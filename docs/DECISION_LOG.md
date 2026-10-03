@@ -23,7 +23,7 @@ Entries that supersede a specification item. Read this first.
 | D-006 | 2026-10-03 | Test-build numbering agreed; unique filenames no longer required | confirmed; version-to-commit tie open |
 | D-007 | 2026-10-03 | Commit and tag every handed-over build | confirmed |
 | D-008 | 2026-10-03 | Docs are always committed and pushed, without asking | confirmed |
-| D-009 | 2026-10-03 | Fix: `Run outcome` shows per-vendor and spree totals | in progress |
+| D-009 | 2026-10-03 | Fix: `Run outcome` shows per-vendor and spree totals | implemented in `1.6.0-test.2`; simulation-tested, not live |
 
 ---
 
@@ -771,3 +771,40 @@ could misattribute purchases to the wrong vendor. The AI's pre-handoff log revie
   Bazaar outcome line; its expected text changes with the line's format (an
   implementation detail), its requirement (outcome logged with the right purchase
   count) does not.
+
+### D-009 addendum (2026-10-03): implementation and evidence
+
+Appended; the entry above is unchanged.
+
+**Built:** `logRunOutcome(label, before)` now prints
+`This vendor: bought=, skipped=, spent=` (counters minus a snapshot taken by
+`runCounters()` just before the run) and `Spree total so far: ...` (accumulated), each
+labelled. Both callers snapshot first. Behavior is otherwise untouched. `VERSION` is
+`1.6.0-test.2` (separate commit, R14).
+
+**Evidence (simulation only; the mock is the AI's model of MQ):**
+- New test T11 and mutation 8: a two-vendor Plane of Knowledge spree in which the second
+  vendor buys nothing. T11 takes its expected counts from the mock's own per-vendor
+  purchase record (3 and 0) and checks both lines carry the right "This vendor" and
+  "Spree total so far" figures. The mutation that prints the accumulated totals as the
+  vendor's result is caught by T11 alone.
+- The same scenario run through the previous build (`v1.6.0-test.1`, from the git tag)
+  reproduces the live defect: vendor 2's line read `bought=3`, vendor 1's total. The new
+  build reads `This vendor: bought=0 ... Spree total so far: bought=3`.
+- T4 (Bazaar outcome line) was changed to look for the new `This vendor: bought=N`
+  wording. Its requirement (outcome logged with the right purchase count) is unchanged;
+  only the line's format, an implementation detail, moved. The T4 expectation still comes
+  from the mock's record, not from the script's output.
+- All 11 tests and 9 mutation checks pass. `equivalence_check` (4 Bazaar scenarios) and a
+  new old-vs-new run of the two-vendor PoK spree both show identical commands, purchases,
+  money and simulated time between `v1.6.0-test.1` and the new build.
+- Review of every log line that restates a counter across vendor boundaries (the lesson
+  from the first live log): `run start ... bought/skipped so far` is labelled "so far";
+  `Run outcome` is now split and labelled; `Purchased (N)` / `Skipped (N)` are printed once,
+  at the end of a spree or Bazaar run, and are spree-wide by design. No other line.
+
+**Side effect worth recording:** the Plane of Knowledge path (`/nav id`, `/target npc`,
+`/click right target`, the vendor-to-vendor loop) is now exercised in simulation; ledger
+Open item 8 is narrowed accordingly.
+
+**Not verified:** anything live. The two-vendor case has only been run in simulation.

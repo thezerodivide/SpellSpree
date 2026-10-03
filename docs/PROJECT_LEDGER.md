@@ -5,14 +5,13 @@ Current state only (Development Protocol §11). History and rationale are in
 
 Last reviewed end to end: 2026-10-03 (§18).
 Baseline: commit `f6c29f4`, referred to as **v1.5.0** (that commit's file still says `1.5-reorder-passes`).
-Current: `1.6.0-test.1` (D-004 file logging, D-005 version), pushed to GitHub and tagged `v1.6.0-test.1` (on `b8a6d53`; docs-only commits follow it, `spellspree.lua` is identical). Simulation-tested only; not yet live-tested.
+Current: `1.6.0-test.2` (D-009 outcome-line fix on top of `1.6.0-test.1` file logging), tagged `v1.6.0-test.2` and pushed. Simulation-tested; `1.6.0-test.1` has run live once.
 
-## Where we left off (updated after the first live log, 2026-10-03)
+## Where we left off (after the outcome-line fix, 2026-10-03)
 
-- State: `v1.6.0-test.1` (file logging) is committed, tagged and pushed. It **has now been run live once** (vendor 1, Cleric 1-25, Benedict; log excerpt in `docs/evidence/`). Logging worked as designed.
-- The live log answered: where the log goes, that mkdir/names work, that price-quote events fire, that the usable-only filter drops scribed spells (also developer-confirmed), that Stop works, and showed the scan **skips spells in pass 1** (item 10) so vendor 1 needed 4 passes. All 70 spells were still bought and scribed.
-- Open decisions for the developer: which of items 11-13 to take on, if any, and in what order (each its own change, one at a time, P-1 log review and P-3 tag before any handoff). Item 10 (scan misses within a pass) is a reframed observation, no change requested. Item 12 is a small fix to my own logging.
-- Not yet exercised live: stacked-scroll re-buy (item 4), the Bazaar (item 3), long sprees (item 13).
+- State: `v1.6.0-test.2` (tag `v1.6.0-test.2`, pushed): D-009 fixes the `Run outcome` line (item 12). Simulation-tested only. `1.6.0-test.1` had its first live run (vendor 1, Cleric 1-25): 70 spells in four passes, nothing lost; vendor 2's outcome line was the bug now fixed.
+- Handoff review (P-1) for `1.6.0-test.2` is in the handoff message; the live check is: run a PoK spree over two or more vendors and read each vendor's `Run outcome` line (`This vendor` vs `Spree total so far`).
+- Open, developer's call: items 11 (partial row count after reopen) and 13 (log volume vs rotation). Item 10 is reframed (no change requested). Items 3 and 4 (Bazaar reopen, stacked re-buy) have not occurred live yet.
 
 ## Resolved behavior
 
@@ -125,8 +124,9 @@ as the pre-logging baseline in four scenarios.
    a console window (the developer has not reported one).
 7. **Testability split (§20)** of the pass/dedupe logic from the MQ binding is
    not yet designed.
-8. **Plane of Knowledge path not simulated.** `runNavAndShop`'s `/nav`, `/target
-   npc`, `/click` conversions to `sendCmd` are verified by static reading only.
+8. ~~Plane of Knowledge path not simulated.~~ **Now simulated (D-009):** a two-vendor
+   spree runs through `/nav`, `/target npc` and `/click` against the mock. Still simulation
+   only; the live PoK path has run once (vendor 1) and logged as expected.
 9. **Repo housekeeping:** README, licence, `.gitignore`, `.gitattributes` not
    decided.
 10. ~~**DEFECT (D-001 implementation): the scan skips spells...**~~ **Reframed,
@@ -151,11 +151,11 @@ as the pre-logging baseline in four scenarios.
     iteration, but a transient 0 (or a small count) at the start of a pass would end
     that pass at once, and a new pass with zero purchases is read as "scan complete".
     Not observed to cause a wrong finish. No fix designed or agreed.
-12. **DEFECT (D-004, my logging): `Run outcome` shows spree-cumulative totals.** For
-    vendor 2 (which bought nothing) the line read `bought=70, spent=756pp...`, which is
-    vendor 1's total, because `S.bought` and `S.spentCopper` accumulate over the whole
-    spree by design. The label reads as if per vendor. A reader could misattribute.
-    Not fixed; needs a decision on wording (cumulative label vs per-vendor delta).
+12. ~~**DEFECT (D-004, my logging): `Run outcome` shows spree-cumulative totals.**~~
+    **Fixed in `1.6.0-test.2` (D-009), simulation-tested only.** Vendor 2 of the first live
+    run (bought nothing) had printed vendor 1's totals (`bought=70`). The line now gives
+    `This vendor:` and `Spree total so far:` separately. Needs a live two-vendor run to
+    confirm; the developer's PoK runs will show it.
 13. **Log volume vs rotation.** About 1.7 KB/s verbose. At the 4 MB rotation limit that
     is about 40 minutes of running; rotation keeps only one `.old`, so a long
     multi-vendor spree would lose its earliest part. Whether that matters, and what to
