@@ -2007,3 +2007,24 @@ Step numbering for handoff labels from now on: **Step 1** list-then-buy, **Step 
 ### Dependencies and shared seams
 - Step 3 depends on Step 1's built list (the Lvl column is already read and logged) and, for the 61-70 visit, on
   Step 2's mapping.
+
+### D-020 addendum (2026-10-03): why the bounding must be strict; question 2 answered
+
+Appended; the entry above is unchanged.
+
+**Developer, 2026-10-03:** "Yeah, we're doing it that way specifically because there's a maximum number of scribed
+spells in a spellbook. We want to let the user determine which spells are purchased."
+
+- **Rationale recorded (developer):** a spellbook holds a limited number of scribed spells, so the user must be the one
+  who decides which spells are bought. This is why a tier box buys only its own levels (R21) and why the 61-70 box
+  goes to the 1-25 vendor and buys only 61-70.
+- **Consequences for the design, as the AI reads them (not new requirements):** anything outside the ticked ranges is
+  never bought, including a spell whose level cannot be read (D-014 item I) and any spell above level 70; and the
+  approved ledger wording (out-of-range scrolls are "deliberately skipped") keeps each skipped spell visible in the log.
+- **Answered:** the AI's question 2 (out-of-range spells appear in the ledger as skipped) is answered "yes", on this
+  reasoning. Not yet answered: question 1 (keep the 61-70 vendor names untouched in `VENDOR_DATA` and repoint only the
+  mapping), question 3 (the Bazaar path stays unfiltered) and question 4 (withdraw the premature `v1.6.0` tag).
+- **Observation raised for the developer, not a request:** the Bazaar path (D-017 spec I-1, unchanged since the
+  baseline) buys every scroll the open vendor sells and ignores the boxes. With the same spellbook limit that can fill
+  the book, so the "user decides" principle does not currently reach it. Whether that should change is the developer's
+  call; the AI has proposed no change.
