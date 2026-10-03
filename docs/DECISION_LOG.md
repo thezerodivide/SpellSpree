@@ -30,6 +30,7 @@ Entries that supersede a specification item. Read this first.
 | D-013 | 2026-10-03 | Requirement: tier boxes become level ranges that buy only their own levels | requirement agreed; not built |
 | D-014 | 2026-10-03 | Design proposal: list-then-buy replaces repeat passes | proposed; awaiting developer approval per item |
 | D-015 | 2026-10-03 | Second-agent review loop: evaluate each recommendation, agree or disagree with reasons | confirmed |
+| D-016 | 2026-10-03 | Handoff labels for messages between Claude and GPT | confirmed; label reading to be confirmed |
 
 ---
 
@@ -1525,3 +1526,56 @@ assume). Addendum 2's "not covered: Druid, Enchanter, Wizard" is superseded by t
 in addendum 2 is unchanged: Druid does not block the design, because R21 makes a wrong mapping fail
 safe, and the level-range build's first-visit level logging (or the developer telling the AI) will
 provide Druid's evidence.
+
+---
+
+## D-016 — Handoff labels for messages between Claude and GPT
+
+**Date:** 2026-10-03 · **Status:** confirmed (format); the AI's reading of two details awaits the
+developer's confirmation · **Supersedes:** nothing; supports D-015.
+
+### Story
+
+Proposals and reviews now pass between the AI (Claude) and the reviewing agent (GPT) through the
+developer. To keep both sides synchronized on which message answers which, the developer asked for a
+lightweight label on every such message.
+
+### Requirement (developer, 2026-10-03)
+
+- R26. Every message between Claude and GPT begins with:
+  `HANDOFF: Step <n> / Decision <n> / Revision <n> / From <Claude|GPT> / <date>`
+  followed, on every revision after the first, by
+  `Answering: <label of the message being answered>`.
+  Revision 1 has no Answering line (it has not gone to the other side yet). GPT uses the same format.
+  The developer's example: `HANDOFF: Step 5 / Decision 17 / Revision 2 / From Claude / 2026-10-01`
+  with `Answering: REVIEW OF: Step 5 / Decision 17 / Revision 1 / From Claude / 2026-10-01`.
+
+### Design choices
+
+None beyond R26.
+
+### Implementation choices (the AI's reading; not yet confirmed)
+
+- **Decision** = the decision-log number (D-014 is Decision 14). **Step** = the order of work in D-014
+  choice G: Step 1 = list-then-buy, Step 2 = the level-range tier boxes (D-013).
+- GPT's review of a Claude message is labelled `REVIEW OF: <the label of the Claude message it
+  reviews>` (as in the developer's example), and Claude's next revision quotes that label verbatim on
+  its Answering line. The revision number of a review equals the revision it reviews.
+- The date is the day the message is written.
+- Each message is archived in `docs/handoffs/` named `<date>_step<n>_decision<n>_rev<n>_<from>.md`, so the
+  exchange can be re-read from the repository. GPT's messages are archived from text the developer pastes.
+- The first exchange (the D-014 proposal and GPT's review of it) predates the convention; the proposal is
+  retrofitted as Revision 1 (its content is D-014) and GPT's review is archived as the review of Revision 1.
+
+### Open
+
+- Whether the Step and Decision numbering and the reading of GPT's label above are what the developer
+  intends.
+
+### Not yet verified
+
+- Nothing; this is a process rule.
+
+### Dependencies and shared seams
+
+- Applies to every message under D-015 (review loop). First use: Step 1 / Decision 14 / Revision 2.
