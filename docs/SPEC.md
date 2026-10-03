@@ -34,8 +34,8 @@ vendors and scribes them. *(INHERITED, from the original header.)*
   The 61-70 box is not offered ...~~ **REVISED by D-019 (2026-10-03), not yet built:**
 - **S-5 (AGREED, D-013 R21 and R24, D-019 R29-R30; not yet built).** The tier boxes stay as they are: 1-25, 26-50,
   51-60 and 61-70 (no UI change). Selecting a range buys only spells whose `Lvl` is in that range (inclusive).
-  The 61-70 range is bought from the **1-25 vendor**; 1-25, 26-50 and 51-60 from their own vendors; if 1-25 and 61-70
-  are both ticked, that vendor is visited once. The 71-80 vendor is out of scope.
+  The 61-70 range is bought from the **1-25 vendor**; 1-25, 26-50 and 51-60 from their own vendors; ~~if 1-25 and 61-70 are both ticked, that vendor is visited once.~~ **each selected range is its own visit with its own level limit (D-020 R34); with all four ticked the flow is vendor 1, vendor 2, vendor 3, then vendor 1 again.** The 71-80 vendor is out of scope.
+- **Release 1.6.0 scope (AGREED, D-020 R31):** Step 1 (list-then-buy, done), Step 2 (each 61-70 selection uses the 1-25 vendor), Step 3 (purchases bounded by the selected level range). Steps 2 and 3 are not built.
 - **S-4 (AGREED, D-003 R9).** Process requirement: before any build is presented
   for manual testing, its logging is reviewed against what that test needs to
   show (see `WORKING_AGREEMENT.md` P-1).

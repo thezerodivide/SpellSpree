@@ -34,6 +34,7 @@ Entries that supersede a specification item. Read this first.
 | D-017 | 2026-10-03 | APPROVED: Step 1, list-then-buy replaces repeat passes | approved by the developer; supersedes spec S-1 / D-001 R1; built as 1.6.0-test.3; first live run succeeded (137 spells, one pass per vendor) |
 | D-018 | 2026-10-03 | Step 1 accepted (as a step); the 1.6.0 release was premature and is being withdrawn | acceptance stands; release withdrawn, see addendum |
 | D-019 | 2026-10-03 | Step 2 direction changed: the four tier boxes stay; the logic underneath changes | direction recorded; design under discussion; nothing built |
+| D-020 | 2026-10-03 | Release 1.6.0 scope: Steps 1-3; each selected range is its own visit | requirement recorded; Steps 2 and 3 not built |
 
 ---
 
@@ -1962,3 +1963,47 @@ range purchases. Or was that part of what we just did?"
   commit. The next handed-over build is `1.6.0-test.4` with its own tag (D-006, D-007).
 - **Lesson recorded:** do not infer a release from an acceptance. A release, a tag, or any version change that is
   more than the build under test needs its own explicit go-ahead.
+
+---
+
+## D-020 — Release 1.6.0 scope: Steps 1-3; each selected range is its own visit
+
+**Date:** 2026-10-03 · **Status:** requirement recorded; Steps 2 and 3 not built · **Supersedes:** the numbering of
+steps in D-014 choice G and D-016 (Step 2 was "the level-range boxes"); **D-013 R22's "opened once if both are
+selected" and the matching sentence of D-019 R30** (replaced by R34 below). Builds on D-018's addendum.
+
+### Story
+After the premature 1.6.0 release (D-018 addendum) the developer restated what the release must contain, and in doing
+so settled how the level bounding works when several ranges are selected.
+
+### Requirement (developer, 2026-10-03)
+- **R31.** The **1.6.0 release contains Steps 1, 2 and 3**:
+  - **Step 1: completed** (list-then-buy; D-017; accepted as a step in D-018).
+  - **Step 2:** change the logic so each **61-70 selection uses the 1-25 spell vendor** for each class.
+  - **Step 3:** implement **purchases bounded by the selected level range**.
+- **R34.** With all four ranges selected the flow is: visit and buy from vendor 1 (range 1-25), vendor 2 (26-50),
+  vendor 3 (51-60), then **vendor 1 a second time** (range 61-70). The developer accepts the second visit to vendor 1.
+  **Each selected range is its own visit with its own level limit; visits are not merged.**
+- R21 stands (a range buys only spells whose Lvl is in it, inclusive). R24 stands (71-80 out of scope). The UI does not
+  change (D-019 R29).
+- R23a's purpose stands (the 61-70 vendor locations are not lost); how they are kept is still a design choice.
+
+### Design choices
+None made yet. Steps 2 and 3 each need a design, review through the ChatGPT loop (D-015), and the developer's
+approval before they are built; one change at a time.
+
+### Implementation choices
+Step numbering for handoff labels from now on: **Step 1** list-then-buy, **Step 2** the 61-70 -> 1-25 vendor mapping,
+**Step 3** the level-bounded purchases. The earlier handoff files under Step 1 / Decision 14 are unaffected.
+
+### Open
+- The cleanup of the premature `v1.6.0` tag and `VERSION = '1.6.0'` (D-018 addendum) awaits the developer's go-ahead;
+  with R31 the release now needs Steps 2 and 3, so the tag is still premature.
+- The Step 2 and Step 3 designs (the AI's proposals are in the discussion that followed this entry).
+
+### Not yet verified
+- Nothing live. Steps 2 and 3 are not built.
+
+### Dependencies and shared seams
+- Step 3 depends on Step 1's built list (the Lvl column is already read and logged) and, for the 61-70 visit, on
+  Step 2's mapping.
