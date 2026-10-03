@@ -209,7 +209,7 @@ as the pre-logging baseline in four scenarios.
     **nothing** with the usable-only filter on; a **71-80** vendor also exists (not in `TIERS`).
     Still open: other classes (see below), and what a tier selection should mean.
 
-16. **OBSERVATION (D-017 B' as approved, found in simulation):** a vendor whose usable list is completely empty never "settles" (the rule needs at least one row), so a visit to it waits 15 s and stops with `Vendor list did not settle`, not "nothing to buy". Harmless; no live vendor has been empty (they all sell non-scroll items) and the empty 61-70 vendors are no longer visited. Not changed (approved item); a candidate small change if it ever matters.
+16. **OBSERVATION (D-017 B' as approved, found in simulation):** a vendor whose usable list is completely empty never "settles" (the rule needs at least one row), so a visit to it waits 15 s and stops with `Vendor list did not settle`, not "nothing to buy". Harmless; no live vendor has been empty (they all sell non-scroll items) and the empty 61-70 vendors are no longer visited. Not changed (approved item); a candidate small change if it ever matters. Covered by test `L19` (it documents the current behavior).
 
 ## Out of scope
 
@@ -225,7 +225,8 @@ as the pre-logging baseline in four scenarios.
 From the repo root, with LuaJIT:
 
 ```
-luajit test/test_listthenbuy.lua                      # 18 tests + 9 mutation checks (Step 1, D-017)
+luajit test/test_listthenbuy.lua                      # 19 tests + 10 mutation checks (Step 1, D-017)
+luajit test/test_step2.lua                            # 8 tests + 5 mutation checks (Step 2, D-022)
 luajit test/test_listthenbuy.lua baseline             # the same tests without the mutations; leaves the real build's logs in %TEMP%\spellspree_sim\listthenbuy
 luajit test/test_logging.lua                          # 11 tests + 9 mutation checks (logging, D-004 / D-009)
 luajit test/eligibility_check.lua <previous build .lua> spellspree.lua   # same set of spells bought as a previous build

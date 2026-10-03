@@ -2249,3 +2249,25 @@ rule is an approved item and was not changed.
 
 **Not verified:** everything live. The second visit to the same vendor within one spree has run live only as a separate
 second spree.
+
+### D-022 addendum 2 (2026-10-03): a gap in the tests, found by the developer's questions, closed
+
+Appended; earlier text is unchanged. The developer asked how the suites run, whether the mutation checks change the real Lua,
+and whether the completely empty vendor was kept as a test after non-scroll items were added to the mocks.
+
+- **How the suites run (answer, from the code):** every suite loads the real `spellspree.lua` with `loadfile` and runs it with
+  `mq` and `ImGui` replaced by `test/mock_mq.lua` through `package.preload` (`test/sim_run.lua`); no test contains a second
+  implementation of the script's logic. Mutation checks read the real source text, replace one exact string (the target must be
+  found exactly once or the check is reported as failed), write the result to a temporary file, and run the same tests against
+  that file; the real `spellspree.lua` is not modified. Two kinds of test do not execute the script: `S7` in
+  `test/test_step2.lua` reads the source text (a deliberately static check that the old 61-70 code is commented out, not deleted),
+  and `S6` runs a modified copy of the script to simulate a configuration error. The eligibility check compares two real builds.
+- **The gap (the AI's):** when non-scroll items were added to the test vendors (so the fourth visit did not stop on an empty
+  list), the completely empty vendor was **not** kept as a test. The 15-second timeout was covered only by `L5`, which uses a
+  list whose count keeps changing, not an empty one. So the empty-list behavior recorded in ledger item 16 had no test.
+- **Closed:** `L19` in `test/test_listthenbuy.lua` runs a vendor with no rows at all and checks that the visit stops after about
+  15 s with `state=Stopped` and the reason `Vendor list did not settle`, buying nothing, and that the polls read `count=0`. It
+  documents the approved behavior (D-017 B' says "at least 1 row") and does not endorse it. A new mutation (accepting 0 rows as
+  settled) is caught by `L19` alone, as predicted; the existing "never gives up within 15 s" mutation now also fails `L19`
+  (it measures the same maximum), and `L10`'s ledger check now skips both scenarios that build no list.
+- Counts now: `test_listthenbuy.lua` 19 tests and 10 mutation checks; `test_step2.lua` 8 and 5; `test_logging.lua` 11 and 9.
