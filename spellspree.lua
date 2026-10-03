@@ -1149,9 +1149,20 @@ local function closeVendor(reason)
 end
 
 -- Final outcome of one vendor run, in one line, so a log can be read from its end.
-local function logRunOutcome(label)
-    logLine(string.format('Run outcome (%s): state=%s, reason="%s", bought=%d, skipped=%d, spent=%s.',
-        label, tostring(S.state), tostring(S.lastStopReason), S.bought, S.skipped, formatCoin(S.spentCopper)), COLOR_GOLD)
+-- S.bought/S.skipped/S.spentCopper accumulate across a whole shopping spree (by
+-- design), so the line reports THIS vendor's result (counters now minus the
+-- snapshot taken just before the run) and the spree total separately, each
+-- labelled. Printing only the accumulated figures read as a per-vendor result
+-- (D-009).
+local function runCounters()
+    return { bought = S.bought, skipped = S.skipped, spent = S.spentCopper }
+end
+
+local function logRunOutcome(label, before)
+    logLine(string.format('Run outcome (%s): state=%s, reason="%s". This vendor: bought=%d, skipped=%d, spent=%s. Spree total so far: bought=%d, skipped=%d, spent=%s.',
+        label, tostring(S.state), tostring(S.lastStopReason),
+        S.bought - before.bought, S.skipped - before.skipped, formatCoin(S.spentCopper - before.spent),
+        S.bought, S.skipped, formatCoin(S.spentCopper)), COLOR_GOLD)
 end
 
 -- Close and reopen the currently targeted merchant between scan passes. This
@@ -2086,8 +2097,9 @@ local function runNavAndShop(npcName)
     end
 
     logLine('Merchant window open -- starting the buy run.', COLOR_GOOD)
+    local countersBefore = runCounters()
     runSpellSpree()
-    logRunOutcome('Nav & Shop "' .. npcName .. '"')
+    logRunOutcome('Nav & Shop "' .. npcName .. '"', countersBefore)
 
     -- Always close, no matter how the buy run ended -- this is meant to be a
     -- full, self-contained cycle, not something that leaves a vendor window
@@ -2215,8 +2227,9 @@ local function runBazaarShop()
     S.purchasedNames, S.skippedNames = {}, {}
     logLine('Bazaar: working the merchant window you have open.', COLOR_GOLD)
 
+    local countersBefore = runCounters()
     runSpellSpree()
-    logRunOutcome('Bazaar')
+    logRunOutcome('Bazaar', countersBefore)
     printSpreeSummary()
 end
 
