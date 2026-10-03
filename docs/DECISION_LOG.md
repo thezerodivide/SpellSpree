@@ -2953,3 +2953,10 @@ Buffalo): the old file ends with `identity changed`, the new file starts with th
 **Known and not exercised live:** an early stop partway through a visit, an unreadable Lvl cell, a character switch during a run (all covered by the
 simulation only); the Bazaar path (unchanged, its own later pass); the 5-second gap between the transition line and the new file's header seen once live
 (cause not confirmed; harmless). **Build:** `VERSION = '1.6.0'`, tag `v1.6.0`; the file is the same as `1.6.0-test.5` apart from the version string.
+
+### Addendum (2026-10-03): the original author's names
+
+The developer clarified that **Ratlanta and Heeby are the same person**: Heeby is the original author's name in the Project Triune Discord. Earlier entries
+of this log (D-001, the project-ownership note) name the author as Ratlanta, which is the name shown in the Discord exchange where permission to take over
+development was given; the README and the release notes for 1.6.0 credit him as @Heeby, his Discord name there. Both names refer to the original author of
+SpellSpree (v1.4 and earlier). No earlier entry is changed.
