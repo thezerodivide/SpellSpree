@@ -7,6 +7,12 @@ Last reviewed end to end: 2026-10-03 (§18).
 Baseline: commit `f6c29f4`, referred to as **v1.5.0** (that commit's file still says `1.5-reorder-passes`).
 Current: `1.6.0-test.1` (D-004 file logging, D-005 version), pushed to GitHub and tagged `v1.6.0-test.1` (on `b8a6d53`; docs-only commits follow it, `spellspree.lua` is identical). Simulation-tested only; not yet live-tested.
 
+## Where we left off (end of session 1, 2026-10-03)
+
+- State: `v1.6.0-test.1` (file logging) is committed, tagged and pushed. Simulation-tested only; **no live test yet**. The D-003 log review for it was given in the handoff message; the live-test questions it expects are the Open items 1-4 and 6 below.
+- Next, developer's choice: (a) live-test `v1.6.0-test.1` and read the log (start with its `log path resolution:` line), or (b) design the repeat-purchase guard (Open item 4) as its own change. Scope of (b) is not agreed beyond the stacked-scroll case.
+- Reminder for any future build handed over: P-1 log review, P-3 commit + tag, one change per build.
+
 ## Resolved behavior
 
 Only behavior the developer has explicitly agreed.
