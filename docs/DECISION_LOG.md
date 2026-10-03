@@ -30,7 +30,7 @@ Entries that supersede a specification item. Read this first.
 | D-013 | 2026-10-03 | Requirement: tier boxes become level ranges that buy only their own levels | requirement agreed; not built |
 | D-014 | 2026-10-03 | Design proposal: list-then-buy replaces repeat passes | proposed; awaiting developer approval per item |
 | D-015 | 2026-10-03 | Second-agent review loop: evaluate each recommendation, agree or disagree with reasons | confirmed |
-| D-016 | 2026-10-03 | Handoff labels for messages between Claude and GPT | confirmed; label reading to be confirmed |
+| D-016 | 2026-10-03 | Handoff labels for messages between Claude and GPT | confirmed, including numbering and revision rule |
 
 ---
 
@@ -1602,3 +1602,11 @@ number; Step = order of work, Step 1 list-then-buy, Step 2 level ranges); (b) th
 Claude's reply. The developer's sketch showed Claude's reply as "Revision 1", but earlier said
 Revision 1 has no Answering line and gave "Revision 2" in the first example. The AI is numbering a
 reply to a review as the next revision (Revision 2) unless told otherwise.
+
+### D-016 addendum 2 (2026-10-03): numbering and revision rule confirmed
+
+Appended; earlier text is unchanged. **Developer, 2026-10-03, confirming both open points:**
+(a) **Decision** = the decision-log number and **Step** = the order of work (Step 1 list-then-buy,
+Step 2 level ranges) is correct; (b) **each reply by Claude in the chain increments the revision
+number**: Revision 1, then 2, then 3, and so on. A ChatGPT review carries the revision number of
+the Claude message it reviews. D-016 is now fully confirmed; nothing remains open under it.

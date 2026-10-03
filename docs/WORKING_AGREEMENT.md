@@ -55,6 +55,8 @@ These add to the Development Protocol for this project only.
   Flow: Claude `HANDOFF: ... / From Claude / <date>`; ChatGPT `REVIEW OF: ... / From ChatGPT / <date>`
   (From = the author; numbers are those of the Claude message reviewed); Claude's reply `HANDOFF: ... /
   From Claude / <date>` with `Answering: <ChatGPT's REVIEW OF label, repeated exactly>`.
+  Numbering confirmed: Decision = the decision-log number; Step = order of work; each Claude reply in
+  the chain increments the revision number.
 
 ## Sibling projects (Development Protocol §21)
 
