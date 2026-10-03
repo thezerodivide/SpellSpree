@@ -40,6 +40,7 @@ local SCENARIOS = {
     vanish     = function(d) return base(d, { reorderAfterBuy = true, events = { { atMs = 4000, kind = 'vanish', name = 'Spell: Gamma' } } }) end,
     partial    = function(d) return base(d, { partialAtOpen = { rows = 2, untilMs = 1500 } }) end,
     neversettle = function(d) return base(d, { neverSettles = true }) end,
+    emptyvendor = function(d) return { logsRaw = d, rootRaw = d, nonSpells = {}, spells = {} } end,
     misselect1 = function(d) return base(d, { misselect = { name = 'Spell: Beta', times = 1 } }) end,
     misselect3 = function(d) return base(d, { misselect = { name = 'Spell: Beta', times = 3 } }) end,
     drift      = function(d) return base(d, { driftOnce = { name = 'Spell: Beta', afterMs = 200 } }) end,
@@ -186,7 +187,7 @@ local TESTS = {
     { id = 'L10', src = 'D-017 F\'\' (a): every built-list entry ends with exactly one outcome; none is left without one; the counts add up',
       fn = function(c)
           for name, r in pairs(c) do
-              if name ~= 'neversettle' then
+              if name ~= 'neversettle' and name ~= 'emptyvendor' then -- these two never build a list, so there is no ledger
                   local n, counts = ledger(r.lines)
                   if not n then return false, name .. ': no ledger line' end
                   local sum = 0; for _, v in pairs(counts) do sum = sum + v end
@@ -270,6 +271,19 @@ local TESTS = {
           return true
       end },
 
+    { id = 'L19', src = 'D-017 B-prime as approved ("at least 1 row") and ledger item 16: a vendor whose usable list is completely empty never settles, so the visit stops after the 15 s maximum with reason "Vendor list did not settle", buying nothing (this documents the approved behavior; it does not endorse it)',
+      fn = function(c)
+          local r = c.emptyvendor
+          if #r.sim.purchases ~= 0 or cmdCount(r.sim, 'MW_Buy_Button') ~= 0 then return false, 'something was bought from an empty vendor' end
+          local o = grep(r.lines, 'Run outcome (Bazaar)')
+          if #o ~= 1 or not o[1]:find('Vendor list did not settle', 1, true) or not o[1]:find('state=Stopped', 1, true) then
+              return false, 'outcome line lacks state=Stopped and the reason: ' .. tostring(o[1])
+          end
+          if r.sim.clockMs < 14500 or r.sim.clockMs > 17500 then return false, string.format('stopped after %d simulated ms, expected about 15000', r.sim.clockMs) end
+          if #grep(r.lines, 'list settle poll') < 2 or #grep(r.lines, 'count=0') < 2 then return false, 'the polls do not show an empty list (count=0)' end
+          return true
+      end },
+
     { id = 'L18', src = 'D-017 A\': the list read logs each spell\'s Lvl (column 8); the mock gives Gamma level 25',
       fn = function(c)
           local hits = 0
@@ -306,8 +320,12 @@ local MUTATIONS = {
       from = "            if byName[name] then", to = "            if false then" },
     { name = 'the final scan no longer reports new scrolls', fails = { 'L16' },
       from = "                newScrolls[#newScrolls + 1] = name", to = "                local _ = name" },
-    { name = 'the settle wait never gives up within 15 s', fails = { 'L5' },
+    -- L19 also measures the 15 s maximum, so it fails here too (my first prediction predates L19)
+    { name = 'the settle wait never gives up within 15 s', fails = { 'L5', 'L19' },
       from = "local LIST_MAX_WAIT_MS   = 15000", to = "local LIST_MAX_WAIT_MS   = 60000" },
+    -- predicted before running: only L19 depends on an empty list being refused as "settled"
+    { name = 'an empty list (0 rows) is accepted as settled', fails = { 'L19' },
+      from = "        if n and n >= 1 and n == last then", to = "        if n and n >= 0 and n == last then" },
     { name = 'a row that is gone at lookup gets no outcome', fails = { 'L3', 'L10' },
       from = "        setOutcome(entry, OUTCOME.SKIPPED, 'row gone at lookup')", to = "        local _ = 'row gone at lookup'" },
 }
