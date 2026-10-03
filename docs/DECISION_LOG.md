@@ -2600,3 +2600,13 @@ wrapper mutation verify it) and stated that **every item A-F is agreed from its 
   script starts normally with the hook block present.
 
 **Status:** presented to the developer for approval; nothing is built until the developer authorizes.
+
+### D-026 approval and open items (2026-10-03, developer)
+
+The developer approved each decision reached by consensus (A, B, C'', D, E', F and the delivery plan above). Build authorized;
+TDD order: tests first with a recorded red run, then the hook, then mutation checks, existing suites unchanged.
+
+Open items resolved by the developer in the same message:
+- **L19** (commit `a850999`): kept, "if only for historical purposes".
+- **Delayed-selection test** (D-024 Open): approved. Test-only change plus one new mock option (`selectDelayMs`), with a new row in
+  `docs/MOCK_MODEL.md` classified ASSUMED (no live observation of a late `Merchant.SelectedItem`).
