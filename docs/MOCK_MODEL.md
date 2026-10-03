@@ -49,6 +49,7 @@ an ASSUMED row, change its class and cite the evidence.
 | 31 | Simulated time advances only when the script calls `mq.delay` | ASSUMED | |
 | 32 | The cursor is always empty | ASSUMED | live: empty throughout the runs read so far |
 | 33 | `selectDelay`: a click on a row takes effect only after a set time, the selection stays where it was meanwhile, and a late landing replaces whatever is selected at that moment | ASSUMED | never observed live; every live selection checked so far was already in place by the first read (the logs show the selection check passing at the first poll). A stress model for the adverse case (D-024 Open, approved by the developer 2026-10-03) |
+| 34 | `levelText`: column 8 returns raw text chosen by the test (padded, blank, `--`, words, decimals, negatives); `false` makes the cell missing (the TLO returns nil for a row that exists) | ASSUMED | the live logs show only numbers (a padded number, and `--` for non-spell rows), so no blank or missing Lvl cell for a spell was ever observed (D-025) |
 
 How to read a passing test: rows marked DIFFERS or ASSUMED are where a pass proves least. Live runs remain the only evidence for
 those.

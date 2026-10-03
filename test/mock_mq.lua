@@ -27,6 +27,9 @@ end
 --         neverSettles (the count keeps changing); events = { {atMs=, kind='vanish'|'appear', name=, price=} };
 --         misselect = { name=, times= } (a click on that row selects a different row that many times);
 --         driftOnce = { name=, afterMs= } (the selection moves away from that item shortly after it is made);
+--       Step 3 (level bounding, D-025): spells[i].levelText = the raw text returned for column 8 (overrides level; false = the cell is
+--         missing, so the TLO returns nil for it). sim.selectClicks[name] counts the select clicks that landed on each row (a record
+--         for tests, no behavior).
 --         selectDelay = { name=, ms= } (a click on that row only takes effect that many ms later, every time; until then the
 --           selection stays where it was, and a late landing replaces whatever is selected then; D-026, delayed selection);
 --         stopAtMs (the Stop button is pressed once at that simulated time).
@@ -42,7 +45,7 @@ function M.new(opts)
     local sim = {
         opts = opts, clockMs = 0, cmds = {}, prints = {}, merchantOpen = true,
         usableChecked = true, known = {}, targetId = 4242, finished = false,
-        scribeRejects = opts.scribeRejectFirst or 0, delays = 0, purchases = {}, buyClicks = {}, pending = {}, ticks = {},
+        scribeRejects = opts.scribeRejectFirst or 0, delays = 0, purchases = {}, buyClicks = {}, pending = {}, ticks = {}, selectClicks = {},
     }
     sim.money = opts.money or 10000000
 
@@ -53,7 +56,7 @@ function M.new(opts)
             id = id + 1; rows[#rows + 1] = { name = n, id = id, price = 5 }
         end
         for _, sp in ipairs(spec.spells or {}) do
-            id = id + 1; rows[#rows + 1] = { name = 'Spell: ' .. sp.name, id = id, price = sp.price or 100, level = sp.level }
+            id = id + 1; rows[#rows + 1] = { name = 'Spell: ' .. sp.name, id = id, price = sp.price or 100, level = sp.level, levelText = sp.levelText }
         end
         return rows
     end
@@ -111,6 +114,7 @@ function M.new(opts)
         local row = cmd:match('^/notify MerchantWnd ItemList listselect (%d+)$')
         if row then
             local r = sim.visible[tonumber(row)]
+            if r then sim.selectClicks[r.name] = (sim.selectClicks[r.name] or 0) + 1 end
             if r and opts.misselect and r.name == opts.misselect.name and (sim.misselected or 0) < (opts.misselect.times or 1) then
                 -- the list shifted under the click: a different row ends up selected
                 sim.misselected = (sim.misselected or 0) + 1
@@ -327,7 +331,11 @@ function M.new(opts)
                                     elseif col == 5 then return ret(tostring(math.floor((P % 1000) / 100)))
                                     elseif col == 6 then return ret(tostring(math.floor((P % 100) / 10)))
                                     elseif col == 7 then return ret(tostring(P % 10))
-                                    elseif col == 8 then return ret(r.level and string.format('%3d', r.level) or '--') end
+                                    elseif col == 8 then
+                                        if r.levelText == false then return ret(nil) end
+                                        if r.levelText ~= nil then return ret(r.levelText) end
+                                        return ret(r.level and string.format('%3d', r.level) or '--')
+                                    end
                                     return ret(nil)
                                 end
                                 if col ~= 2 then return ret(nil) end

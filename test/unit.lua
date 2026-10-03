@@ -57,17 +57,24 @@ local function install(unit)
     _G.SPELLSPREE_UNIT = unit
 end
 
-local function verifyExports(unit)
+-- `extra` (optional) is a list of { name, type } a particular test needs on top of the standing exports (D-025: Step 3 adds
+-- parseTierRange, validateRange and classifyLevel; a test that needs them says so, so older tests do not depend on them)
+local function verifyExports(unit, extra)
     for _, name in ipairs(EXPECTED_ORDER) do
         if type(unit[name]) ~= U.EXPECTED[name] then
             error(string.format('the script did not expose %s as a %s (got %s)', name, U.EXPECTED[name], type(unit[name])), 0)
+        end
+    end
+    for _, want in ipairs(extra or {}) do
+        if type(unit[want[1]]) ~= want[2] then
+            error(string.format('the script did not expose %s as a %s (got %s)', want[1], want[2], type(unit[want[1]])), 0)
         end
     end
 end
 
 -- variant 'load-outside' is a deliberately weakened wrapper used only to show that the cleanup tests can fail (D-026 C'' mutation)
 function U.new(variant)
-    return function(scriptPath, body)
+    return function(scriptPath, body, extra)
         assert(rawget(_G, 'SPELLSPREE_UNIT') == nil, 'SPELLSPREE_UNIT is already set: an earlier test leaked it')
         local saved = save()
         local unit = {}
@@ -76,7 +83,7 @@ function U.new(variant)
             local chunk, lerr = loadfile(scriptPath)
             if not chunk then error('load failed: ' .. tostring(lerr), 0) end
             chunk()
-            verifyExports(unit)
+            verifyExports(unit, extra)
         end
         local ok, err
         if variant == 'load-outside' then
@@ -84,7 +91,7 @@ function U.new(variant)
             local chunk, lerr = loadfile(scriptPath)       -- unprotected: an error here skips the restore below
             if not chunk then error('load failed: ' .. tostring(lerr), 0) end
             chunk()
-            verifyExports(unit)
+            verifyExports(unit, extra)
             ok, err = pcall(body, unit)
         else
             ok, err = pcall(function() load(); body(unit) end)
