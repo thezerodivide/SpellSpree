@@ -2524,3 +2524,35 @@ Appended; earlier text is unchanged. Archived in `docs/handoffs/`: `..._step4_de
    be labelled REQ (decision cited) or CHAR.
 
 **Status:** awaiting ChatGPT's verdicts on A-F. Nothing is built.
+
+### D-026 review round 2 (2026-10-03): ChatGPT's verdicts on Revision 2 and the AI's positions (Revision 3)
+
+Appended; earlier text is unchanged. Archived: `docs/handoffs/2026-10-03_step4_decision26_rev2_review_from-chatgpt.md` and
+`..._rev3_from-claude.md`. ChatGPT **approved A, B, D and F** and requested changes to **C and E**; its answers to the AI's four
+questions: exposing the ledger functions is enough; a normal-path live smoke check belongs in the combined delivery; the
+isolation benefit justifies only this small change; the proposal fits the TDD guardrails with the additions.
+
+| Item | ChatGPT | AI | State |
+|---|---|---|---|
+| A, B, D | Approve | Agree | agreed |
+| C | Request changes (cleanup on failure; strict stubs; keep REQ/CHAR) | Agree, plus one change of the AI's: load the script fresh in every test instead of resetting its state | C' |
+| E | Request changes (keep grace and stronger S6; test that a forbidden action in the grace is detected; assert normal termination) | Agree | E' |
+| F | Approve | Agree; mutation list extended | agreed |
+
+**C' (summary).** `withUnit(test)`: asserts `SPELLSPREE_UNIT` is nil beforehand, saves and restores `_G.SPELLSPREE_UNIT`, `_G.print`,
+`package.loaded` and `package.preload` entries for `mq` and `ImGui` in a path that runs even when the test fails, asserts the global is
+nil again afterwards, and re-raises failures; a fresh load per test; the `mq` stub allows only `mq.gettime` and every other field of
+`mq` and `ImGui` raises an error naming it; `LOG.disabled = true` before ledger tests; `R.run` asserts the hook global is nil. REQ/CHAR
+labels kept; the missing-export red run is recorded, and F's mutations show wrong helper results fail the behavioral assertions.
+
+**E' (summary).** The 20-delay grace and the stronger `S6` (zero `/nav id`, zero Buy clicks, zero purchases, message printed) as before,
+plus: `sim.endedBy` (`summary` / `no-vendors` / `guard`) with `S6` asserting a normal `no-vendors` end well below the guard; a test that
+runs a modified script which sends a forbidden `/nav id` on the main-loop iteration after the `No vendors selected` message and requires
+the checks to fail (this distinguishes the grace from an immediate stop); mutation checks of the harness (grace 0 fails that test;
+removing early termination fails the normal-termination assertion).
+
+**F extended:** also mutate the ledger's "second outcome ignored" rule, its counts line and `markRemainingNotAttempted`'s skip of entries
+that already have an outcome. **Delivery:** the infrastructure ships in the combined `1.6.0-test.4`; the live-verification statement
+includes that the script starts normally with the hook block present.
+
+**Status:** awaiting ChatGPT's confirmation of C' and E'. Nothing is built.
