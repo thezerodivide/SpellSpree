@@ -9,7 +9,7 @@ Current: `1.6.0-test.3`: **Step 1, list-then-buy (D-017)** on top of the file lo
 
 ## Where we left off (Step 1 accepted, 2026-10-03)
 
-- State: **`v1.6.0`** (tag, pushed) is the accepted Step 1 build (list-then-buy; D-018). Live: 137 spells, one pass per vendor.
+- State: Step 1 (list-then-buy) is accepted as a step (D-018). Live: 137 spells, one pass per vendor. **The `v1.6.0` tag and `VERSION = '1.6.0'` were created prematurely** and await the developer's go-ahead to be withdrawn (delete the tag; set `VERSION` back to `1.6.0-test.3`, identical code). The release is reserved for after Step 2.
 - Step 2 (level ranges) is being **discussed, nothing built**. Direction (D-019): the four tier boxes stay as they are; underneath, a box buys only spells whose Lvl is in its range, and 61-70 is bought from the 1-25 vendor. The design then goes through the ChatGPT review loop (D-015) and your approval before any build.
 - Open, developer's call: item 13 (log volume vs rotation; K approved leaving it).
 
@@ -25,7 +25,7 @@ Only behavior the developer has explicitly agreed.
 - Every handed-over build is committed and tagged `v<VERSION>` first. *(D-007 R16)*
 - ~~Repeat passes with close and reopen (D-001 R1)~~ **superseded by list-then-buy (D-017, approved):** build the list once, buy each name at most once by exact-name lookup, verified selection before Buy, ledger of outcomes, log-only final scan. *(In progress.)*
 - ~~**Level-range tier boxes (not built):** 1-25, 26-50, 51-60, 61-65 ... the 61-70 box is not offered ...~~ **Revised (D-019):** the four tier boxes stay (1-25, 26-50, 51-60, 61-70; no UI change); a box buys only spells whose Lvl is in its range; 61-70 is bought from the 1-25 vendor (one visit if 1-25 is also ticked). Not built; design under discussion. *(D-013 R21, R24; D-019 R29, R30)*
-- **Step 1 accepted (D-018):** list-then-buy is released as **1.6.0**.
+- **Step 1 accepted as a step (D-018).** ~~Released as 1.6.0~~: the **1.6.0 release was premature and is being withdrawn** (the developer: Step 2, level-bounded purchases, is still to be built; D-018 addendum).
 
 Inherited behavior of the original (Bazaar mode, `Song:` scrolls, PoK vendor
 walk, buy-and-scribe loop, usable-only filter requirement, stop conditions) is

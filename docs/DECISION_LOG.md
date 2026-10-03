@@ -32,7 +32,7 @@ Entries that supersede a specification item. Read this first.
 | D-015 | 2026-10-03 | Second-agent review loop: evaluate each recommendation, agree or disagree with reasons | confirmed |
 | D-016 | 2026-10-03 | Handoff labels for messages between Claude and GPT | confirmed, including numbering and revision rule |
 | D-017 | 2026-10-03 | APPROVED: Step 1, list-then-buy replaces repeat passes | approved by the developer; supersedes spec S-1 / D-001 R1; built as 1.6.0-test.3; first live run succeeded (137 spells, one pass per vendor) |
-| D-018 | 2026-10-03 | Step 1 accepted; released as 1.6.0 | accepted by the developer |
+| D-018 | 2026-10-03 | Step 1 accepted (as a step); the 1.6.0 release was premature and is being withdrawn | acceptance stands; release withdrawn, see addendum |
 | D-019 | 2026-10-03 | Step 2 direction changed: the four tier boxes stay; the logic underneath changes | direction recorded; design under discussion; nothing built |
 
 ---
@@ -1940,3 +1940,25 @@ None made. Nothing is built.
 ### Dependencies and shared seams
 - Builds on D-017's built list (the Lvl column is already read and logged). Supersedes the box set in spec S-5 as
   recorded; S-5 is updated in place.
+
+### D-018 addendum (2026-10-03): the 1.6.0 release was premature
+
+Appended; the entry above is unchanged.
+
+**Developer, 2026-10-03:** "We're not ready for the 1.6.0 release. We still need to implement the bounded by level
+range purchases. Or was that part of what we just did?"
+
+- **Answer:** no. Step 1 (D-017) replaced the scan mechanism and reads and logs each spell's `Lvl` but buys exactly what
+  the old script bought (D-014 choice G, checked by `eligibility_check`). Level-bounded purchasing is Step 2 (D-013,
+  D-019) and is **not built**.
+- **What the AI got wrong:** in its message asking for acceptance it said that accepting Step 1 would drop the `-test`
+  from the version (D-006). The developer replied "I accept step 1"; the AI took that as agreement to release. The
+  developer meant accepting Step 1 as a step, not a release. D-018 R28 ("accepted, so version 1.6.0") was the AI's
+  reading and is **withdrawn**. The AI created and pushed the tag `v1.6.0` and a commit setting `VERSION = '1.6.0'`.
+- **What stands:** Step 1 is accepted as a step. The release version `1.6.0` is reserved for when the change the
+  developer considers one release is complete, i.e. after Step 2 is built, tested, run live and accepted.
+- **Cleanup proposed to the developer (not yet done, because deleting a published tag is outward-facing):** delete the
+  tag `v1.6.0` locally and on GitHub; set `VERSION` back to `'1.6.0-test.3'` (the code is identical to that tag) in a new
+  commit. The next handed-over build is `1.6.0-test.4` with its own tag (D-006, D-007).
+- **Lesson recorded:** do not infer a release from an acceptance. A release, a tag, or any version change that is
+  more than the build under test needs its own explicit go-ahead.
