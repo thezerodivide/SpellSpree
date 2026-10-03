@@ -30,6 +30,10 @@ end
 --       Step 3 (level bounding, D-025): spells[i].levelText = the raw text returned for column 8 (overrides level; false = the cell is
 --         missing, so the TLO returns nil for it). sim.selectClicks[name] counts the select clicks that landed on each row (a record
 --         for tests, no behavior).
+--       Step 5 (log follows the character, D-028): identities = { {atMs=, server=, character=}, ... } (the server and character name the TLOs
+--         return from each simulated time on; a nil or non-string value models an unreadable read); logsUnreadableAfterMs (Path('logs') reads
+--         nil from then on); presses = n and pressNotBeforeMs = { [k] = ms } (the Run button is pressed again for the k-th time once the
+--         previous run's summary has printed and that time has passed); redetectAtMs (the Re-detect button is pressed once at that time).
 --         selectDelay = { name=, ms= } (a click on that row only takes effect that many ms later, every time; until then the
 --           selection stays where it was, and a late landing replaces whatever is selected then; D-026, delayed selection);
 --         stopAtMs (the Stop button is pressed once at that simulated time).
@@ -377,18 +381,27 @@ function M.new(opts)
     end
 
     local paths = { logs = opts.logsRaw, root = opts.rootRaw }
+    local function identity(kind)
+        local server, character = 'SimServer', 'Simtest'
+        for _, e in ipairs(opts.identities or {}) do
+            if sim.clockMs >= (e.atMs or 0) then server, character = e.server, e.character end
+        end
+        if kind == 'server' then return server end
+        return character
+    end
     mq.TLO = {
         Window = window,
         Zone = { ShortName = function() return opts.zone or 'bazaar' end },
-        EverQuest = { Server = function() return 'SimServer' end },
+        EverQuest = { Server = function() return identity('server') end },
         MacroQuest = { Path = function(n)
             if opts.logsUnreadable then return node(nil) end
+            if opts.logsUnreadableAfterMs and sim.clockMs >= opts.logsUnreadableAfterMs then return node(nil) end
             return node(paths[n])
         end },
         Me = {
             Platinum = coin('pp'), Gold = coin('gp'), Silver = coin('sp'), Copper = coin('cp'),
             NumBagSlots = function() return 10 end,
-            CleanName = function() return 'Simtest' end,
+            CleanName = function() return identity('character') end,
             Class = { ShortName = function() return 'CLR' end },
             Inventory = function(name)
                 local n = tonumber(name:match('^pack(%d+)$'))
@@ -461,6 +474,19 @@ function M.new(opts)
         if label == 'Stop' and opts.stopAtMs and not sim.stopped and sim.clockMs >= opts.stopAtMs then
             sim.stopped = true
             return true
+        end
+        if label == 'Re-detect' and opts.redetectAtMs and not sim.redetected and sim.clockMs >= opts.redetectAtMs then
+            sim.redetected = true
+            return true
+        end
+        if opts.presses and sim.clickPrefix and label:sub(1, #sim.clickPrefix) == sim.clickPrefix then
+            sim.pressCount = sim.pressCount or 0
+            local notBefore = opts.pressNotBeforeMs and opts.pressNotBeforeMs[sim.pressCount + 1] or 0
+            if sim.pressCount < opts.presses and (sim.summaries or 0) >= sim.pressCount and sim.clockMs >= notBefore then
+                sim.pressCount = sim.pressCount + 1
+                return true
+            end
+            return false
         end
         if sim.clickPrefix and label:sub(1, #sim.clickPrefix) == sim.clickPrefix then
             sim.clickPrefix = nil

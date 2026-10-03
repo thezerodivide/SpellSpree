@@ -38,7 +38,13 @@ function M.run(scriptPath, opts, ...)
         sim.prints[#sim.prints + 1] = line
         -- printSpreeSummary's last line ("Skipped (...") exists in both the pre-logging
         -- baseline and the current script, so runs of either end at the same point.
-        if line:find('Skipped (', 1, true) then sim.finished = true; sim.endedBy = sim.endedBy or 'summary' end
+        if line:find('Skipped (', 1, true) then
+            sim.summaries = (sim.summaries or 0) + 1
+            -- a scenario that presses Run several times (opts.runs) ends after that many summaries
+            if sim.summaries >= (opts and opts.runs or 1) then sim.finished = true; sim.endedBy = sim.endedBy or 'summary' end
+        end
+        -- a run that raises an error never prints the summary: the error line ends the run (D-028 tests)
+        if line:find('Unexpected error', 1, true) and not sim.finished then sim.finished = true; sim.endedBy = sim.endedBy or 'error-line' end
         if line:find('No vendors selected', 1, true) and not sim.noVendorsAt then sim.noVendorsAt = sim.delays end
     end
 
