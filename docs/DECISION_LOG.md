@@ -31,7 +31,7 @@ Entries that supersede a specification item. Read this first.
 | D-014 | 2026-10-03 | Design proposal: list-then-buy replaces repeat passes | proposed; awaiting developer approval per item |
 | D-015 | 2026-10-03 | Second-agent review loop: evaluate each recommendation, agree or disagree with reasons | confirmed |
 | D-016 | 2026-10-03 | Handoff labels for messages between Claude and GPT | confirmed, including numbering and revision rule |
-| D-017 | 2026-10-03 | APPROVED: Step 1, list-then-buy replaces repeat passes | approved by the developer; supersedes spec S-1 / D-001 R1 for the scan mechanism; building |
+| D-017 | 2026-10-03 | APPROVED: Step 1, list-then-buy replaces repeat passes | approved by the developer; supersedes spec S-1 / D-001 R1; built as 1.6.0-test.3, simulation-tested, not yet live |
 
 ---
 
@@ -1783,3 +1783,45 @@ As above. Nothing else is decided here.
 
 - Replaces the scan loop of D-001. Keeps D-004 logging, D-009's outcome line. Step 2 (D-013) builds on the
   list this step creates.
+
+### D-017 addendum (2026-10-03): the build, `1.6.0-test.3`, and its evidence
+
+Appended; the entry above is unchanged.
+
+**Built (`spellspree.lua`):** `waitForListToSettle` (B'), `buildSpellList` (A'), `rowForName` and `selectEntry`
+(C, H'), `processEntry` (the existing buy, landing and scribe logic, restructured so each exit records an outcome),
+the outcome ledger `setOutcome` / `markRemainingNotAttempted` / `logLedger` (F''a), `finalScan` (F''b), and a
+rewritten `runSpellSpree`. Removed: `reopenCurrentMerchantForNextPass`, the pass counter, the per-pass seen-set, the
+row-shift compensation, `MAX_SCAN_PASSES`, and `merchantSelectedItemKey`. The window's `Skipped` counter keeps its
+old meaning (see D-017 implementation choices). Version `1.6.0-test.3` (separate commit).
+
+**Evidence, simulation only (the mock models MacroQuest and the vendor window from what the live logs showed):**
+- `test/test_listthenbuy.lua`: 18 tests (L1-L18), each citing the D-017 item it comes from, with expected values
+  taken from D-017 or from the mock's own record (purchases, Buy clicks, commands), all passing; 9 mutation checks,
+  each caught by exactly the tests predicted in advance (the predictions were written before the first run). The
+  scenarios: a vendor that reorders after every buy; a row that vanishes before it is reached; a partial list at
+  open; a list that never settles; a click that selects the wrong row once and three times; a selection that drifts
+  before Buy; names where one is the start of another; running out of money; the user's Stop; a scribe that never
+  completes; a purchase that stacks; rows that linger 10 s after a scribe; a scroll that appears after the build; a
+  duplicate name.
+- `test/test_logging.lua` (11 tests, 9 mutations) still passes on this build.
+- `test/eligibility_check.lua`: the previous tagged build (`v1.6.0-test.2`) and this one buy the **same set** of
+  scrolls and leave the same money in five simulated scenarios (reorder after every buy; rows leave at once; a
+  scribe rejected twice; no money; a two-vendor Plane of Knowledge spree). This is the check for choice G (eligibility
+  unchanged). `test/equivalence_check.lua` (identical commands and timing) is for logging-only changes and is no
+  longer applicable to this build.
+- Log review by the AI as a receiving developer: the happy path, the vanish, drift and out-of-money logs. One
+  mistake of the AI's during that review, recorded for honesty: the first vanish log it read showed `LEDGER DEFECT`;
+  that was the output of the last mutation (mutation runs overwrite the scenario logs), not of the real build. The
+  real build's log was re-read after adding a baseline-only mode to the test runner; it records
+  `deliberately skipped -- row gone at lookup`. The mutant's log did show that the "no outcome recorded" detector works.
+
+**Not verified:** anything live. In particular: that an exact-name lookup plus a click selects the right row on the
+live client, that Buy after it works as it did after the old click, how long the live list takes to settle (the 2 s
+window and 15 s maximum are untuned), and what the vendor does while the run is in progress.
+
+**What the first live log will let the developer and the AI read (D-003 review):** every selection line gives the
+row the exact-name lookup found and the row the entry had at build time (a difference is a reorder, observed);
+every settle poll gives its count; every entry gives its outcome and reason; the final scan reports new and lingering
+rows. What the log cannot show: whether a scribe really happened (it is inferred from the scroll leaving its slot),
+and anything about a vendor the run did not reach.

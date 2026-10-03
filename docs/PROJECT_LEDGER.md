@@ -5,13 +5,14 @@ Current state only (Development Protocol §11). History and rationale are in
 
 Last reviewed end to end: 2026-10-03 (§18).
 Baseline: commit `f6c29f4`, referred to as **v1.5.0** (that commit's file still says `1.5-reorder-passes`).
-Current: `1.6.0-test.2` (D-009 outcome-line fix on top of `1.6.0-test.1` file logging), tagged `v1.6.0-test.2` and pushed. Simulation-tested; `1.6.0-test.1` has run live once.
+Current: `1.6.0-test.3`: **Step 1, list-then-buy (D-017)** on top of the file logging (D-004) and the outcome-line fix (D-009). Tagged `v1.6.0-test.3` and pushed. Simulation-tested only; not yet live-tested.
 
-## Where we left off (after the outcome-line fix, 2026-10-03)
+## Where we left off (Step 1 built, 2026-10-03)
 
-- State: `v1.6.0-test.2` (tag `v1.6.0-test.2`, pushed): D-009 fixes the `Run outcome` line (item 12). Simulation-tested only. `1.6.0-test.1` had its first live run (vendor 1, Cleric 1-25): 70 spells in four passes, nothing lost; vendor 2's outcome line was the bug now fixed.
-- Handoff review (P-1) for `1.6.0-test.2` is in the handoff message; the live check is: run a PoK spree over two or more vendors and read each vendor's `Run outcome` line (`This vendor` vs `Spree total so far`).
-- Open, developer's call: items 11 (partial row count after reopen) and 13 (log volume vs rotation). Item 10 is reframed (no change requested). Items 3 and 4 (Bazaar reopen, stacked re-buy) have not occurred live yet.
+- State: `v1.6.0-test.3` (tag, pushed) replaces the repeat-pass scan with list-then-buy (D-017, approved item by item after a review loop with ChatGPT). 18 new simulation tests + 9 mutation checks pass; the earlier logging suite still passes; the new build buys the same spells as the previous one in five simulated scenarios. **Not yet run live.**
+- Next: the developer runs it on a live vendor and sends the log. What to read first: the `list settle poll` lines, the `[list] Built the spell list` line, each `select "..."` line (lookup row vs row at build time), and the `Outcome ledger` and `Final scan` lines.
+- After Step 1 is accepted: Step 2, the level-range tier boxes (D-013, approved as a requirement, not started). The 61-70 vendor entries stay commented out.
+- Still open, developer's call: item 13 (log volume vs rotation; K approved leaving it), item 12 is fixed, item 14 is built.
 
 ## Resolved behavior
 
@@ -125,7 +126,7 @@ as the pre-logging baseline in four scenarios.
    and the log cannot show whether it under-reports against the vendor's true row
    count. Not fully settled.
 3. **Does `/click right target` reopen the merchant in the Bazaar?** It reopened the merchant three times in PoK (live log, vendor 1). Bazaar not yet tried.
-4. **Stacked-purchase re-buy.** Hypothesis from code reading: a purchase that
+4. ~~**Stacked-purchase re-buy.**~~ **Resolved by design (D-017 E): each name is bought at most once, no repeat passes, so a stacked unscribed scroll can no longer be re-bought.** Was: **Stacked-purchase re-buy.** Hypothesis from code reading: a purchase that
    stacks onto an unscribed copy keeps its row, counts as bought, forces another
    pass, and is bought again until `MAX_SCAN_PASSES`. Not observed (no stacked
    purchase occurred in the first live run). Scope of any
@@ -163,7 +164,7 @@ as the pre-logging baseline in four scenarios.
     the extra passes are the accepted cost of the design (S-1).** The AI's earlier
     suggestion (adjust the index by the number of rows actually removed) stays
     unagreed and is not planned. See D-001 addendum 3.
-11. **HAZARD (D-001 implementation): row count read right after a reopen can be
+11. ~~**HAZARD: row count read right after a reopen can be partial.**~~ **Resolved by design (D-017: no reopen; B' waits for the list to settle before building).** Was: **HAZARD (D-001 implementation): row count read right after a reopen can be
     partial.** Pass 2 started with 13 rows when the full list was 104. It did no harm
     here because the first row read was a spell and the count is re-read each
     iteration, but a transient 0 (or a small count) at the start of a pass would end
@@ -179,7 +180,7 @@ as the pre-logging baseline in four scenarios.
     multi-vendor spree would lose its earliest part. Whether that matters, and what to
     do, is the developer's call; not observed to happen.
 
-14. **APPROVED (D-017), building as `1.6.0-test.3`.** Was: **DESIGN PROPOSED, awaiting per-item approval (D-014; E approved, new choice H proposed, A-D/F/G unanswered):** list-then-buy replaces repeat passes. Wanted by the developer (D-010 addendum 5); not yet approved item by item; S-1 stands until it is. Was: **PROPOSAL under investigation (D-010):** build the vendor's spell list when it opens
+14. **BUILT (D-017) as `1.6.0-test.3`, simulation-tested, awaiting a live run.** Was: **DESIGN PROPOSED, awaiting per-item approval (D-014; E approved, new choice H proposed, A-D/F/G unanswered):** list-then-buy replaces repeat passes. Wanted by the developer (D-010 addendum 5); not yet approved item by item; S-1 stands until it is. Was: **PROPOSAL under investigation (D-010):** build the vendor's spell list when it opens
     and buy from that list, instead of line-by-line multiple passes. Not an agreed
     requirement; S-1 stands. Blocked on spike results. Spike built: `spikes/spellspree_spike.lua`
     `0.1.0-spike.2` (tag `spike/vendor-0.1.0-spike.2`), simulation-checked only; awaiting a
@@ -211,10 +212,13 @@ as the pre-logging baseline in four scenarios.
 From the repo root, with LuaJIT:
 
 ```
-luajit test/test_logging.lua
-luajit test/equivalence_check.lua <pre-change baseline .lua> spellspree.lua
+luajit test/test_listthenbuy.lua                      # 18 tests + 9 mutation checks (Step 1, D-017)
+luajit test/test_listthenbuy.lua baseline             # the same tests without the mutations; leaves the real build's logs in %TEMP%\spellspree_sim\listthenbuy
+luajit test/test_logging.lua                          # 11 tests + 9 mutation checks (logging, D-004 / D-009)
+luajit test/eligibility_check.lua <previous build .lua> spellspree.lua   # same set of spells bought as a previous build
 ```
 
-Both run `spellspree.lua` against `test/mock_mq.lua`, a model of MacroQuest. They
-are **simulation only** (Development Protocol §10): they prove nothing about live
-behavior.
+(`test/equivalence_check.lua`, identical commands and timing against a previous build, applies only to
+logging-only changes; it reports DIFFERENT for a build that changes the mechanism.) All of these run
+`spellspree.lua` against `test/mock_mq.lua`, a model of MacroQuest and the vendor window. They are
+**simulation only** (Development Protocol section 10): they prove nothing about live behavior.

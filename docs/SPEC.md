@@ -36,7 +36,7 @@ vendors and scribes them. *(INHERITED, from the original header.)*
   the 26-50 vendor, 51-60 from the 51-60 vendor. ~~The 61-70 box is removed.~~ The 61-70 box is not offered and its vendor entries stay in
   the source **commented out, not deleted**, for if the server raises the maximum level (D-013
   addendum, R23a). The 71-80 vendor is out of scope. This supersedes inherited item I-1's tier handling.
-- **S-6 (AGREED, D-017; building).** When a vendor is open the script waits for its visible usable list
+- **S-6 (AGREED, D-017; built as 1.6.0-test.3, awaiting a live run).** When a vendor is open the script waits for its visible usable list
   to settle (row count unchanged for 8 polls of 250 ms; at most 15 s, else the vendor is skipped and the
   reason logged), builds a list of its `Spell:` / `Song:` rows once, and buys each name at most once: it
   finds the row by exact name, selects it, verifies the selected name immediately before Buy (up to 3
