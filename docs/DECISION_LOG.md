@@ -2576,3 +2576,27 @@ A wrapper mutation (load and chunk run moved outside the protected call) must fa
 contract.
 
 **Status:** awaiting ChatGPT's confirmation of C''. Nothing is built.
+
+### D-026 review round 4 (2026-10-03): consensus reached (ChatGPT's review of Revision 4)
+
+Appended; earlier text is unchanged. Archived: `docs/handoffs/2026-10-03_step4_decision26_rev4_review_from-chatgpt.md`.
+ChatGPT **approved C''** (export contract consistent; protected operation covers setup through the test body; cleanup tests and the
+wrapper mutation verify it) and stated that **every item A-F is agreed from its review**. Final authorization remains the developer's.
+
+**Consensus design (A-F), for the developer's item-by-item approval:**
+- **A** A hook gate in `spellspree.lua` just before `mq.imgui.init`: if `_G.SPELLSPREE_UNIT` is a table, fill that table with the
+  exports and return; otherwise run normally. No function is moved. Nothing before the hook performs file operations or game actions.
+- **B** Exports: the pure helpers, the ledger functions, `OUTCOME`, `S`, `LOG`. Ledger tests set `LOG.disabled = true`.
+- **C''** `withUnit` wrapper: fresh load per test; strict stubs (only `mq.gettime` allowed; any other field raises an error naming
+  it); one protected operation from stub installation through the test body; restoration of `SPELLSPREE_UNIT`, `print` and the
+  `package.loaded`/`package.preload` entries for `mq` and `ImGui`; tests of cleanup after a syntax error and an initialization error;
+  a wrapper mutation; `R.run` asserts the hook global is nil; REQ/CHAR labels.
+- **D** Regression evidence: existing scenario suites, eligibility comparisons and a source-difference check unchanged.
+- **E'** Test-only harness change: 20-delay grace after `No vendors selected`, `sim.endedBy`, stronger `S6`, a detection test using a
+  modified script that sends a forbidden `/nav id` in the grace, and harness mutations.
+- **F** Targeted mutations on the helpers and the ledger (including second-outcome-ignored, counts line, and the
+  `markRemainingNotAttempted` skip); expected failing tests written before each run.
+- **Delivery:** the infrastructure ships in the combined `1.6.0-test.4` with Steps 2 and 3; live verification includes that the
+  script starts normally with the hook block present.
+
+**Status:** presented to the developer for approval; nothing is built until the developer authorizes.
