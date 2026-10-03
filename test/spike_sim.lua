@@ -38,3 +38,12 @@ if which == 'watch' or which == 'both' then
     print('\n##### WATCH: script ok=' .. tostring(sim.ok) .. ' err=' .. tostring(sim.runErr) .. ' cmds sent=' .. #sim.cmds)
     show(dir)
 end
+
+if which == 'watchmissing' then
+    -- a name that is not on the list (e.g. already scribed): the spike must stop at once and say what is there
+    local dir = fresh('watchmissing')
+    local o = { logsRaw = dir, rootRaw = dir, nonSpells = stock.nonSpells, spells = stock.spells }
+    local sim = R.run('spikes/spellspree_spike.lua', o, 'watch', 'Spell: Alph', '25')
+    print('##### WATCH, NAME NOT ON LIST: script ok=' .. tostring(sim.ok) .. ' err=' .. tostring(sim.runErr) .. ' simulated ms=' .. sim.clockMs)
+    show(dir)
+end
