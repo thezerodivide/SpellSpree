@@ -369,7 +369,13 @@ local MAX_LOG_LINES = 400
 -- ============================================================================
 local LOG_MAX_BYTES = 4 * 1024 * 1024
 local LOG_ROTATE_CHECK_EVERY = 100
-local LOG = { path = nil, dir = nil, disabled = false, writes = 0, resolution = nil, t0 = nil }
+local LOG_SYNC_EVERY_MS = 2000
+-- identity / identityKey: who the current file was resolved for (D-028). syncing: a sync is running (its own writes must not start another).
+-- hold: a run is dispatched, so routing stays pinned to the run's file. heldNoted: identities already noted during this hold.
+-- pendingIdentity: the snapshot a sync wants the next path resolution to use. lastSyncMs: when the last sync ran (throttle).
+local LOG = { path = nil, dir = nil, disabled = false, writes = 0, resolution = nil, t0 = nil,
+    identity = nil, identityKey = nil, syncing = false, hold = false, heldNoted = nil, pendingIdentity = nil, lastSyncMs = nil, unreadableNoted = false }
+local logSyncIdentity -- defined after logLine/logObs (D-028); logWriteFile calls it
 
 local function logClockMs()
     local ok, t = pcall(function() return mq.gettime() end)
@@ -387,6 +393,18 @@ end
 
 local function logSafePart(s)
     return (tostring(s or 'unknown'):gsub('[^%w_%-]', '_'))
+end
+
+-- D-028 C: an identity read is unavailable when it is nil, "n/a" (what tloText returns for a failed read), "NULL" or empty after trimming.
+local function logUnavailable(v)
+    if v == nil then return true end
+    local t = tostring(v):match('^%s*(.-)%s*$')
+    return t == '' or t == 'n/a' or t == 'NULL'
+end
+
+-- The part of the file name that identifies the character: the sanitized server and character, as the name uses them (D-028 A').
+local function logIdentityKeyFor(server, char)
+    return logSafePart(server) .. '_' .. logSafePart(char)
 end
 
 local function logIsAbsolute(p)
@@ -410,8 +428,10 @@ local function logResolvePath()
     local logsRaw, rootRaw
     pcall(function() logsRaw = mq.TLO.MacroQuest.Path('logs')() end)
     pcall(function() rootRaw = mq.TLO.MacroQuest.Path('root')() end)
-    local server = tloText(function() return mq.TLO.EverQuest.Server() end)
-    local char = tloText(function() return mq.TLO.Me.CleanName() end)
+    -- D-028 B': a sync passes the one reading it made; a first resolution (load) reads once itself
+    local snap = LOG.pendingIdentity
+    local server = snap and snap.server or tloText(function() return mq.TLO.EverQuest.Server() end)
+    local char = snap and snap.char or tloText(function() return mq.TLO.Me.CleanName() end)
     LOG.resolution = string.format("MacroQuest.Path('logs')=%s, MacroQuest.Path('root')=%s, server=%s, character=%s",
         tostring(logsRaw), tostring(rootRaw), server, char)
 
@@ -426,16 +446,23 @@ local function logResolvePath()
     local dir = base:gsub('[/\\]+$', '') .. '/spellspree'
     if not logEnsureDir(dir) then return nil, 'could not create ' .. dir end
     LOG.dir = dir
-    return dir .. '/spellspree_' .. logSafePart(server) .. '_' .. logSafePart(char) .. '.log'
+    LOG.identity = { server = server, char = char }
+    LOG.identityKey = logIdentityKeyFor(server, char)
+    LOG.pendingIdentity = nil
+    return dir .. '/spellspree_' .. LOG.identityKey .. '.log'
 end
 
 local function logFail(reason)
+    if LOG.disabled then return end -- D-028 B': one failure notice, however many failures follow
     LOG.disabled = true
     table.insert(S.log, { text = 'File logging is OFF: ' .. reason .. ' (window log only).', color = COLOR_ERR, t = os.date('%H:%M:%S') })
     print('\ay[SpellSpree]\ax File logging is OFF: ' .. reason)
 end
 
 local function logWriteFile(level, text)
+    if LOG.disabled then return end
+    -- D-028 A': the character may have changed since the last record; the sync is throttled and guarded against re-entry
+    logSyncIdentity(false)
     if LOG.disabled then return end
     local ok, err = pcall(function()
         if not LOG.path then
@@ -523,6 +550,76 @@ local function zoneShort()
     local ok, shortName = pcall(function() return mq.TLO.Zone.ShortName() end)
     if not ok or shortName == nil then return '' end
     return tostring(shortName):lower()
+end
+
+-- The observations a reviewer needs at the top of a log file (P-1): written at load, and again at the top of a file that a character
+-- switch starts or continues (D-028 B). The text of the load version is what the earlier builds wrote.
+local function logSessionHeader(continued, server, char)
+    local source = tloText(function() return debug.getinfo(1, 'S').source end)
+    if continued then
+        logObs(string.format('session start (continued session): build=v%s source=%s load offset=+%dms', VERSION, source, logClockMs() - LOG.t0))
+    else
+        logObs(string.format('session start: build=v%s source=%s', VERSION, source))
+    end
+    logObs('log path resolution: ' .. tostring(LOG.resolution))
+    logObs('log file: ' .. tostring(LOG.path))
+    logObs(string.format('environment at %s: zone=%s character=%s server=%s class=%s merchantOpen=%s', continued and 'switch' or 'load',
+        zoneShort(), char or tloText(function() return mq.TLO.Me.CleanName() end), server or tloText(function() return mq.TLO.EverQuest.Server() end),
+        tloText(function() return mq.TLO.Me.Class.ShortName() end), tostring(merchantOpen())))
+    logObs('known limits: MacroQuest returns nothing from /notify, /itemnotify, /target, /click or /nav. Each CMD line records what was sent and why; whether it worked is only inferred from the OBS lines that read game state afterward. A CMD followed by unchanged state means no effect was observed, not that the command was proven ignored.')
+end
+
+-- D-028: the log file follows the character that is playing. Reads the server and character ONCE and uses that one snapshot for everything
+-- below. Unforced calls act at most once per LOG_SYNC_EVERY_MS; while a run holds the file (LOG.hold) it only notes a difference.
+-- Raw identity unchanged: nothing. Raw differs but the same file: a record and a header in that file. Different file: a record in the old
+-- file, then the new file starts with a header and a notice. Everything is written through logWriteFile (its own pcall; a failure turns
+-- file logging off); the whole sync is inside a pcall and LOG.syncing is cleared after it, so it can never raise into a run.
+logSyncIdentity = function(force)
+    if LOG.syncing or LOG.disabled or not LOG.path then return end
+    local now = logClockMs()
+    if not force and LOG.lastSyncMs and (now - LOG.lastSyncMs) < LOG_SYNC_EVERY_MS then return end
+    LOG.lastSyncMs = now
+    LOG.syncing = true
+    local ok, err = pcall(function()
+        local server = tloText(function() return mq.TLO.EverQuest.Server() end)
+        local char = tloText(function() return mq.TLO.Me.CleanName() end)
+        if logUnavailable(server) or logUnavailable(char) then
+            if not LOG.unreadableNoted then
+                LOG.unreadableNoted = true
+                logObs(string.format('identity unreadable (server=%s character=%s): keeping the current log file.', server, char))
+            end
+            return
+        end
+        LOG.unreadableNoted = false
+        local old = LOG.identity
+        if old and old.server == server and old.char == char then return end
+        if LOG.hold then
+            local id = server .. '/' .. char
+            LOG.heldNoted = LOG.heldNoted or {}
+            if not LOG.heldNoted[id] then
+                LOG.heldNoted[id] = true
+                logObs(string.format('identity differs during a run: observed %s, the run started as %s/%s; records stay in %s until the run ends.',
+                    id, tostring(old and old.server), tostring(old and old.char), tostring(LOG.path)))
+            end
+            return
+        end
+        local key = logIdentityKeyFor(server, char)
+        local sameFile = (key == LOG.identityKey)
+        logObs(string.format('identity changed: %s/%s -> %s/%s; %s', tostring(old and old.server), tostring(old and old.char), server, char,
+            sameFile and ('continuing in ' .. tostring(LOG.path)) or ('continuing in a new file for ' .. key)))
+        if LOG.disabled then return end
+        LOG.identity = { server = server, char = char }
+        if not sameFile then
+            LOG.pendingIdentity = { server = server, char = char }
+            LOG.path, LOG.identityKey, LOG.writes = nil, nil, 0
+        end
+        logSessionHeader(true, server, char)
+        if not LOG.disabled and not sameFile then
+            logLine(string.format('Logging to a new file for %s: %s', char, tostring(LOG.path)), COLOR_INFO)
+        end
+    end)
+    LOG.syncing = false
+    if not ok then logFail('identity sync failed: ' .. tostring(err)) end
 end
 
 -- Plane of Knowledge's zone short name is "poknowledge" -- standard,
@@ -1771,7 +1868,8 @@ local function runSpellSpree(range)
     -- NOT resetting S.openedBags: a bag's open/closed state in the game does not reset between vendors, and
     -- the click that opens it TOGGLES it.
     logLine('Starting up...', COLOR_GOLD)
-    logObs(string.format('run start: zone=%s target=%s merchantOpen=%s stopOnOutOfMoney=%s money=%s bought/skipped so far=%d/%d',
+    logObs(string.format('run start: character=%s server=%s zone=%s target=%s merchantOpen=%s stopOnOutOfMoney=%s money=%s bought/skipped so far=%d/%d',
+        tloText(function() return mq.TLO.Me.CleanName() end), tloText(function() return mq.TLO.EverQuest.Server() end),
         zoneShort(), tloText(function() return mq.TLO.Target.CleanName() end), tostring(merchantOpen()),
         tostring(S.stopOnOutOfMoney), formatCoin(myTotalCopper()), S.bought, S.skipped))
     logLine('This will open bags as needed to buy and scribe into -- please leave them open once they pop up (closing one mid-run can briefly misread a purchase as failed).', COLOR_WARN)
@@ -2375,6 +2473,7 @@ local function draw()
         if ImGui.Button(string.format('Run Shopping Spree (%d selected)', selectedCount), 260, 0) then
             S.stopRequested = false
             S.shoppingSpreeRequested = true
+            logSyncIdentity(true)
             logLine('User pressed Run Shopping Spree.', COLOR_MUTE)
         end
         if not canSpree then ImGui.EndDisabled() end
@@ -2415,6 +2514,7 @@ local function draw()
         if ImGui.Button('Buy From Open Vendor', 260, 0) then
             S.stopRequested = false
             S.bazaarRequested = true
+            logSyncIdentity(true)
             logLine('User pressed Buy From Open Vendor.', COLOR_MUTE)
         end
         if not canBazaar then ImGui.EndDisabled() end
@@ -2496,6 +2596,8 @@ if type(rawget(_G, 'SPELLSPREE_UNIT')) == 'table' then
     unit.setOutcome, unit.markRemainingNotAttempted, unit.logLedger = setOutcome, markRemainingNotAttempted, logLedger
     unit.OUTCOME, unit.S, unit.LOG = OUTCOME, S, LOG
     unit.parseTierRange, unit.validateRange, unit.classifyLevel = parseTierRange, validateRange, classifyLevel
+    unit.logWriteFile, unit.logLine, unit.logObs, unit.logFail = logWriteFile, logLine, logObs, logFail
+    unit.logSyncIdentity, unit.logUnavailable, unit.logIdentityKeyFor = logSyncIdentity, logUnavailable, logIdentityKeyFor
     return
 end
 
@@ -2552,13 +2654,24 @@ end
 -- helpers) happens here, never inside the ImGui draw callback.
 -- ============================================================================
 logLine(string.format('SpellSpree v%s loaded. Check some vendors below and hit Run Shopping Spree.', VERSION), COLOR_GOLD)
-logObs(string.format('session start: build=v%s source=%s', VERSION, tloText(function() return debug.getinfo(1, 'S').source end)))
-logObs('log path resolution: ' .. tostring(LOG.resolution))
-logObs('log file: ' .. tostring(LOG.path))
-logObs(string.format('environment at load: zone=%s character=%s server=%s class=%s merchantOpen=%s',
-    zoneShort(), tloText(function() return mq.TLO.Me.CleanName() end), tloText(function() return mq.TLO.EverQuest.Server() end),
-    tloText(function() return mq.TLO.Me.Class.ShortName() end), tostring(merchantOpen())))
-logObs('known limits: MacroQuest returns nothing from /notify, /itemnotify, /target, /click or /nav. Each CMD line records what was sent and why; whether it worked is only inferred from the OBS lines that read game state afterward. A CMD followed by unchanged state means no effect was observed, not that the command was proven ignored.')
+logSessionHeader(false)
+
+-- D-028 E'': one run is dispatched like this. The log file is reconciled with the character first; then the file is held (routing stays
+-- pinned to the run's file while detection continues); the run executes; if it failed, its error line is written while the file is still
+-- held, so it lands with the run's other records whatever the throttle says; the hold is released; and a forced sync follows, so the first
+-- record after the run goes to the file for the character in force. Everything after the xpcall runs whether the run succeeded or failed.
+local function dispatchRun(run)
+    logSyncIdentity(true)
+    LOG.hold, LOG.heldNoted = true, nil
+    local ok, err = xpcall(run, errHandler)
+    if not ok then
+        S.state = STATE.STOPPED
+        S.lastStopReason = 'Script error'
+        pcall(function() logLine('Unexpected error: ' .. tostring(err), COLOR_ERR) end)
+    end
+    LOG.hold, LOG.heldNoted = false, nil
+    logSyncIdentity(true)
+end
 
 while open do
     mq.doevents()
@@ -2579,21 +2692,11 @@ while open do
     end
     if S.shoppingSpreeRequested and S.state ~= STATE.RUNNING then
         S.shoppingSpreeRequested = false
-        local ok, err = xpcall(runShoppingSpree, errHandler)
-        if not ok then
-            logLine('Unexpected error: ' .. tostring(err), COLOR_ERR)
-            S.state = STATE.STOPPED
-            S.lastStopReason = 'Script error'
-        end
+        dispatchRun(runShoppingSpree)
     end
     if S.bazaarRequested and S.state ~= STATE.RUNNING then
         S.bazaarRequested = false
-        local ok, err = xpcall(runBazaarShop, errHandler)
-        if not ok then
-            logLine('Unexpected error: ' .. tostring(err), COLOR_ERR)
-            S.state = STATE.STOPPED
-            S.lastStopReason = 'Script error'
-        end
+        dispatchRun(runBazaarShop)
     end
     mq.delay(50)
 end
