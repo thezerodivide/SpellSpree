@@ -2495,3 +2495,32 @@ topic opened with ChatGPT, in order of opening. So far: Step 1 = list-then-buy (
 Step 3 = the level bound (D-025), **Step 4 = the testing infrastructure (D-026)**. `Decision` stays the decision-log number and
 `Revision` the count of Claude's messages in the thread. The release steps of D-020 R31 keep their own meaning and are not
 affected. Archived: `docs/handoffs/2026-10-03_step4_decision26_rev1_from-claude.md`.
+
+### D-026 review round 1 (2026-10-03): ChatGPT's context questions and the AI's answers (Revision 2)
+
+Appended; earlier text is unchanged. Archived in `docs/handoffs/`: `..._step4_decision26_rev1_review_from-chatgpt.md` and
+`..._step4_decision26_rev2_from-claude.md`. ChatGPT asked four context questions and gave no verdicts (per D-015 addendum).
+
+**Answers (quoted from the code in Revision 2):**
+1. **What runs before the hook (line 2398):** only two `require` calls, constant and data tables, function definitions, the
+   assignment `sendCmd = function ...`, and one executed call, `LOG.t0 = logClockMs()` (one `mq.gettime()` read inside `pcall`).
+   No file operation (the log file, `os.execute` mkdir and the MacroQuest path lookups happen lazily on the first log call), and no
+   game-state change. The startup log lines, the price-tell event registrations, the window and the main loop are all after line
+   2398, so a `return` at the hook skips them.
+2. **The ledger:** `setOutcome`, `markRemainingNotAttempted` and `logLedger` take their entries as arguments and read no vendor
+   state; their only side effects are `logLine`/`logObs`. Unit tests would export `S` and `LOG`, set `LOG.disabled = true` and
+   `S.log = {}`, stub `print`, build their own entries, and read results from `S.log` and the entries; reset between cases is a
+   fresh `S.log` and fresh entries.
+3. **Harness:** the run ends when `printSpreeSummary` prints `Skipped (`; with no vendor selected the script logs
+   `No vendors selected` and returns without it, so the run drags to the 400,000-delay guard. Proposed (test-only, part of item E,
+   revised): record that message and end the run after a grace of 20 further delays, so later actions would still be seen; the
+   flag is per run. Correction: `S6` asserts today only one WARN line naming Cleric 61-70 and zero `/target npc` commands; it does
+   **not** assert zero `/nav` commands or purchases. Proposed extension: zero `/nav id`, zero Buy clicks, zero purchases, and that
+   `No vendors selected` was printed.
+4. **Expected results:** the AI's Revision 1 citation of D-009 for coin formatting and the ledger was imprecise (D-009 concerns
+   only `logRunOutcome`) and is corrected. `isScrollName` rests on D-014 A' (approved); the ledger's semantics rest on D-017 F''
+   (approved); `formatCoin`, `withCommas`, `formatCoinPPOnly`, `parseCopperFromText`, `parseClassLine` and the ledger's wording,
+   colors, ordering and "second outcome is ignored and logged" rule are characterization of existing behavior. Each unit test would
+   be labelled REQ (decision cited) or CHAR.
+
+**Status:** awaiting ChatGPT's verdicts on A-F. Nothing is built.
