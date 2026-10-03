@@ -26,7 +26,7 @@ Entries that supersede a specification item. Read this first.
 | D-009 | 2026-10-03 | Fix: `Run outcome` shows per-vendor and spree totals | implemented in `1.6.0-test.2`; simulation-tested, not live |
 | D-010 | 2026-10-03 | Proposal: build the vendor's spell list at open, then buy from it (spikes) | proposal; requirement S-1 unchanged until spike evidence is reviewed |
 | D-011 | 2026-10-03 | Operator cues in test runs must not be buried | confirmed |
-| D-012 | 2026-10-03 | Problem: spell vendors do not match the level tiers the script offers | problem recorded; facts being gathered |
+| D-012 | 2026-10-03 | Problem: spell vendors do not match the level tiers the script offers | problem confirmed by the developer; design question open (see addendum) |
 
 ---
 
@@ -1162,3 +1162,31 @@ None.
 
 - Shares the vendor list read and the per-item data with D-010 (list-then-buy): a list built at
   open would carry each row's level, so level filtering fits there. Not a requirement of D-010.
+
+### D-012 addendum (2026-10-03): column header confirmed; developer's account confirmed; levels spike withdrawn
+
+Appended; the entry above is unchanged.
+
+- **Column 8 is the level (confirmed).** The developer sent a screenshot of the vendor window:
+  the headers are **Item Name, Qty, platinum, gold, silver, copper, Lvl**, and the row for
+  `Spell: Blessing of Faith` reads `--`, 19, 0, 8, 6, 35. So the list's columns 3 to 8 are
+  quantity, the four price columns, and required level. This resolves Open question 1 and
+  D-010 addendum 5's "unconfirmed" on column 8. (The screenshot is in the conversation, not
+  saved in the repo.)
+- **The developer's account of the vendors is a confirmed fact.** The developer states it was
+  confirmed by buying spells for **14 characters**: the `26-50` and `51-60` vendors hold only
+  spells of those levels; the level 61-65 spells are on the `1-25` vendor; so the `61-70` vendor
+  is not needed as the script works, and selecting `1-25` buys 61-65 spells too. This replaces
+  the entry's "developer-stated, not verified by the AI" with **developer-confirmed from direct
+  repeated experience**. The AI still has no level data of its own for those spells.
+- **Withdrawn:** the `levels` spike mode the AI proposed under Implementation choices. The
+  developer: "We don't need a spike to determine what levels each vendor contains." It was
+  never committed or handed over (the unfinished edits were discarded). The chat-spam fix for
+  probe and watch modes (D-011) was bundled in the same unfinished edit and is also not built;
+  it is not needed unless those modes are run again, and D-011 / P-5 still apply to any future
+  run that needs an operator action.
+- **Open questions that remain, for the developer:** (2) the exact mapping: which vendor holds
+  which level ranges per class, in particular **what the `61-70` vendor holds** (nothing needed?
+  levels 66-70?), and whether every class follows the same pattern as Cleric (Open 4, likely
+  answered by the 14 characters); (3) what "select a tier" should mean once the level is known.
+  Neither is decided. They are being asked one at a time.

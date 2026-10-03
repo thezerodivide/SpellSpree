@@ -90,7 +90,7 @@ as the pre-logging baseline in four scenarios.
 - `List('=name,2')` finds the exact row; without `=` it matches substrings. A missing name returns nothing.
 - `Merchant.SelectItem('=name')` works from Lua with no trailing call, selects immediately, and prompts one price tell like `listselect`.
 - Vicar Thiran's list is not alphabetical.
-- **The vendor list has eight columns** (`List('row,col')`): 1 icon (empty), 2 item name, 3 apparently stock (`--` on spells, `1` on a Blue Diamond), 4-7 **price as platinum, gold, silver, copper** (confirmed: Blue Diamond reads `393 / 7 / 4 / 9` and the vendor's price tell for it was `393pp 7gp 4sp 9cp`), 8 **probably the required level** (` 35` and ` 40` on spells at a 26-50 vendor, `--` on a gem), **not confirmed**. Only five rows' columns have been seen; MacroQuest's window TLO has no member for column header text, so the headers cannot be read by script. The level guess can be checked by the developer reading the window's column header, or by a sweep of column 8 against known spell levels.
+- **The vendor list has eight columns** (`List('row,col')`), confirmed by the window's own header (developer's screenshot): 1 icon (empty), 2 **Item Name**, 3 **Qty** (`--` = unlimited, `1` on a Blue Diamond), 4-7 price in **platinum, gold, silver, copper** (also cross-checked: Blue Diamond reads `393 / 7 / 4 / 9`, the vendor's price tell was `393pp 7gp 4sp 9cp`), 8 **Lvl**, the required level (` 35`/` 40` on spells, `--` on a gem). MacroQuest's window TLO has no member for column header text, so a script cannot read the headers itself, but the layout is now known.
 
 *Confirmed from the vendor spike watch run (`0.1.0-spike.2`, Vicar Thiran, `Spell: Resist Cold` bought and scribed by hand, 2026-10-03; log in `docs/evidence/2026-10-03_Benedict_spike-0.1.0-spike.2_watch_ResistCold.log`; details in D-010 addendum 4):*
 
@@ -184,11 +184,13 @@ as the pre-logging baseline in four scenarios.
     live run by the developer. **Probe and watch both done; Q1-Q6 answered (see confirmed
     facts). Decision for the developer: adopt list-then-buy, which would supersede S-1.**
 
-15. **PROBLEM (developer-stated, D-012):** the tier boxes do not match what the vendors sell.
-    The 1-25 vendor also sells the level 61-65 spells, so `Cleric 1-25` buys spells outside
-    1-25 and the `61-70` vendor is never needed. Not yet verified by us. Facts being gathered
-    with spike `0.1.0-spike.3` (`levels` mode, one run per vendor). Whether and how to buy by
-    level is undecided.
+15. **PROBLEM (developer-confirmed from buying for 14 characters, D-012):** the tier boxes do not
+    match what the vendors sell. The `26-50` and `51-60` vendors hold only those levels; the level
+    61-65 spells are on the `1-25` vendor; so `Cleric 1-25` buys spells outside 1-25 and the
+    `61-70` vendor is not needed as the script works. The vendor list's `Lvl` column (col 8, header
+    confirmed) can tell each spell's level. **Open, developer's call:** what the `61-70` vendor
+    holds; whether all classes follow the Cleric pattern; what selecting a tier should mean
+    (D-012). No spike needed for this (developer).
 
 ## Out of scope
 
