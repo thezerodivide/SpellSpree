@@ -1491,3 +1491,24 @@ later level-range change (D-013). In that change R21 makes a wrong mapping fail 
 never wrong ones). Evidence to gather: the developer names which classes the 14 characters covered;
 and the level-range build logs each vendor's level counts on first visit, so the first live run per
 class is itself the evidence.
+
+### D-013 addendum 2 (2026-10-03): evidence for the vendor-level pattern, by class (answers D-014 item J)
+
+Appended; earlier text is unchanged.
+
+**Developer, 2026-10-03:** the vendor-level pattern was tested by buying spells on
+**War, Pal, Mnk, Shd, Clr, Nec, Bst, Mag, Shm, Rng, Brd**.
+
+**What that covers, checked by the AI against the script's own class tables** (`CLASS_ORDER` /
+`VENDOR_DATA`: 12 classes with spell vendors): covered, **9 of 12**: Paladin, Shadowknight,
+Cleric, Necromancer, Beastlord, Magician, Shaman, Ranger, Bard. **Not covered, 3**: **Druid,
+Enchanter, Wizard**. War and Mnk are on the developer's list but have no spell vendors in the
+script's tables, so they add no evidence about the vendor pattern as the script uses it; the
+AI does not know what was bought on them and does not assume.
+
+**Effect on Open item J / D-013 assumption:** the assumption "the Cleric pattern holds for all
+12 classes" is now backed by the developer's testing for 9 classes and **unbacked for Druid,
+Enchanter and Wizard**. It stays an open item for those three. Because R21 makes a wrong
+mapping fail safe (a range buys fewer spells, never wrong ones), the three classes do not block
+the design; their evidence will come from the level-range build logging each vendor's level
+counts on first visit, or from the developer telling the AI sooner.
