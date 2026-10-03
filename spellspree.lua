@@ -30,10 +30,12 @@
 --      spell scroll: buy it, confirm the quantity window if one pops up,
 --      right-click it where it landed to scribe it into your spellbook,
 --      confirm a scribe dialog if one pops up, then move to the next item.
---   3b. The merchant can reorder its list mid-purchase, so one walk of the list
---      is treated as a "pass". If a pass bought anything, the vendor is closed
---      and reopened (same NPC) and another pass runs, repeating until a full
---      pass buys nothing.
+--   3b. The vendor window changes under a row-by-row scan (rows leave the list
+--      late, in batches, and unprompted), so row positions are never trusted:
+--      the script waits for the visible list to settle, reads it ONCE into a list
+--      of scroll names, then finds each name's row by exact name just before
+--      buying it. Each name is bought at most once; there is no reopen and no
+--      repeat pass. Every name ends with one logged outcome (D-017).
 --   4. Stop (and close the vendor) once the list runs out. Stops (vendor left
 --      open) if it can't afford the next spell, if inventory fills up
 --      mid-run, or if a purchase just plain fails -- in that case it skips
@@ -323,7 +325,6 @@ local S = {
     currentName       = nil,
     currentIndex      = 0,
     lastStopReason    = nil,
-    lastScanSelName   = nil, -- item name seen selected on the previous scan iteration
     mouseOverOverlay  = false, -- true while the mouse is hovering this window (see draw())
     openedBags        = {}, -- [bagIdx] = true once we've clicked it open this run
     consecutiveNoMoneyMovement = 0, -- see the "not paid" branch in runSpellSpree
@@ -926,22 +927,6 @@ local function itemDisplayName(it)
 end
 
 
--- Stable identity for reorder-safe merchant enumeration. The visible UI row
--- number is only an address into the list AT THIS MOMENT; it is not the item's
--- identity, because the merchant can reorder itself after purchases/scribes.
--- Prefer the selected item's real ID when MQ exposes it, with the displayed
--- name included for readable diagnostics. Fall back to name only if ID cannot
--- be read.
-local function merchantSelectedItemKey(it, knownName)
-    local name = knownName or itemDisplayName(it)
-    local id = nil
-    pcall(function() id = tonumber(it.ID()) end)
-    if id and id > 0 then
-        return string.format('id:%d|name:%s', id, name), tostring(id)
-    end
-    return 'name:' .. tostring(name), 'name-fallback'
-end
-
 -- Searches every general inventory slot and bag for an existing item with
 -- this exact name, returning its location and current stack count. Used only
 -- to recognize a purchase that stacked onto an existing copy instead of
@@ -1165,127 +1150,546 @@ local function logRunOutcome(label, before)
         S.bought, S.skipped, formatCoin(S.spentCopper)), COLOR_GOLD)
 end
 
--- Close and reopen the currently targeted merchant between scan passes. This
--- intentionally forces the client to rebuild the usable-only merchant list so
--- successfully scribed spells disappear before the next pass. Returns true
--- only after the merchant is open again and the usable-only filter is verified.
-local function reopenCurrentMerchantForNextPass(passNumber)
-    -- Preserve the exact merchant target BEFORE closing the window. On this
-    -- client, closing MerchantWnd can clear or disturb the current target, so
-    -- a blind `/click right target` afterward is not a reliable reopen action.
-    local merchantTargetId = nil
-    local merchantTargetName = nil
-    pcall(function() merchantTargetId = tonumber(mq.TLO.Target.ID()) end)
-    pcall(function() merchantTargetName = mq.TLO.Target.CleanName() or mq.TLO.Target.Name() end)
+-- ============================================================================
+-- List-then-buy (decision log D-017, replacing the repeat-pass scan of D-001).
+-- ----------------------------------------------------------------------------
+-- The vendor window changes under a row-by-row scan: scribed rows leave the list
+-- late and in batches, and rows leave it with nobody acting on them (live logs,
+-- D-010 addenda 3-4). So row POSITIONS are never trusted here. When a vendor is
+-- open the script:
+--   1. waits for the visible usable list to settle (B');
+--   2. reads it ONCE into a list of the scroll rows, by name (A');
+--   3. for each name, finds that row by EXACT NAME right before clicking it,
+--      selects it, and verifies the selected name immediately before Buy (C, H');
+--   4. buys and scribes with the existing logic, each name at most once (E);
+--   5. records exactly one outcome for every name (F'') and, if the window is
+--      still open, does a log-only final scan.
+-- No close/reopen, no second pass. Level-range filtering is a later, separate
+-- change (D-013, Step 2).
+-- ============================================================================
+local LIST_COL = { NAME = 2, QTY = 3, PP = 4, GP = 5, SP = 6, CP = 7, LVL = 8 } -- confirmed from the window header (D-012 addendum)
+local LIST_POLL_MS       = 250   -- B': untuned starting values (Protocol section 15)
+local LIST_STABLE_POLLS  = 8
+local LIST_MAX_WAIT_MS   = 15000
+local SELECT_ATTEMPTS    = 3     -- H': untuned
 
-    if not merchantTargetId or merchantTargetId <= 0 then
-        logLine('[merchant scan] Cannot preserve the merchant target before close/reopen -- stopping rather than clicking an unknown target.', COLOR_ERR)
-        return false, 'Could not preserve merchant target before reopen'
-    end
+-- Text of one cell of the visible merchant list, or nil if unreadable/absent.
+local function listCell(r, c)
+    local v = nil
+    pcall(function() v = mq.TLO.Window('MerchantWnd').Child('ItemList').List(string.format('%d,%d', r, c))() end)
+    if v == nil or v == false then return nil end
+    return tostring(v)
+end
 
-    logLine(string.format('[merchant scan] Pass %d bought at least one spell; closing merchant to force a fresh filtered list before the next pass. Preserved merchant target: %s (#%d).',
-        passNumber, tostring(merchantTargetName or 'unknown'), merchantTargetId), COLOR_WARN)
-    closeVendor(string.format('close the merchant to force a fresh usable-only list before pass %d', passNumber + 1))
+-- Row number (1-based) of the visible row whose name is EXACTLY `name`, or nil. The leading "=" makes the
+-- match exact; without it MacroQuest matches substrings (live probe, D-010 addendum 3).
+local function rowForName(name)
+    local v = nil
+    pcall(function()
+        v = mq.TLO.Window('MerchantWnd').Child('ItemList').List(string.format('=%s,%d', name, LIST_COL.NAME))()
+    end)
+    return tonumber(v)
+end
 
-    local closed = false
-    for _ = 1, 20 do -- up to ~2s
-        if not merchantOpen() then
-            closed = true
-            break
+local function selectedNameNow()
+    local sel = merchantSelectedItem()
+    if not sel then return nil end
+    return itemDisplayName(sel)
+end
+
+-- B'. Returns the settled row count, or nil plus the reason. A stable count is a heuristic, not proof that
+-- the list is complete; every poll is logged so the values can be tuned from live runs.
+local function waitForListToSettle()
+    local startedAt = logClockMs()
+    local last, same, polls = nil, 0, 0
+    while true do
+        mq.doevents()
+        if S.stopRequested then return nil, 'Stopped by user' end
+        if not merchantOpen() then return nil, 'Merchant closed' end
+        local n = merchantVisibleRowCount()
+        polls = polls + 1
+        if n and n >= 1 and n == last then
+            same = same + 1
+        elseif n and n >= 1 then
+            same = 1
+        else
+            same = 0
         end
-        mq.delay(100)
+        last = n
+        logObs(string.format('list settle poll %d: count=%s, same-count polls in a row=%d/%d, waited %d ms',
+            polls, tostring(n), same, LIST_STABLE_POLLS, logClockMs() - startedAt))
+        if same >= LIST_STABLE_POLLS then return n end
+        if logClockMs() - startedAt >= LIST_MAX_WAIT_MS then
+            return nil, 'Vendor list did not settle'
+        end
+        mq.delay(LIST_POLL_MS)
     end
-    logObs(string.format('merchantOpen after the Done click: closed=%s', tostring(closed)))
-    if not closed then
-        logLine('[merchant scan] Merchant window did not close cleanly between passes -- stopping rather than scanning a stale list.', COLOR_ERR)
-        return false, 'Merchant did not close between passes'
+end
+
+-- A'. Reads the visible list once and keeps the scroll rows, one entry per name (first occurrence).
+local function buildSpellList(rows)
+    local entries, byName = {}, {}
+    local unreadable, duplicates, nonScroll = 0, {}, 0
+    for r = 1, rows do
+        local name = listCell(r, LIST_COL.NAME)
+        if name == nil then
+            unreadable = unreadable + 1
+        elseif isScrollName(name) then
+            if byName[name] then
+                duplicates[#duplicates + 1] = name
+                logLine(string.format('[list] "%s" appears more than once (row %d); keeping the first, buying it once.', name, r), COLOR_WARN)
+            else
+                local function clean(c) return (tostring(listCell(r, c) or '?'):gsub('%s+', '')) end
+                local price = string.format('%spp %sgp %ssp %scp', clean(LIST_COL.PP), clean(LIST_COL.GP), clean(LIST_COL.SP), clean(LIST_COL.CP))
+                local e = {
+                    name = name, index = #entries + 1, row = r, outcome = nil, detail = nil, selectAttempts = 0,
+                    levelText = listCell(r, LIST_COL.LVL), qtyText = listCell(r, LIST_COL.QTY), priceText = price,
+                }
+                entries[#entries + 1] = e
+                byName[name] = e
+            end
+        else
+            nonScroll = nonScroll + 1
+        end
+    end
+    return entries, byName, { unreadable = unreadable, duplicates = duplicates, nonScroll = nonScroll }
+end
+
+-- F''(a). The six outcomes. Every built-list entry ends with exactly one.
+local OUTCOME = {
+    SCRIBED       = 'bought and scribed',
+    BOUGHT_NO_SCRIBE = 'bought, scribe not completed',
+    NOT_BOUGHT    = 'attempted, not bought',
+    SKIPPED       = 'deliberately skipped',
+    NOT_ATTEMPTED = 'not attempted because the run stopped',
+    NONE          = 'NO OUTCOME RECORDED',
+}
+local OUTCOME_ORDER = { OUTCOME.SCRIBED, OUTCOME.BOUGHT_NO_SCRIBE, OUTCOME.NOT_BOUGHT, OUTCOME.SKIPPED, OUTCOME.NOT_ATTEMPTED, OUTCOME.NONE }
+
+local function setOutcome(entry, outcome, detail)
+    if entry.outcome then
+        logLine(string.format('LEDGER DEFECT: an outcome was recorded twice for "%s" (kept "%s", ignored "%s").', entry.name, entry.outcome, outcome), COLOR_ERR)
+        return
+    end
+    entry.outcome, entry.detail = outcome, detail
+    logObs(string.format('outcome for "%s": %s%s', entry.name, outcome, detail and (' -- ' .. detail) or ''))
+end
+
+-- Entries from `fromIndex` on that have no outcome yet were never reached because the run stopped.
+local function markRemainingNotAttempted(entries, fromIndex, reason)
+    for i = fromIndex, #entries do
+        if not entries[i].outcome then setOutcome(entries[i], OUTCOME.NOT_ATTEMPTED, reason) end
+    end
+end
+
+-- Logs the ledger: counts for every outcome, names for all but the first. An entry with no outcome is a defect.
+local function logLedger(entries)
+    local groups = {}
+    for _, o in ipairs(OUTCOME_ORDER) do groups[o] = {} end
+    for _, e in ipairs(entries) do
+        if not e.outcome then
+            logLine(string.format('LEDGER DEFECT: "%s" ended with no recorded outcome.', e.name), COLOR_ERR)
+            e.outcome, e.detail = OUTCOME.NONE, 'no outcome was recorded'
+        end
+        table.insert(groups[e.outcome], e)
+    end
+    local parts = {}
+    for _, o in ipairs(OUTCOME_ORDER) do parts[#parts + 1] = string.format('%s=%d', o, #groups[o]) end
+    logLine(string.format('Outcome ledger (%d built-list entries): %s.', #entries, table.concat(parts, '; ')), COLOR_GOLD)
+    for idx, o in ipairs(OUTCOME_ORDER) do
+        if idx > 1 and #groups[o] > 0 then
+            local names = {}
+            for _, e in ipairs(groups[o]) do names[#names + 1] = e.detail and string.format('%s (%s)', e.name, e.detail) or e.name end
+            logLine(string.format('  %s (%d): %s', o, #groups[o], table.concat(names, '; ')), o == OUTCOME.NONE and COLOR_ERR or COLOR_WARN)
+        end
+    end
+end
+
+-- F''(b). Log-only. Never buys. Needs the window open.
+local function finalScan(entries, byName)
+    if not merchantOpen() then
+        logObs('final scan skipped: the merchant window is not open.')
+        return
+    end
+    local n = merchantVisibleRowCount()
+    if not n then
+        logObs('final scan skipped: the visible row count is unreadable.')
+        return
+    end
+    local newScrolls, lingering, other = {}, {}, {}
+    for r = 1, n do
+        local name = listCell(r, LIST_COL.NAME)
+        if name and isScrollName(name) then
+            local e = byName[name]
+            if not e then
+                newScrolls[#newScrolls + 1] = name
+            elseif e.outcome == OUTCOME.SCRIBED then
+                lingering[#lingering + 1] = name
+            else
+                other[#other + 1] = string.format('%s (%s)', name, tostring(e.outcome))
+            end
+        end
+    end
+    logLine(string.format('Final scan (log only, bought nothing): %d rows read. New scrolls not on the built list: %d%s. Rows still listed for bought-and-scribed entries (expected for about 10 s after a scribe): %d. Rows still listed for other outcomes: %d%s.',
+        n, #newScrolls, #newScrolls > 0 and (' [' .. table.concat(newScrolls, '; ') .. ']') or '', #lingering, #other,
+        #other > 0 and (' [' .. table.concat(other, '; ') .. ']') or ''), #newScrolls > 0 and COLOR_WARN or COLOR_INFO)
+end
+
+-- C + H'. Looks the row up by exact name NOW, selects it, and checks the selected name. Attempts are counted
+-- per entry across the whole visit (3 in total, including the check right before Buy).
+-- Returns 'ok', 'gone' (the row is not in the list at lookup: D) or 'unverified' (3 attempts used).
+local function selectEntry(entry)
+    while entry.selectAttempts < SELECT_ATTEMPTS do
+        local row = rowForName(entry.name)
+        if not row then
+            logObs(string.format('exact-name lookup for "%s" found no row.', entry.name))
+            return 'gone'
+        end
+        entry.selectAttempts = entry.selectAttempts + 1
+        sendCmd(string.format('select "%s": exact-name lookup gave row %d (selection attempt %d/%d)', entry.name, row, entry.selectAttempts, SELECT_ATTEMPTS),
+            '/notify MerchantWnd ItemList listselect %d', row)
+        local selName = nil
+        for _ = 1, 12 do -- up to 360 ms, as the old scan did
+            mq.delay(30)
+            selName = selectedNameNow()
+            if selName == entry.name then break end
+        end
+        logObs(string.format('selection check for "%s": row %d, Merchant.SelectedItem.Name=%s (attempt %d/%d)',
+            entry.name, row, tostring(selName), entry.selectAttempts, SELECT_ATTEMPTS))
+        if selName == entry.name then return 'ok' end
+    end
+    return 'unverified'
+end
+
+-- Buys and scribes ONE built-list entry with the existing logic. Records its outcome. Returns 'continue', or
+-- 'stop' after setting S.state / S.lastStopReason (the caller marks the rest as not attempted).
+local function processEntry(entry)
+    local name = entry.name
+    S.currentName, S.currentIndex = name, entry.index
+    logObs(string.format('entry %d "%s": list row at build time %d, Lvl=%s, Qty=%s, price in list=%s (read from the list; gates nothing)',
+        entry.index, name, entry.row, tostring(entry.levelText), tostring(entry.qtyText), tostring(entry.priceText)))
+
+    local sel = selectEntry(entry)
+    if sel == 'gone' then
+        logLine(string.format('"%s" is no longer in the vendor list -- skipping it.', name), COLOR_WARN)
+        setOutcome(entry, OUTCOME.SKIPPED, 'row gone at lookup')
+        return 'continue'
+    elseif sel == 'unverified' then
+        logLine(string.format('Could not get "%s" selected after %d attempts -- skipping it.', name, SELECT_ATTEMPTS), COLOR_WARN)
+        setOutcome(entry, OUTCOME.NOT_BOUGHT, string.format('selection not verified in %d attempts', SELECT_ATTEMPTS))
+        return 'continue'
     end
 
-    if S.stopRequested then return false, 'Stopped by user' end
+    -- Proactive: selecting an item triggers the vendor's own price tell (confirmed in live logs). A short
+    -- settle wait and an explicit doevents so the tell is processed before it is checked.
+    mq.delay(250)
+    mq.doevents()
+    local q = priceQuotes[name]
+    logObs(string.format('price quote for "%s": %s; money on hand %s', name,
+        q and formatCoin(q.copper) or 'none received (not proof either way)', formatCoin(myTotalCopper())))
+    if q and q.copper > myTotalCopper() then
+        if S.stopOnOutOfMoney then
+            logLine(string.format('Vendor quoted "%s" at %s -- you have %s. Not enough. Stopping.',
+                name, formatCoin(q.copper), formatCoin(myTotalCopper())), COLOR_ERR)
+            S.state = STATE.STOPPED
+            S.lastStopReason = string.format('Not enough money for "%s" (quoted %s)', name, formatCoin(q.copper))
+            setOutcome(entry, OUTCOME.NOT_ATTEMPTED, S.lastStopReason)
+            return 'stop'
+        end
+        logLine(string.format('Vendor quoted "%s" at %s -- you have %s. Not enough, skipping just this one.',
+            name, formatCoin(q.copper), formatCoin(myTotalCopper())), COLOR_WARN)
+        S.skipped = S.skipped + 1
+        table.insert(S.skippedNames, name)
+        setOutcome(entry, OUTCOME.SKIPPED, 'unaffordable by the vendor quote (setting: skip)')
+        return 'continue'
+    end
 
+    -- Item.Price() is unreliable here (always 0), so the only pre-check is whether there is any money at all.
+    if myTotalCopper() <= 0 then
+        if S.stopOnOutOfMoney then
+            logLine(string.format('Out of money -- can\'t afford "%s". Stopping.', name), COLOR_ERR)
+            S.state = STATE.STOPPED
+            S.lastStopReason = 'Out of money'
+            setOutcome(entry, OUTCOME.NOT_ATTEMPTED, 'Out of money')
+            return 'stop'
+        end
+        logLine(string.format('Out of money -- can\'t afford "%s". Skipping it and checking the rest.', name), COLOR_WARN)
+        S.skipped = S.skipped + 1
+        table.insert(S.skippedNames, name)
+        setOutcome(entry, OUTCOME.SKIPPED, 'out of money (setting: skip)')
+        return 'continue'
+    end
+
+    local targetBag, targetSlot = firstFreeInventorySlot()
+    if not targetBag then
+        logLine('No free inventory space left -- stopping.', COLOR_ERR)
+        S.state = STATE.STOPPED
+        S.lastStopReason = 'Inventory full'
+        setOutcome(entry, OUTCOME.NOT_ATTEMPTED, 'Inventory full')
+        return 'stop'
+    end
+    logObs(string.format('expected landing slot for "%s": %s', name, slotLabel(targetBag, targetSlot)))
     waitForMouseOffOverlay()
-    if S.stopRequested then return false, 'Stopped by user' end
+    -- Nothing to open when the target is an empty top-level slot itself (slotIdx == 0).
+    if targetSlot ~= 0 then ensureBagOpen(targetBag) end
 
-    -- Re-acquire the exact NPC we were shopping from. Do not assume the target
-    -- survived closing MerchantWnd. Verify the ID before attempting to reopen.
-    local targetRestored = false
-    for attempt = 1, 10 do -- up to ~3s
-        sendCmd(string.format('re-acquire merchant %s after closing its window (attempt %d/10)', tostring(merchantTargetName or 'unknown'), attempt),
-            '/target id %d', merchantTargetId)
-        mq.delay(300)
-        local currentTargetId = nil
-        pcall(function() currentTargetId = tonumber(mq.TLO.Target.ID()) end)
-        logObs(string.format('target check after /target id: Target.ID=%s expected=%d', tostring(currentTargetId), merchantTargetId))
-        if currentTargetId == merchantTargetId then
-            targetRestored = true
-            break
+    -- Baseline for stack-detection below -- see findExistingCopy.
+    local existingBag, existingSlot, existingStackBefore = findExistingCopy(name)
+    logObs(string.format('pre-buy existing copy of "%s": %s', name,
+        existingBag and string.format('%s, stack %s', slotLabel(existingBag, existingSlot), tostring(existingStackBefore)) or 'none found'))
+
+    -- H': verify the selection IMMEDIATELY before Buy. The waits and bag handling above take hundreds of
+    -- milliseconds to over a second, and the list can shift in that time. A mismatch re-selects (counting
+    -- toward the 3 attempts); the Buy click itself is never retried.
+    if selectedNameNow() ~= name then
+        logLine(string.format('The selection is no longer "%s" just before Buy (it reads "%s") -- selecting it again.', name, tostring(selectedNameNow())), COLOR_WARN)
+        local again = selectEntry(entry)
+        if again == 'gone' then
+            logLine(string.format('"%s" left the vendor list before Buy -- skipping it.', name), COLOR_WARN)
+            setOutcome(entry, OUTCOME.SKIPPED, 'row gone before Buy')
+            return 'continue'
+        elseif again ~= 'ok' then
+            logLine(string.format('Could not get "%s" selected before Buy within %d attempts -- skipping it.', name, SELECT_ATTEMPTS), COLOR_WARN)
+            setOutcome(entry, OUTCOME.NOT_BOUGHT, string.format('selection not verified in %d attempts (before Buy)', SELECT_ATTEMPTS))
+            return 'continue'
         end
     end
-    if not targetRestored then
-        logLine(string.format('[merchant scan] Merchant closed, but could not re-target %s (#%d) for the next pass -- stopping.',
-            tostring(merchantTargetName or 'merchant'), merchantTargetId), COLOR_ERR)
-        return false, 'Could not re-target merchant between passes'
-    end
 
-    logLine(string.format('[merchant scan] Re-targeted %s (#%d); right-clicking to reopen merchant.',
-        tostring(merchantTargetName or 'merchant'), merchantTargetId), COLOR_MUTE)
-    sendCmd('reopen the merchant by right-clicking the re-acquired target', '/click right target')
-    local reopened = false
-    for _ = 1, 25 do -- up to ~5s
-        if merchantOpen() then
-            reopened = true
+    logLine(string.format('Buying "%s"...', name), COLOR_INFO)
+    local copperBeforeBuy = myTotalCopper()
+    sendCmd(string.format('buy the selected item "%s" (selection verified as this item just before; money before %s)', name, formatCoin(copperBeforeBuy)),
+        '/notify MerchantWnd MW_Buy_Button leftmouseup')
+    handleQuantityWindowIfOpen()
+
+    -- Wait for money on hand to actually drop -- the TLO-based confirmation that the transaction posted.
+    local paid = false
+    local paidPolls = 0
+    for _ = 1, 15 do -- up to ~3s
+        paidPolls = paidPolls + 1
+        if myTotalCopper() < copperBeforeBuy then
+            paid = true
             break
         end
         mq.delay(200)
+        mq.doevents()
     end
-    logObs(string.format('merchantOpen after /click right target: reopened=%s', tostring(reopened)))
-    if not reopened then
-        logLine('[merchant scan] Merchant window did not reopen between passes -- stopping.', COLOR_ERR)
-        return false, 'Merchant did not reopen between passes'
+    logObs(string.format('money check after buying "%s": before=%s now=%s paid=%s (polls=%d/15)',
+        name, formatCoin(copperBeforeBuy), formatCoin(myTotalCopper()), tostring(paid), paidPolls))
+    if not paid then
+        -- The quote may have arrived late; if so it gives a definitive answer.
+        local q2 = priceQuotes[name]
+        if q2 and q2.copper > myTotalCopper() then
+            logLine(string.format('Vendor quoted "%s" at %s -- you have %s. Not enough, skipping just this one.',
+                name, formatCoin(q2.copper), formatCoin(myTotalCopper())), COLOR_WARN)
+            S.skipped = S.skipped + 1
+            table.insert(S.skippedNames, name)
+            setOutcome(entry, OUTCOME.NOT_BOUGHT, 'no payment observed; the vendor quote exceeds the money on hand')
+            return 'continue'
+        end
+
+        -- Two misses in a row is a strong signal of being out of money for this vendor's price range.
+        S.consecutiveNoMoneyMovement = S.consecutiveNoMoneyMovement + 1
+        if S.consecutiveNoMoneyMovement >= 2 then
+            if S.stopOnOutOfMoney then
+                logLine(string.format('Money on hand hasn\'t moved for two purchases in a row (now "%s") -- most likely out of money for this vendor. Stopping here rather than guessing at every remaining item.', name), COLOR_ERR)
+                S.state = STATE.STOPPED
+                S.lastStopReason = string.format('Probably not enough money (stopped at "%s")', name)
+                setOutcome(entry, OUTCOME.NOT_BOUGHT, 'no payment observed (second in a row)')
+                return 'stop'
+            end
+            logLine(string.format('Money on hand hasn\'t moved for two purchases in a row (now "%s") -- most likely out of money for this vendor. "Stop when out of money" is off, so skipping and checking the rest anyway.', name), COLOR_WARN)
+            S.skipped = S.skipped + 1
+            table.insert(S.skippedNames, name)
+            setOutcome(entry, OUTCOME.NOT_BOUGHT, 'no payment observed (second in a row)')
+            return 'continue'
+        end
+
+        logLine(string.format('Money on hand didn\'t move for "%s" -- most likely not enough coin for it (no vendor quote to confirm it outright, so not stopping the whole vendor over one miss). Skipping it.', name), COLOR_WARN)
+        S.skipped = S.skipped + 1
+        table.insert(S.skippedNames, name)
+        setOutcome(entry, OUTCOME.NOT_BOUGHT, 'no payment observed')
+        return 'continue'
+    else
+        S.consecutiveNoMoneyMovement = 0
     end
 
-    if not verifyUsableFilterOn() then
-        return false, '"Usable items only" not confirmed after merchant reopen'
+    -- Verify it landed where expected (retried up to ~3s: the slot can lag the purchase).
+    local landed, landedOk = nil, false
+    local landPolls = 0
+    for _ = 1, 15 do -- up to ~3s
+        landPolls = landPolls + 1
+        landed = readTargetSlot(targetBag, targetSlot)
+        if landed then landedOk = true; break end
+        mq.delay(200)
+    end
+    logObs(string.format('landing read of %s for "%s": %s (polls=%d/15)', slotLabel(targetBag, targetSlot), name,
+        landed and ('found "' .. itemDisplayName(landed) .. '"') or 'nothing readable there', landPolls))
+    if landed then
+        local landedName = itemDisplayName(landed)
+        if landedName ~= name then
+            logLine(string.format('Something landed in %s ("%s") but the name doesn\'t match "%s" -- proceeding anyway.', slotLabel(targetBag, targetSlot), landedName, name), COLOR_WARN)
+        end
     end
 
-    local rows = merchantVisibleRowCount()
-    if rows == nil then
-        logLine('[merchant scan] Merchant reopened, but visible row count is unavailable -- stopping rather than guessing.', COLOR_ERR)
-        return false, 'Merchant visible row count unavailable after reopen'
+    if not landedOk and targetSlot ~= 0 then
+        -- One recovery attempt: a closed bag reads as empty, which looks like a failed purchase.
+        if openBagIfClosed(targetBag) then
+            logLine(string.format('"%s" isn\'t reading back from bag %d/slot %d and that bag reads as closed -- re-opening it before giving up.', name, targetBag, targetSlot), COLOR_WARN)
+        else
+            logLine(string.format('"%s" isn\'t reading back from bag %d/slot %d, but that bag is already open -- giving it one more read rather than toggling it shut.', name, targetBag, targetSlot), COLOR_WARN)
+            mq.delay(400)
+        end
+        landed = readTargetSlot(targetBag, targetSlot)
+        if landed then
+            landedOk = true
+            logLine(string.format('"%s" showed up after re-opening the bag -- it did buy, just wasn\'t readable at the time.', name), COLOR_GOOD)
+        end
     end
 
-    logLine(string.format('[merchant scan] Merchant reopened for pass %d with %d visible row(s).', passNumber + 1, rows), COLOR_GOLD)
-    return true, nil, rows
+    -- The money already left, so the purchase posted: sweep the inventory for the scroll and retarget.
+    if not landedOk then
+        local foundBag, foundSlot = findCopyAnywhere(name, existingBag, existingSlot)
+        if foundBag then
+            landed = readTargetSlot(foundBag, foundSlot)
+            if landed then
+                targetBag, targetSlot = foundBag, foundSlot
+                landedOk = true
+                logLine(string.format('"%s" didn\'t land in the slot it was expected in -- found it in %s instead. It did buy.', name, slotLabel(targetBag, targetSlot)), COLOR_GOOD)
+            end
+        end
+    end
+
+    -- A purchase that stacks onto an EXISTING copy looks like "didn't land" too (confirmed to happen here).
+    local stackedInstead = false
+    if not landedOk and existingBag then
+        local nowBag, nowSlot, nowStack = findExistingCopy(name)
+        if nowBag and nowStack and existingStackBefore and nowStack > existingStackBefore then
+            landedOk = true
+            stackedInstead = true
+            S.bought = S.bought + 1
+            table.insert(S.purchasedNames, name)
+            local actualSpent = math.max(0, copperBeforeBuy - myTotalCopper())
+            S.spentCopper = S.spentCopper + actualSpent
+            logLine(string.format('"%s" stacked onto an existing copy (now %d) instead of landing in a new slot -- it did buy. Not auto-scribing this one, since it isn\'t clear whether the existing copy was already scribed -- check it yourself if it wasn\'t.', name, nowStack), COLOR_GOOD)
+        end
+    end
+
+    if not landedOk then
+        logLine(string.format('"%s" didn\'t buy for some reason -- skipping it.', name), COLOR_WARN)
+        S.skipped = S.skipped + 1
+        table.insert(S.skippedNames, name)
+        setOutcome(entry, OUTCOME.BOUGHT_NO_SCRIBE, 'money moved but the scroll could not be located')
+        return 'continue'
+    elseif stackedInstead then
+        setOutcome(entry, OUTCOME.BOUGHT_NO_SCRIBE, 'stacked onto an existing copy; not auto-scribed')
+        return 'continue'
+    end
+
+    -- Hard safety gate: never right-click anything that isn't name-confirmed as a scroll.
+    local landedName = itemDisplayName(landed)
+    if not isScrollName(landedName) then
+        logLine(string.format('"%s" landed in %s but isn\'t named like a spell or song scroll -- NOT right-clicking it. Stopping so you can check what happened.', landedName, slotLabel(targetBag, targetSlot)), COLOR_ERR)
+        S.state = STATE.STOPPED
+        S.lastStopReason = string.format('Refused to scribe non-spell item: "%s"', landedName)
+        setOutcome(entry, OUTCOME.BOUGHT_NO_SCRIBE, string.format('a non-scroll item landed ("%s")', landedName))
+        return 'stop'
+    end
+
+    S.bought = S.bought + 1
+    table.insert(S.purchasedNames, name)
+    -- The ACTUAL measured drop in money on hand is the only trustworthy cost figure.
+    local actualSpent = math.max(0, copperBeforeBuy - myTotalCopper())
+    S.spentCopper = S.spentCopper + actualSpent
+    logLine(string.format('Scribing "%s"...', name), COLOR_INFO)
+
+    -- The client can reject the right-click for a while after a purchase, so click, watch for the scroll to
+    -- leave the slot, and click again -- up to 20 tries. Stop is respected between attempts.
+    local scribed = false
+    local maxAttempts = 20
+    local recoveryAttempted = false
+    for attempt = 1, maxAttempts do
+        mq.delay(attempt == 1 and 150 or 1000)
+        if S.stopRequested then break end
+
+        waitForMouseOffOverlay()
+        if S.stopRequested then break end
+
+        -- A few attempts in with no progress, the bag is probably closed: toggle it open exactly once.
+        if targetSlot ~= 0 and attempt == 4 and not scribed and not recoveryAttempted then
+            recoveryAttempted = true
+            waitForMouseOffOverlay()
+            if openBagIfClosed(targetBag) then
+                logLine(string.format('Still no progress on "%s" -- bag %d reads as closed, re-opening it.', name, targetBag), COLOR_WARN)
+            end
+        end
+
+        sendCmd(string.format('scribe "%s": right-click the scroll at %s (attempt %d/%d)', name, slotLabel(targetBag, targetSlot), attempt, maxAttempts),
+            targetSlotNotifyCmd(targetBag, targetSlot))
+        handleScribeConfirmIfOpen()
+
+        for _ = 1, 5 do
+            local stillThere = readTargetSlot(targetBag, targetSlot)
+            if not stillThere or itemDisplayName(stillThere) ~= name then
+                scribed = true
+                break
+            end
+            mq.delay(200)
+        end
+        logObs(string.format('scribe attempt %d/%d for "%s": %s', attempt, maxAttempts, name,
+            scribed and 'scroll no longer reads in the slot (scribe inferred; MQ gives no direct confirmation)' or 'scroll still reads in the slot'))
+        if scribed then break end
+        if S.stopRequested then break end
+
+        if attempt % 5 == 0 then
+            logLine(string.format('Still trying to scribe "%s" (attempt %d/%d)...', name, attempt, maxAttempts), COLOR_WARN)
+        end
+    end
+
+    if scribed then
+        -- The scroll can transit through the cursor briefly during the scribe animation.
+        for _ = 1, 15 do -- up to ~3s
+            if not cursorItemName() then break end
+            mq.delay(200)
+        end
+        local stuck = cursorItemName()
+        logObs('cursor after scribing "' .. name .. '": ' .. tostring(stuck or 'empty'))
+        setOutcome(entry, OUTCOME.SCRIBED, nil)
+        if stuck then
+            logLine(string.format('"%s" scribed, but something is still on the cursor afterward ("%s") -- stopping to be safe.', name, stuck), COLOR_ERR)
+            S.state = STATE.STOPPED
+            S.lastStopReason = string.format('Cursor not clear after scribing "%s"', name)
+            return 'stop'
+        end
+        logLine(string.format('Confirmed scribed: "%s" (cost %s, scroll left %s).', name, formatCoin(actualSpent), slotLabel(targetBag, targetSlot)), COLOR_GOOD)
+        return 'continue'
+    end
+
+    if S.stopRequested then
+        logLine('Stopped by user.', COLOR_WARN)
+        S.state = STATE.STOPPED
+        S.lastStopReason = 'Stopped by user'
+        setOutcome(entry, OUTCOME.BOUGHT_NO_SCRIBE, 'the user pressed Stop during the scribe')
+        return 'stop'
+    end
+    logLine(string.format('"%s" was bought, but the scroll never left %s after %d tries -- a common cause is a full spellbook. Stopping so you can check.', name, slotLabel(targetBag, targetSlot), maxAttempts), COLOR_ERR)
+    S.state = STATE.STOPPED
+    S.lastStopReason = string.format('Scribe failed on "%s"', name)
+    setOutcome(entry, OUTCOME.BOUGHT_NO_SCRIBE, string.format('scribe failed after %d attempts', maxAttempts))
+    return 'stop'
 end
 
 local function runSpellSpree()
     S.state = STATE.RUNNING
-    -- NOT resetting bought/skipped/spentCopper here -- same bug class as
-    -- the bag-tracking fix above. These need to accumulate across the
-    -- WHOLE shopping spree (all vendors), not wipe out every time a new
-    -- vendor's run starts -- otherwise the final total only reflects
-    -- whatever the LAST vendor did, which is exactly why "Spent" showed 0pp
-    -- after a run that bought plenty, just not at the final vendor. These
-    -- get reset once, at the start of runShoppingSpree, instead.
+    -- NOT resetting bought/skipped/spentCopper here -- they accumulate across the whole shopping spree (all
+    -- vendors); they are reset once at the start of runShoppingSpree.
     S.currentName, S.currentIndex = nil, 0
     S.lastStopReason = nil
-    S.lastScanSelName = nil
-    -- Reset per vendor, unlike bought/skipped/spentCopper -- this is about
-    -- catching a streak within THIS vendor's list, not something that should
-    -- carry a near-miss over from a completely different vendor and trip a
-    -- stop on the very first purchase attempt there.
+    -- Reset per vendor: a streak within THIS vendor's list must not carry over from another vendor.
     S.consecutiveNoMoneyMovement = 0
-    -- Also per-vendor -- a quote from a different vendor's identically-named
-    -- item (unlikely, but not impossible) shouldn't linger and misinform a
-    -- decision here.
+    -- Also per vendor: a quote from another vendor's identically named item must not misinform a decision.
     priceQuotes = {}
-    -- NOT resetting S.openedBags here -- it needs to persist across the
-    -- whole session (all vendors in a shopping spree), not just this one
-    -- run. The bag's actual open/closed state in the game doesn't reset
-    -- between vendor visits, so if this got wiped every run, the very next
-    -- vendor would forget the bag was already open, blindly right-click it
-    -- "to open" it, and since that click TOGGLES the bag, slam it shut
-    -- instead -- exactly the "bag randomly closes between vendors" bug.
+    -- NOT resetting S.openedBags: a bag's open/closed state in the game does not reset between vendors, and
+    -- the click that opens it TOGGLES it.
     logLine('Starting up...', COLOR_GOLD)
     logObs(string.format('run start: zone=%s target=%s merchantOpen=%s stopOnOutOfMoney=%s money=%s bought/skipped so far=%d/%d',
         zoneShort(), tloText(function() return mq.TLO.Target.CleanName() end), tostring(merchantOpen()),
@@ -1326,649 +1730,89 @@ local function runSpellSpree()
         logObs(string.format('first free slot at run start: %s.', slotLabel(checkBag, checkSlot)))
     end
 
-    -- Walk the ENTIRE VISIBLE merchant list. MerchantWnd -> ItemList is the
-    -- authority because /notify listselect addresses those visible rows directly,
-    -- while Merchant.Item(N) can use a different index space when filtering is on.
-    local idx = 1
-    local nonSpellSkipped = 0
-
-    -- Row numbers are NOT stable identities. Project Triune's merchant can
-    -- reorder the visible list during purchasing without the user touching the
-    -- sort controls. We therefore treat each open-window traversal as ONE pass.
-    -- Within that pass, remember identities already inspected so a reorder cannot
-    -- make us buy the same scroll twice. If the pass buys anything, close and
-    -- reopen the merchant before the next pass; the usable-only filter then
-    -- rebuilds the list without successfully scribed spells. Completion requires
-    -- a complete pass that buys zero spells.
-    local seenMerchantItems = {}
-    local scanPass = 1
-    local totalUniqueInspected = 0
-    local passBoughtStart = S.bought
-    local MAX_SCAN_PASSES = 100 -- defensive ceiling against a merchant that never converges
-
-    local lastVisibleRowCount = merchantVisibleRowCount()
-    if not lastVisibleRowCount then
-        logLine('Could not read MerchantWnd ItemList row count -- stopping rather than guessing at merchant indices.', COLOR_ERR)
+    -- A': wait for the visible usable list to settle, then read it once.
+    local rows, why = waitForListToSettle()
+    if not rows then
+        if why == 'Stopped by user' then
+            logLine('Stopped by user.', COLOR_WARN)
+        elseif why == 'Merchant closed' then
+            logLine('Merchant window closed unexpectedly -- stopping.', COLOR_ERR)
+        else
+            logLine(string.format('The vendor list did not settle within %d ms -- skipping this vendor rather than buying from a possibly partial list.', LIST_MAX_WAIT_MS), COLOR_ERR)
+        end
         S.state = STATE.STOPPED
-        S.lastStopReason = 'Merchant visible row count unavailable'
+        S.lastStopReason = why
         return
     end
-    logLine(string.format('[merchant scan] Visible row count at start: %d.', lastVisibleRowCount), COLOR_GOLD)
-    logLine(string.format('[merchant scan] Starting pass %d at visible row #1.', scanPass), COLOR_MUTE)
+    logLine(string.format('[list] The visible list settled at %d row(s).', rows), COLOR_GOLD)
 
-    while true do
-        -- Explicit and frequent, not left to whatever mq.delay() may or may
-        -- not do internally -- the outer main loop's own mq.doevents() call
-        -- only runs once, before this whole function is even entered, and
-        -- doesn't run again until this returns, which can be many items and
-        -- many seconds later.
+    local entries, byName, stats = buildSpellList(rows)
+    logLine(string.format('[list] Built the spell list: %d scroll(s) to buy from %d row(s); %d non-scroll row(s) ignored; %d unreadable row(s); %d duplicate name(s).',
+        #entries, rows, stats.nonScroll, stats.unreadable, #stats.duplicates), COLOR_GOLD)
+    do
+        local chunk = {}
+        for _, e in ipairs(entries) do
+            chunk[#chunk + 1] = string.format('%d=%s [Lvl %s, %s]', e.index, e.name, tostring(e.levelText), e.priceText)
+            if #chunk == 4 then logObs('built list: ' .. table.concat(chunk, ' | ')); chunk = {} end
+        end
+        if #chunk > 0 then logObs('built list: ' .. table.concat(chunk, ' | ')) end
+    end
+
+    local function finish()
+        logLedger(entries)
+        finalScan(entries, byName)
+    end
+
+    for i, entry in ipairs(entries) do
+        -- Explicit and frequent: the outer main loop's doevents only runs once before this function.
         mq.doevents()
 
         if S.stopRequested then
             logLine('Stopped by user.', COLOR_WARN)
             S.state = STATE.STOPPED
             S.lastStopReason = 'Stopped by user'
+            markRemainingNotAttempted(entries, i, S.lastStopReason)
+            finish()
             return
         end
         if not merchantOpen() then
             logLine('Merchant window closed unexpectedly -- stopping.', COLOR_ERR)
             S.state = STATE.STOPPED
             S.lastStopReason = 'Merchant closed'
+            markRemainingNotAttempted(entries, i, S.lastStopReason)
+            finish()
             return
         end
-
         do
             local stray = cursorItemName()
             if stray then
                 logLine(string.format('Something ended up on your cursor ("%s") -- that means an action didn\'t complete cleanly. Stopping before anything gets lost or misplaced.', stray), COLOR_ERR)
                 S.state = STATE.STOPPED
                 S.lastStopReason = string.format('Unexpected item on cursor: "%s"', stray)
+                markRemainingNotAttempted(entries, i, S.lastStopReason)
+                finish()
                 return
             end
         end
 
-        local rowCount = merchantVisibleRowCount()
-        if not rowCount then
-            logLine(string.format('[merchant scan] Could not read visible row count before row #%d -- stopping rather than guessing at the end of the list.', idx), COLOR_ERR)
-            S.state = STATE.STOPPED
-            S.lastStopReason = 'Merchant visible row count unavailable during scan'
+        local result = processEntry(entry)
+        if result == 'stop' then
+            markRemainingNotAttempted(entries, i + 1, S.lastStopReason)
+            finish()
             return
         end
-        if rowCount ~= lastVisibleRowCount then
-            logLine(string.format('[merchant scan] Visible row count changed: %d -> %d before row #%d.', lastVisibleRowCount, rowCount, idx), COLOR_WARN)
-            -- If rows disappeared after the previous item (for example because a
-            -- newly scribed spell no longer survives the usable-only filter), the
-            -- next unvisited row shifts upward. Revisit the current visible
-            -- position instead of skipping whatever moved into it.
-            if rowCount < lastVisibleRowCount then
-                local removed = lastVisibleRowCount - rowCount
-                local oldIdx = idx
-                idx = math.max(1, idx - removed)
-                if idx ~= oldIdx then
-                    logLine(string.format('[merchant scan] Row removal shifted the list; adjusting next row %d -> %d so shifted rows are not skipped.', oldIdx, idx), COLOR_WARN)
-                end
-            end
-            lastVisibleRowCount = rowCount
-        end
-
-        if idx > rowCount then
-            local boughtThisPass = S.bought - passBoughtStart
-            if boughtThisPass == 0 then
-                if nonSpellSkipped > 0 then
-                    logLine(string.format('[merchant scan] Scan complete: pass %d reached the end of %d visible row(s) and bought zero spells. No purchase-triggered reorder remains to reconcile. Inspected %d item encounter(s) total; skipped %d non-spell item(s).',
-                        scanPass, rowCount, totalUniqueInspected, nonSpellSkipped), COLOR_GOLD)
-                else
-                    logLine(string.format('[merchant scan] Scan complete: pass %d reached the end of %d visible row(s) and bought zero spells. No purchase-triggered reorder remains to reconcile. Inspected %d item encounter(s) total.',
-                        scanPass, rowCount, totalUniqueInspected), COLOR_GOLD)
-                end
-                S.state = STATE.DONE
-                S.lastStopReason = 'Full refreshed merchant pass bought zero spells'
-                closeVendor('scan complete: a full pass bought zero spells')
-                return
-            end
-
-            logLine(string.format('[merchant scan] Pass %d reached the current end (%d row(s)) after buying %d spell(s). A mid-pass reorder may have moved unvisited spells behind the cursor.',
-                scanPass, rowCount, boughtThisPass), COLOR_WARN)
-
-            if scanPass >= MAX_SCAN_PASSES then
-                logLine(string.format('[merchant scan] Aborting after %d close/reopen passes -- the merchant never reached a pass with zero purchases.', MAX_SCAN_PASSES), COLOR_ERR)
-                S.state = STATE.STOPPED
-                S.lastStopReason = 'Merchant list did not converge after reopen passes'
-                return
-            end
-
-            local reopened, reopenReason, reopenedRows = reopenCurrentMerchantForNextPass(scanPass)
-            if not reopened then
-                if reopenReason == 'Stopped by user' then
-                    logLine('Stopped by user.', COLOR_WARN)
-                end
-                S.state = STATE.STOPPED
-                S.lastStopReason = reopenReason or 'Merchant reopen failed'
-                return
-            end
-
-            scanPass = scanPass + 1
-            idx = 1
-            seenMerchantItems = {} -- fresh window/list; completed spells should now be absent
-            S.lastScanSelName = nil
-            passBoughtStart = S.bought
-            lastVisibleRowCount = reopenedRows
-            logLine(string.format('[merchant scan] Starting pass %d at visible row #1 on the freshly reopened merchant.', scanPass), COLOR_MUTE)
-            rowCount = reopenedRows
-        end
-
-        local rowCountBeforeRow = rowCount
-        local previousSelectedName = S.lastScanSelName
-        logLine(string.format('[merchant scan] Requesting visible UI row #%d of %d.', idx, rowCountBeforeRow), COLOR_MUTE)
-
-        -- Select this visible UI row, then poll for Merchant.SelectedItem to
-        -- settle. A repeated name is NOT an EOF signal: adjacent legitimate rows
-        -- can share names, and the visible row count already tells us whether this
-        -- index exists. If the name never changes from the prior row, retry the
-        -- listselect once, log it, then accept the returned selection.
-        sendCmd(string.format('select visible row #%d of %d to read what item it holds (pass %d)', idx, rowCountBeforeRow, scanPass),
-            '/notify MerchantWnd ItemList listselect %d', idx)
-        local sel, selName = nil, nil
-        local selectionAdvanced = false
-        local selPolls = 0
-        for _ = 1, 12 do
-            selPolls = selPolls + 1
-            mq.delay(30)
-            sel = merchantSelectedItem()
-            if sel then
-                selName = itemDisplayName(sel)
-                if previousSelectedName == nil or selName ~= previousSelectedName then
-                    selectionAdvanced = true
-                    break
-                end
-            end
-        end
-
-        if sel and not selectionAdvanced and previousSelectedName ~= nil and selName == previousSelectedName then
-            logLine(string.format('[merchant scan] Row #%d selection still reads "%s"; retrying listselect once because selection did not visibly advance.', idx, selName), COLOR_WARN)
-            sendCmd(string.format('retry selecting row #%d: selection still reads the previous row\'s name', idx),
-                '/notify MerchantWnd ItemList listselect %d', idx)
-            for _ = 1, 12 do
-                mq.delay(30)
-                sel = merchantSelectedItem()
-                if sel then
-                    selName = itemDisplayName(sel)
-                    if selName ~= previousSelectedName then
-                        selectionAdvanced = true
-                        break
-                    end
-                end
-            end
-            if sel and not selectionAdvanced then
-                logLine(string.format('[merchant scan] Row #%d still reads "%s" after retry; accepting it because row #%d is within the authoritative visible row count (%d).', idx, selName, idx, rowCountBeforeRow), COLOR_MUTE)
-            end
-        end
-
-        S.lastScanSelName = selName
-        logObs(string.format('row #%d/%d select result: name=%s itemID=%s polls=%d advanced=%s previousName=%s',
-            idx, rowCountBeforeRow, selName or 'nil (nothing selected)', tloText(function() return sel.ID() end),
-            selPolls, tostring(selectionAdvanced), tostring(previousSelectedName)))
-
-        if not sel then
-            logLine(string.format('[merchant scan] Could not read Merchant.SelectedItem for visible row #%d -- skipping that row.', idx), COLOR_WARN)
-            idx = idx + 1
-        else
-            local itemKey, itemIdText = merchantSelectedItemKey(sel, selName)
-            local alreadySeen = seenMerchantItems[itemKey] == true
-            logLine(string.format('[merchant scan] Pass %d row #%d/%d selected: "%s" [item %s] -> %s.',
-                scanPass, idx, rowCountBeforeRow, selName, itemIdText, alreadySeen and 'already inspected THIS PASS' or 'NEW THIS PASS'), COLOR_MUTE)
-
-            if alreadySeen then
-                idx = idx + 1
-            else
-                -- Mark it before processing. This set is deliberately pass-local:
-                -- it prevents a mid-pass reorder from buying the same merchant item
-                -- twice before we close/reopen the vendor. After reopen the set is
-                -- reset because successfully scribed spells should be absent from
-                -- the freshly filtered list.
-                seenMerchantItems[itemKey] = true
-                totalUniqueInspected = totalUniqueInspected + 1
-
-                local name = selName
-                if not isSpellItem(sel, name) then
-                nonSpellSkipped = nonSpellSkipped + 1
-                -- Keep the GUI's "current position" moving even while
-                -- skipping non-spells -- otherwise it looks frozen for the
-                -- whole time it's working through a big inventory, when
-                -- really it's just not found a spell to report yet.
-                S.currentName, S.currentIndex = name, idx
-                idx = idx + 1
-            else
-                S.currentName, S.currentIndex = name, idx
-
-                -- Proactive: selecting an item triggers the vendor's own
-                -- price tell automatically (confirmed directly against real
-                -- chat log output -- every item does this, not just spells).
-                -- A short settle wait plus an explicit doevents right here,
-                -- not just the one at the top of this loop (which only
-                -- catches whatever arrived before THIS item was even
-                -- selected) -- the tell is a separate, asynchronous response
-                -- to the selection just above, so it needs its own moment to
-                -- actually arrive and then be processed before checking for
-                -- it makes any sense.
-                mq.delay(250)
-                mq.doevents()
-                local q = priceQuotes[name]
-                logObs(string.format('price quote for "%s": %s; money on hand %s', name,
-                    q and formatCoin(q.copper) or 'none received (not proof either way: chat events have been unreliable here)',
-                    formatCoin(myTotalCopper())))
-                if q and q.copper > myTotalCopper() then
-                    if S.stopOnOutOfMoney then
-                        logLine(string.format('Vendor quoted "%s" at %s -- you have %s. Not enough. Stopping.',
-                            name, formatCoin(q.copper), formatCoin(myTotalCopper())), COLOR_ERR)
-                        S.state = STATE.STOPPED
-                        S.lastStopReason = string.format('Not enough money for "%s" (quoted %s)', name, formatCoin(q.copper))
-                        return
-                    end
-                    logLine(string.format('Vendor quoted "%s" at %s -- you have %s. Not enough, skipping just this one.',
-                        name, formatCoin(q.copper), formatCoin(myTotalCopper())), COLOR_WARN)
-                    S.skipped = S.skipped + 1
-                    table.insert(S.skippedNames, name)
-                    idx = idx + 1
-                    goto nextItem
-                end
-
-                -- Item.Price() has proven completely unreliable in this
-                -- environment (always reads 0 here, tried multiple sources)
-                -- -- same category of issue as the checkbox and chat events.
-                -- Rather than display a fake "(0cp)" price or gate purchases
-                -- on a number we know is wrong, this only checks the one
-                -- thing we CAN trust: whether you have any money at all. The
-                -- real cost gets shown after the fact, measured from the
-                -- actual drop in money on hand.
-                if myTotalCopper() <= 0 then
-                    if S.stopOnOutOfMoney then
-                        logLine(string.format('Out of money -- can\'t afford "%s". Stopping.', name), COLOR_ERR)
-                        S.state = STATE.STOPPED
-                        S.lastStopReason = 'Out of money'
-                        return
-                    end
-                    logLine(string.format('Out of money -- can\'t afford "%s". Skipping it and checking the rest.', name), COLOR_WARN)
-                    S.skipped = S.skipped + 1
-                    table.insert(S.skippedNames, name)
-                    idx = idx + 1
-                    goto nextItem
-                end
-
-                local targetBag, targetSlot = firstFreeInventorySlot()
-                if not targetBag then
-                    logLine('No free inventory space left -- stopping.', COLOR_ERR)
-                    S.state = STATE.STOPPED
-                    S.lastStopReason = 'Inventory full'
-                    return
-                end
-                logObs(string.format('expected landing slot for "%s": %s', name, slotLabel(targetBag, targetSlot)))
-                waitForMouseOffOverlay()
-                -- Nothing to open when the target is an empty top-level slot
-                -- itself (no bag equipped there at all) -- see slotIdx == 0
-                -- in firstFreeInventorySlot's own comment.
-                if targetSlot ~= 0 then ensureBagOpen(targetBag) end
-
-                -- Baseline for stack-detection below -- see findExistingCopy.
-                local existingBag, existingSlot, existingStackBefore = findExistingCopy(name)
-                logObs(string.format('pre-buy existing copy of "%s": %s', name,
-                    existingBag and string.format('%s, stack %s', slotLabel(existingBag, existingSlot), tostring(existingStackBefore)) or 'none found'))
-
-                logLine(string.format('Buying "%s"...', name), COLOR_INFO)
-                local copperBeforeBuy = myTotalCopper()
-                sendCmd(string.format('buy the selected item "%s" (selection was read back as this item; money before %s)', name, formatCoin(copperBeforeBuy)),
-                    '/notify MerchantWnd MW_Buy_Button leftmouseup')
-                handleQuantityWindowIfOpen()
-
-                -- Wait for money on hand to actually drop -- the real,
-                -- TLO-based confirmation that the transaction posted, instead
-                -- of a blind delay or a chat line that isn't firing reliably.
-                local paid = false
-                local paidPolls = 0
-                for _ = 1, 15 do -- up to ~3s
-                    paidPolls = paidPolls + 1
-                    if myTotalCopper() < copperBeforeBuy then
-                        paid = true
-                        break
-                    end
-                    mq.delay(200)
-                    mq.doevents()
-                end
-                logObs(string.format('money check after buying "%s": before=%s now=%s paid=%s (polls=%d/15)',
-                    name, formatCoin(copperBeforeBuy), formatCoin(myTotalCopper()), tostring(paid), paidPolls))
-                if not paid then
-                    -- Race-condition safety net: the proactive check right
-                    -- after selecting this item should have already caught
-                    -- an unaffordable spell before we ever got here, but if
-                    -- the quote arrived a beat late, it'll be sitting in
-                    -- priceQuotes by now -- check again rather than falling
-                    -- through to the ambiguous "money didn't move" reasoning
-                    -- below when a definitive answer is actually available.
-                    local q = priceQuotes[name]
-                    if q and q.copper > myTotalCopper() then
-                        logLine(string.format('Vendor quoted "%s" at %s -- you have %s. Not enough, skipping just this one.',
-                            name, formatCoin(q.copper), formatCoin(myTotalCopper())), COLOR_WARN)
-                        S.skipped = S.skipped + 1
-                        table.insert(S.skippedNames, name)
-                        idx = idx + 1
-                        goto nextItem
-                    end
-
-                    -- Two of these in a row is a much stronger signal, though:
-                    -- a one-off explains a single miss, but the same thing
-                    -- happening on back-to-back purchases is far more likely
-                    -- genuine -- actually out of money for this vendor's
-                    -- price range. That's when stopping outright is
-                    -- justified, since Item.Price() is confirmed unreliable
-                    -- (always reads 0) and there's no way to check
-                    -- affordability ahead of time the way the earlier
-                    -- "myTotalCopper() <= 0" check already does for being
-                    -- flat broke.
-                    S.consecutiveNoMoneyMovement = S.consecutiveNoMoneyMovement + 1
-                    if S.consecutiveNoMoneyMovement >= 2 then
-                        if S.stopOnOutOfMoney then
-                            logLine(string.format('Money on hand hasn\'t moved for two purchases in a row (now "%s") -- most likely out of money for this vendor. Stopping here rather than guessing at every remaining item.', name), COLOR_ERR)
-                            S.state = STATE.STOPPED
-                            S.lastStopReason = string.format('Probably not enough money (stopped at "%s")', name)
-                            return
-                        end
-                        logLine(string.format('Money on hand hasn\'t moved for two purchases in a row (now "%s") -- most likely out of money for this vendor. "Stop when out of money" is off, so skipping and checking the rest anyway.', name), COLOR_WARN)
-                        S.skipped = S.skipped + 1
-                        table.insert(S.skippedNames, name)
-                        idx = idx + 1
-                        goto nextItem
-                    end
-
-                    -- No quote to confirm it outright, and not (yet) two in a
-                    -- row -- but money simply not moving at all already IS
-                    -- conclusive that nothing was bought; there's nothing left
-                    -- to learn from spending another 3s on the landing check
-                    -- too, and letting it fall through to that was producing
-                    -- a vague, uninformative "didn't buy for some reason"
-                    -- that buried what actually happened. Confirmed directly
-                    -- against real testing: this exact single-miss pattern
-                    -- has turned out to mean insufficient funds far more
-                    -- often than not, even without a price quote to prove it
-                    -- outright, so the message says so plainly now instead of
-                    -- staying generic.
-                    logLine(string.format('Money on hand didn\'t move for "%s" -- most likely not enough coin for it (no vendor quote to confirm it outright, so not stopping the whole vendor over one miss). Skipping it.', name), COLOR_WARN)
-                    S.skipped = S.skipped + 1
-                    table.insert(S.skippedNames, name)
-                    idx = idx + 1
-                    goto nextItem
-                else
-                    S.consecutiveNoMoneyMovement = 0
-                end
-
-                -- Verify it actually landed where we expected before trusting the
-                -- purchase. Retried for up to ~3s (matching the "paid" wait just
-                -- above, since both are waiting on the same round trip) rather
-                -- than a single immediate read -- the bag is open by now
-                -- (firstFreeInventorySlot takes care of that), but on a slower
-                -- connection there can still be a real gap between the purchase
-                -- actually landing server-side and the slot's contents showing
-                -- up through the TLO, and a read landing inside that gap is how
-                -- a purchase that genuinely went through got reported as failed.
-                --
-                -- readTargetSlot (not bagSlotItem directly) so this reads
-                -- correctly whichever kind of slot this turned out to be -- a
-                -- purchase landing as a loose item directly in an empty
-                -- top-level slot needs a different read than one landing
-                -- inside a bag, and using the wrong one here is exactly what
-                -- was causing "didn't buy" reports for purchases that landed
-                -- in an open top-level slot: bagSlotItem only ever looks
-                -- INSIDE a bag, so it always came up empty for those.
-                local landed, landedOk = nil, false
-                local landPolls = 0
-                for _ = 1, 15 do -- up to ~3s
-                    landPolls = landPolls + 1
-                    landed = readTargetSlot(targetBag, targetSlot)
-                    if landed then landedOk = true; break end
-                    mq.delay(200)
-                end
-                logObs(string.format('landing read of %s for "%s": %s (polls=%d/15)', slotLabel(targetBag, targetSlot), name,
-                    landed and ('found "' .. itemDisplayName(landed) .. '"') or 'nothing readable there', landPolls))
-                if landed then
-                    local landedName = itemDisplayName(landed)
-                    if landedName ~= name then
-                        logLine(string.format('Something landed in %s ("%s") but the name doesn\'t match "%s" -- proceeding anyway.', slotLabel(targetBag, targetSlot), landedName, name), COLOR_WARN)
-                    end
-                end
-
-                if not landedOk and targetSlot ~= 0 then
-                    -- S.openedBags only tracks "did we open this bag once this
-                    -- session" -- not "is it still open right now." If the user
-                    -- (or anything else) closed it since, every read of it goes
-                    -- right back to being unreliable, which reads exactly like
-                    -- "the purchase failed" even when it didn't. One recovery
-                    -- attempt here, same reasoning as the scribe loop's own
-                    -- recovery step further down: re-toggling a bag that was
-                    -- never actually the problem risks closing it, but a
-                    -- purchase that already had a full 3s to show up and still
-                    -- isn't reading is far more likely explained by a closed
-                    -- bag than by anything a toggle could break. Only applies
-                    -- when there's actually a bag involved -- an empty
-                    -- top-level slot has no bag to have gotten closed.
-                    if openBagIfClosed(targetBag) then
-                        logLine(string.format('"%s" isn\'t reading back from bag %d/slot %d and that bag reads as closed -- re-opening it before giving up.', name, targetBag, targetSlot), COLOR_WARN)
-                    else
-                        logLine(string.format('"%s" isn\'t reading back from bag %d/slot %d, but that bag is already open -- giving it one more read rather than toggling it shut.', name, targetBag, targetSlot), COLOR_WARN)
-                        mq.delay(400)
-                    end
-                    landed = readTargetSlot(targetBag, targetSlot)
-                    if landed then
-                        landedOk = true
-                        logLine(string.format('"%s" showed up after re-opening the bag -- it did buy, just wasn\'t readable at the time.', name), COLOR_GOOD)
-                    end
-                end
-
-                -- Still nothing in the predicted slot, and the bag-reopen
-                -- recovery above didn't turn it up either. The money already
-                -- came out of pocket, so this purchase DID post -- sweep the
-                -- whole inventory for the scroll and retarget onto wherever
-                -- it really is, rather than calling a paid-for purchase a
-                -- failure. Retargeting matters as much as the reporting
-                -- does: everything downstream (the spell-scroll name gate,
-                -- the right-click to scribe, the "did it leave the slot"
-                -- check) works off targetBag/targetSlot, so pointing those
-                -- at the real location is what lets the scribe step run at
-                -- all.
-                if not landedOk then
-                    local foundBag, foundSlot = findCopyAnywhere(name, existingBag, existingSlot)
-                    if foundBag then
-                        landed = readTargetSlot(foundBag, foundSlot)
-                        if landed then
-                            targetBag, targetSlot = foundBag, foundSlot
-                            landedOk = true
-                            logLine(string.format('"%s" didn\'t land in the slot it was expected in -- found it in %s instead. It did buy.', name, slotLabel(targetBag, targetSlot)), COLOR_GOOD)
-                        end
-                    end
-                end
-
-                -- Didn't land in the predicted NEW slot -- but a purchase
-                -- that stacks onto an EXISTING copy instead of landing
-                -- anywhere new looks exactly like this too, and that's
-                -- confirmed to happen on this server. If there was an
-                -- existing copy before this purchase, check whether its
-                -- stack just grew rather than concluding failure outright.
-                local stackedInstead = false
-                if not landedOk and existingBag then
-                    local nowBag, nowSlot, nowStack = findExistingCopy(name)
-                    if nowBag and nowStack and existingStackBefore and nowStack > existingStackBefore then
-                        landedOk = true
-                        stackedInstead = true
-                        S.bought = S.bought + 1
-                        table.insert(S.purchasedNames, name)
-                        local actualSpent = math.max(0, copperBeforeBuy - myTotalCopper())
-                        S.spentCopper = S.spentCopper + actualSpent
-                        logLine(string.format('"%s" stacked onto an existing copy (now %d) instead of landing in a new slot -- it did buy. Not auto-scribing this one, since it isn\'t clear whether the existing copy was already scribed -- check it yourself if it wasn\'t.', name, nowStack), COLOR_GOOD)
-                    end
-                end
-
-                if not landedOk then
-                    logLine(string.format('"%s" didn\'t buy for some reason -- skipping it.', name), COLOR_WARN)
-                    S.skipped = S.skipped + 1
-                    table.insert(S.skippedNames, name)
-                    idx = idx + 1
-                elseif stackedInstead then
-                    -- Already counted as bought and logged above; nothing
-                    -- left to do but move on to the next item.
-                    idx = idx + 1
-                else
-                    -- Hard safety gate: never right-click ANYTHING that isn't
-                    -- name-confirmed as a spell scroll, no matter how
-                    -- confident the earlier detection was. This is what
-                    -- would have stopped the food item from getting eaten --
-                    -- "landed" is read fresh from the actual slot, so this
-                    -- catches a wrong purchase even if isSpellItem was fooled
-                    -- earlier or something unexpected landed there.
-                    local landedName = itemDisplayName(landed)
-                    if not isScrollName(landedName) then
-                        logLine(string.format('"%s" landed in %s but isn\'t named like a spell or song scroll -- NOT right-clicking it. Stopping so you can check what happened.', landedName, slotLabel(targetBag, targetSlot)), COLOR_ERR)
-                        S.state = STATE.STOPPED
-                        S.lastStopReason = string.format('Refused to scribe non-spell item: "%s"', landedName)
-                        return
-                    end
-
-                    S.bought = S.bought + 1
-                    table.insert(S.purchasedNames, name)
-                    -- The ACTUAL measured drop in money on hand -- Price()
-                    -- doesn't work here at all (confirmed always 0), so this
-                    -- real measurement is the only trustworthy cost figure.
-                    local actualSpent = math.max(0, copperBeforeBuy - myTotalCopper())
-                    S.spentCopper = S.spentCopper + actualSpent
-                    logLine(string.format('Scribing "%s"...', name), COLOR_INFO)
-
-                    -- The client can reject the right-click for a while after
-                    -- a purchase ("You can't use that command right now") --
-                    -- confirmed happening 3x in a row before it finally took.
-                    -- So: click, wait ~1s while watching for the scroll to
-                    -- actually leave the slot (right-clicking a scroll
-                    -- consumes it on a successful scribe), and if it's still
-                    -- sitting there just click again -- up to 20 tries
-                    -- (~20+s total). Respects Stop between attempts so it's
-                    -- not a dead 20s wait if you want out.
-                    local scribed = false
-                    local maxAttempts = 20
-                    local recoveryAttempted = false
-                    for attempt = 1, maxAttempts do
-                        mq.delay(attempt == 1 and 150 or 1000)
-                        if S.stopRequested then break end
-
-                        waitForMouseOffOverlay()
-                        if S.stopRequested then break end
-
-                        -- A few attempts in with zero progress -- the bag is
-                        -- very likely not actually open. Try toggling it
-                        -- open exactly ONCE as a recovery step. Right-
-                        -- clicking the bag icon toggles it open/closed, so
-                        -- blindly retrying risks closing an already-open bag
-                        -- -- but if it WAS open, something should have
-                        -- worked well before attempt 4, so by this point a
-                        -- toggle is far more likely to open a closed bag
-                        -- than close an open one. (With openedBags now
-                        -- persisting across the whole session instead of
-                        -- resetting every vendor, this recovery step should
-                        -- rarely even need to fire anymore -- it's a safety
-                        -- net, not the primary fix.) Only applies when
-                        -- there's actually a bag involved -- an empty
-                        -- top-level slot has nothing to toggle.
-                        if targetSlot ~= 0 and attempt == 4 and not scribed and not recoveryAttempted then
-                            recoveryAttempted = true
-                            waitForMouseOffOverlay()
-                            if openBagIfClosed(targetBag) then
-                                logLine(string.format('Still no progress on "%s" -- bag %d reads as closed, re-opening it.', name, targetBag), COLOR_WARN)
-                            end
-                        end
-
-                        sendCmd(string.format('scribe "%s": right-click the scroll at %s (attempt %d/%d)', name, slotLabel(targetBag, targetSlot), attempt, maxAttempts),
-                            targetSlotNotifyCmd(targetBag, targetSlot))
-                        handleScribeConfirmIfOpen()
-
-                        for _ = 1, 5 do
-                            local stillThere = readTargetSlot(targetBag, targetSlot)
-                            if not stillThere or itemDisplayName(stillThere) ~= name then
-                                scribed = true
-                                break
-                            end
-                            mq.delay(200)
-                        end
-                        logObs(string.format('scribe attempt %d/%d for "%s": %s', attempt, maxAttempts, name,
-                            scribed and 'scroll no longer reads in the slot (scribe inferred; MQ gives no direct confirmation)' or 'scroll still reads in the slot'))
-                        if scribed then break end
-                        if S.stopRequested then break end
-
-                        if attempt % 5 == 0 then
-                            logLine(string.format('Still trying to scribe "%s" (attempt %d/%d)...', name, attempt, maxAttempts), COLOR_WARN)
-                        end
-                    end
-
-                    if scribed then
-                        -- The scroll can transit through the cursor briefly
-                        -- as part of the normal scribe animation even after
-                        -- it's left the bag slot -- wait for the cursor to
-                        -- actually clear too before calling this done,
-                        -- otherwise the cursor-safety check on the very next
-                        -- loop iteration can catch it mid-transition and
-                        -- think something went wrong (it didn't -- this is
-                        -- what caused the false "unexpected item on cursor"
-                        -- stop right after a successful scribe).
-                        for _ = 1, 15 do -- up to ~3s
-                            if not cursorItemName() then break end
-                            mq.delay(200)
-                        end
-                        local stuck = cursorItemName()
-                        logObs('cursor after scribing "' .. name .. '": ' .. tostring(stuck or 'empty'))
-                        if stuck then
-                            logLine(string.format('"%s" scribed, but something is still on the cursor afterward ("%s") -- stopping to be safe.', name, stuck), COLOR_ERR)
-                            S.state = STATE.STOPPED
-                            S.lastStopReason = string.format('Cursor not clear after scribing "%s"', name)
-                            return
-                        end
-                        logLine(string.format('Confirmed scribed: "%s" (cost %s, scroll left %s).', name, formatCoin(actualSpent), slotLabel(targetBag, targetSlot)), COLOR_GOOD)
-
-                        -- Scribing can change the usable-only filtered list. Give
-                        -- the UI a short chance to refresh before choosing the next
-                        -- row. If the row count shrank, keep this same visible index
-                        -- because the next unvisited item has shifted into it.
-                        local afterScribeRowCount = merchantVisibleRowCount()
-                        for _ = 1, 10 do
-                            if afterScribeRowCount and afterScribeRowCount ~= rowCountBeforeRow then break end
-                            mq.delay(50)
-                            afterScribeRowCount = merchantVisibleRowCount()
-                        end
-                        if afterScribeRowCount and afterScribeRowCount ~= rowCountBeforeRow then
-                            logLine(string.format('[merchant scan] Visible row count changed after row #%d: %d -> %d.', idx, rowCountBeforeRow, afterScribeRowCount), COLOR_WARN)
-                            lastVisibleRowCount = afterScribeRowCount
-                            if afterScribeRowCount < rowCountBeforeRow then
-                                logLine(string.format('[merchant scan] Keeping next scan at row #%d because the filtered list shrank; the next unvisited item may have shifted into this row.', idx), COLOR_WARN)
-                            else
-                                idx = idx + 1
-                            end
-                        else
-                            logObs(string.format('row count after scribing row #%d: unchanged at %s after the ~500ms wait; advancing to the next row.', idx, tostring(afterScribeRowCount)))
-                            idx = idx + 1
-                        end
-                    else
-                        if S.stopRequested then
-                            logLine('Stopped by user.', COLOR_WARN)
-                            S.state = STATE.STOPPED
-                            S.lastStopReason = 'Stopped by user'
-                            return
-                        end
-                        logLine(string.format('"%s" was bought, but the scroll never left %s after %d tries -- a common cause is a full spellbook. Stopping so you can check.', name, slotLabel(targetBag, targetSlot), maxAttempts), COLOR_ERR)
-                        S.state = STATE.STOPPED
-                        S.lastStopReason = string.format('Scribe failed on "%s"', name)
-                        return
-                    end
-                end
-            end
-        end
-        end
-
-        ::nextItem::
         mq.delay(100)
     end
+
+    if #entries == 0 then
+        logLine('No spell or song scrolls are listed on this vendor.', COLOR_GOLD)
+    else
+        logLine(string.format('Reached the end of the built list (%d entr%s).', #entries, #entries == 1 and 'y' or 'ies'), COLOR_GOLD)
+    end
+    S.state = STATE.DONE
+    S.lastStopReason = 'End of the built list'
+    finish()
+    closeVendor('the built list is finished')
 end
 
 -- ============================================================================
