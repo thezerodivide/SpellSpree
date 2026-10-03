@@ -1,0 +1,47 @@
++5308ms | spike 0.1.0-spike.2 | === spike start: mode=probe ===
++5308ms | spike 0.1.0-spike.2 | character=Benedict server=multiclass zone=poknowledge target=Vicar Thiran
++5308ms | spike 0.1.0-spike.2 | log file: C:\Users\Public\MacroQuest\Logs/spellspree/spike_multiclass_Benedict.log
++5308ms | spike 0.1.0-spike.2 | ItemList.Items()=168  Merchant.Items=183  usable-only box checked=true
++5309ms | spike 0.1.0-spike.2 | --- Q1: which List column holds the item name (select 3 rows, compare cells with Merchant.SelectedItem.Name) ---
++5534ms | spike 0.1.0-spike.2 | row 1: Merchant.SelectedItem.Name="Spell: Blessing of Faith"; cells: c1=""; c2="Spell: Blessing of Faith" (EQUALS selected name); c3="--"; c4="19"; c5="0"; c6="8"; c7="6"; c8=" 35"
++5748ms | spike 0.1.0-spike.2 | row 84: Merchant.SelectedItem.Name="Spell: Hammer of Judgment"; cells: c1=""; c2="Spell: Hammer of Judgment" (EQUALS selected name); c3="--"; c4="23"; c5="5"; c6="1"; c7="9"; c8=" 40"
++5979ms | spike 0.1.0-spike.2 | row 168: Merchant.SelectedItem.Name="Spell: Hammer of Judgment"; cells: 
++5979ms | spike 0.1.0-spike.2 | RESULT Q1: name column = 2 (matched in 2 of 3 tested rows)
++5979ms | spike 0.1.0-spike.2 | --- Q6: read the whole visible list, no selecting ---
++5981ms | spike 0.1.0-spike.2 | RESULT Q6: read 168 rows (1 unreadable) in 2 ms (0.01 ms/row); 86 are Spell:/Song: scrolls; duplicate names: 0
++5981ms | spike 0.1.0-spike.2 | first rows: 1:"Spell: Blessing of Faith", 2:"Spell: Pacify", 3:"Spell: Resist Disease", 4:"Spell: Invoke Fear", 5:"Spell: Dismiss Summoned"
++5982ms | spike 0.1.0-spike.2 | last rows: 164:"Shadow Weave Ring", 165:"Rujarkian Orc Boots", 166:"Spell: Plague of Insects", 167:"Blue Diamond", 168:"nil"
++5995ms | spike 0.1.0-spike.2 | scroll rows: 1=Spell: Blessing of Faith | 2=Spell: Pacify | 3=Spell: Resist Disease | 4=Spell: Invoke Fear | 5=Spell: Dismiss Summoned | 6=Spell: Resuscitate | 7=Spell: Turning of the Unnatural | 8=Spell: Nullify Magic
++5996ms | spike 0.1.0-spike.2 | scroll rows: 9=Spell: Resist Cold | 10=Spell: Remove Curse | 11=Spell: Complete Healing | 12=Spell: Word of Souls | 13=Spell: Sacred Word | 14=Spell: Hammer of Requital | 15=Spell: Temperance | 16=Spell: Guard of Vie
++5996ms | spike 0.1.0-spike.2 | scroll rows: 17=Spell: Yaulp III | 18=Spell: Symbol of Naltron | 19=Spell: Resolution | 20=Spell: Restoration | 21=Spell: Resist Magic | 22=Spell: Abolish Poison | 23=Spell: Improved Invis vs Undead | 24=Spell: Word Divine
++5996ms | spike 0.1.0-spike.2 | scroll rows: 25=Spell: Armor of the Faithful | 26=Spell: Mass Imbue Sapphire | 27=Spell: Mass Imbue Topaz | 28=Spell: Celestial Health | 29=Spell: Superior Healing | 30=Spell: Resist Poison | 31=Spell: Word of Health | 32=Spell: Frenzied Strength
++5996ms | spike 0.1.0-spike.2 | scroll rows: 33=Spell: Valor | 34=Spell: Atone | 35=Spell: Renewal | 36=Spell: Abundant Food | 37=Spell: Resist Fire | 38=Spell: Panic the Dead | 39=Spell: Word of Spirit | 40=Spell: Instill
++5997ms | spike 0.1.0-spike.2 | scroll rows: 41=Spell: Revive | 42=Spell: Expulse Summoned | 43=Spell: Abundant Drink | 44=Spell: Counteract Disease | 45=Spell: Divine Barrier | 46=Spell: Wrath | 47=Spell: Imbue Opal | 48=Spell: Imbue Topaz
++5997ms | spike 0.1.0-spike.2 | scroll rows: 49=Spell: Imbue Plains Pebble | 50=Spell: Imbue Amber | 51=Spell: Imbue Sapphire | 52=Spell: Imbue Ruby | 53=Spell: Imbue Emerald | 54=Spell: Imbue Black Pearl | 55=Spell: Imbue Diamond | 56=Spell: Imbue Rose Quartz
++5997ms | spike 0.1.0-spike.2 | scroll rows: 57=Spell: Imbue Black Sapphire | 58=Spell: Imbue Peridot | 59=Spell: Mass Imbue Amber | 60=Spell: Mass Imbue Black Pearl | 61=Spell: Mass Imbue Black Sapphire | 62=Spell: Mass Imbue Diamond | 63=Spell: Mass Imbue Emerald | 64=Spell: Mass Imbue Opal
++5997ms | spike 0.1.0-spike.2 | scroll rows: 65=Spell: Mass Imbue Peridot | 66=Spell: Mass Imbue Plains Pebble | 67=Spell: Mass Imbue Rose Quartz | 68=Spell: Mass Imbue Ruby | 69=Spell: Banish Undead | 70=Spell: Earthquake | 71=Spell: Retribution | 72=Spell: Celestial Healing
++5997ms | spike 0.1.0-spike.2 | scroll rows: 73=Spell: Shield of Words | 74=Spell: Word of Healing | 75=Spell: Blessing of Temperance | 76=Spell: Sound of Force | 77=Spell: Resurrection | 78=Spell: Expel Summoned | 79=Spell: Expel Undead | 80=Spell: Blinding Luminance
++5998ms | spike 0.1.0-spike.2 | scroll rows: 81=Spell: Tremor | 82=Spell: Armor of Protection | 83=Spell: Armor of Faith | 84=Spell: Hammer of Judgment | 85=Spell: Hammer of Divinity | 166=Spell: Plague of Insects
++5998ms | spike 0.1.0-spike.2 | --- Q2: Merchant.Item(n) against the visible list ---
++5998ms | spike 0.1.0-spike.2 | Merchant.Items=182 vs ItemList.Items()=168
++5999ms | spike 0.1.0-spike.2 | RESULT Q2: Merchant.Item read 182 entries (0 unreadable) in 1 ms; only in visible list: 0; only in Merchant.Item: 15; same name at same position: 87 of 168
++5999ms | spike 0.1.0-spike.2 |   only in Merchant.Item: Sharkbone Plated Shoulderpads (Enchanted)
++5999ms | spike 0.1.0-spike.2 |   only in Merchant.Item: Spell: Jolting Blades
++6000ms | spike 0.1.0-spike.2 |   only in Merchant.Item: Elysian Boots
++6000ms | spike 0.1.0-spike.2 |   only in Merchant.Item: Bile Drenched Main-gauche (Legendary)
++6000ms | spike 0.1.0-spike.2 |   only in Merchant.Item: Warblade of the Fallen
++6000ms | spike 0.1.0-spike.2 |   only in Merchant.Item: Spell: Foliage Shield
++6000ms | spike 0.1.0-spike.2 |   only in Merchant.Item: Fine Steel Rapier
++6001ms | spike 0.1.0-spike.2 |   only in Merchant.Item: Zraxthril Forged Cutlass
++6001ms | spike 0.1.0-spike.2 | --- Q3: by-name row lookup, exact (=name) and not exact ---
++6002ms | spike 0.1.0-spike.2 | first scroll "Spell: Blessing of Faith": sweep first row=1; List("=name")=1; List("name")=1
++6002ms | spike 0.1.0-spike.2 | first non-scroll "Crysotherium": sweep first row=86; List("=name")=86; List("name")=86
++6002ms | spike 0.1.0-spike.2 | name that prefixes another (Shadowy Assassin's Cape (Enchanted)) "Shadowy Assassin's Cape": sweep first row=102; List("=name")=102; List("name")=102
++6003ms | spike 0.1.0-spike.2 | match style on "Spell: Blessing of Faith": List("Spell: Blessing of Fa")=1 [prefix-style match if a row]; List("ll: Blessing of Faith")=1 [substring-style match if a row]; List("=Spell: Blessing of Fa")=nil [exact should be nil]
++6003ms | spike 0.1.0-spike.2 | List of a name that is not there returns: nil (type nil)
++6003ms | spike 0.1.0-spike.2 | --- Q4: Merchant.SelectItem(name) called from Lua ---
++6225ms | spike 0.1.0-spike.2 | selected row 87 via listselect; SelectedItem.Name="Old Dragon Horn"; price tells so far=2
++7127ms | spike 0.1.0-spike.2 | called Merchant.SelectItem("=Crysotherium") without (): returned NULL; SelectedItem.Name over time: 0ms:"Crysotherium", 100ms:"Crysotherium", 200ms:"Crysotherium", 400ms:"Crysotherium", 800ms:"Crysotherium"; new price tells=1
++7127ms | spike 0.1.0-spike.2 | RESULT Q4: after SelectItem the list reports SelectedIndex=86 (row of "Crysotherium" in sweep: 86); SelectedItem.Name="Crysotherium"
++7675ms | spike 0.1.0-spike.2 | control: listselect of row 87 prompted 1 new price tell(s)
++7675ms | spike 0.1.0-spike.2 | === probe finished. Nothing was bought, sold or scribed. ===

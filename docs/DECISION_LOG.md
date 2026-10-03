@@ -944,3 +944,29 @@ doing anything. Checked in simulation: a deliberately wrong name stops at once a
 **Name to use:** `Spell: Resist Cold` is the likely exact string, from the vendor's `Spell:`
 naming convention seen in the live log. **Not verified**; if it differs, the spike will say
 what the list holds.
+
+### D-010 addendum 3 (2026-10-03): probe results (live, Vicar Thiran, Cleric 26-50)
+
+Appended; earlier text is unchanged. Evidence: the developer's live run of spike
+`0.1.0-spike.2` in probe mode; full log in
+`docs/evidence/2026-10-03_Benedict_spike-0.1.0-spike.2_probe_VicarThiran.log`. Nothing was
+bought or scribed. These are observations of one vendor at one moment.
+
+| Open question | Observed |
+|---|---|
+| Q1 name column | Column **2** of the list box holds the item name (matched `Merchant.SelectedItem.Name` on rows 1 and 84). Other columns hold small numbers (`--`, `19`, `0`, `8`, `6`, ` 35`); their meaning was not investigated. |
+| Row count | `ItemList.Items()` read **168** but only rows 1-167 are readable; row 168 returned nothing, and `listselect 168` left the previous selection in place. So the count was **one too high** here. |
+| Q6 speed | The whole visible list (168 rows) was read in **2 ms** with no selecting. For comparison the scan spends about 130 ms per row today. |
+| Q2 `Merchant.Item(n)` | **Not the visible list.** `Merchant.Items` read 183, then 182 about 6 s later (unexplained change). Every visible name is present in `Merchant.Item`, but it holds 15 more, among them two `Spell:` entries (`Jolting Blades`, `Foliage Shield`), and only 87 of 168 positions agree. It looks like the vendor's full, unfiltered stock. |
+| Q3 by-name lookup | `List('=name,2')` returned the right row each time (first scroll, a non-scroll, and a name that is the start of another). A lookup **without** `=` matches **substrings**: both `Spell: Blessing of Fa` (prefix) and `ll: Blessing of Faith` (inner fragment) returned row 1. `=` with a truncated name returned nothing. A name not on the list returns nothing. |
+| Q4 `Merchant.SelectItem` | Works **from Lua, by name, with no trailing call**: `Merchant.SelectItem('=Crysotherium')` changed `SelectedItem` to that item at 0 ms, the list's `SelectedIndex` read 86 (the sweep's row), and it prompted **one price tell**, the same as a `listselect` (control: one tell). |
+| Also seen | Vicar Thiran's list is **not alphabetical** (it differs from Vicar Ceraen's). 86 of the 167 readable rows are `Spell:` scrolls. `Spell: Resist Cold` is at row 9, so that is its exact name. |
+
+**Not yet answered:** Q5, how long a scribed spell's row lingers and whether a by-name
+lookup still finds the stale row (the watch run). That decides whether a list-then-buy
+design needs an "already bought" guard.
+
+**What this does and does not show:** it shows the visible usable list can be read in one
+millisecond-scale sweep, and any row can be selected by exact name. It does not show how a
+buy-from-the-list design behaves over a whole vendor; stale rows after a scribe are the
+unknown that matters. No requirement has changed; S-1 stands.

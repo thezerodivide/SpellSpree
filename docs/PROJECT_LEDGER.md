@@ -82,6 +82,15 @@ as the pre-logging baseline in four scenarios.
 - The Stop button works mid-vendor: `User pressed Stop` -> `Stopped by user` -> outcome line -> merchant closed.
 - Logging volume: about 1.7 KB per second of run (3,239 lines / 487 KB in 4m50s).
 
+*Confirmed from the vendor spike probe (`0.1.0-spike.2`, Vicar Thiran, 2026-10-03; log in `docs/evidence/2026-10-03_Benedict_spike-0.1.0-spike.2_probe_VicarThiran.log`; one vendor, one moment; details in D-010 addendum 3):*
+
+- The visible list's item-name column is column 2; the whole list (168 rows) reads in about 2 ms with no selecting.
+- `ItemList.Items()` was one higher than the number of readable rows (168 vs 167).
+- `Merchant.Item(n)` is the vendor's full unfiltered stock (182-183 entries vs 168 visible), in a different order. It is not the usable list.
+- `List('=name,2')` finds the exact row; without `=` it matches substrings. A missing name returns nothing.
+- `Merchant.SelectItem('=name')` works from Lua with no trailing call, selects immediately, and prompts one price tell like `listselect`.
+- Vicar Thiran's list is not alphabetical.
+
 *Not exercised in that run:* a purchase that stacks onto an existing copy (Open item 4), the Bazaar (Open item 3), a long multi-vendor spree, a failed scribe.
 
 *Claimed by the original author in code comments, not verified by us:*
@@ -100,7 +109,7 @@ as the pre-logging baseline in four scenarios.
 1. ~~Does the usable-only filter drop already-scribed spells on reopen?~~
    **Resolved, 2026-10-03 (developer, from direct in-game observation):** yes. This is
    the reason for making multiple passes on one vendor. See the confirmed facts.
-2. **Is `ItemList.Items()` reliable?** The build hard-stops if it reads nil. First
+2. **Is `ItemList.Items()` reliable?** *New evidence (spike probe):* at Vicar Thiran it read **one more than the number of readable rows** (168, rows 1-167). The build hard-stops if it reads nil. First
    live log: it never read nil, and its counts were consistent with what the scan
    then selected (pass 4 read all 83 rows with no unreadable selection). Two
    caveats: it can be **partial right after a reopen** (13 then 104; see item 11),
@@ -165,8 +174,8 @@ as the pre-logging baseline in four scenarios.
     and buy from that list, instead of line-by-line multiple passes. Not an agreed
     requirement; S-1 stands. Blocked on spike results. Spike built: `spikes/spellspree_spike.lua`
     `0.1.0-spike.2` (tag `spike/vendor-0.1.0-spike.2`), simulation-checked only; awaiting a
-    live run by the developer (probe, then `watch` with one hand-bought spell). Questions
-    are D-010 Open 1-6.
+    live run by the developer. **Probe done (Q1-Q4, Q6 answered, see confirmed facts);
+    watch (Q5, stale rows after a scribe) is next.**
 
 ## Out of scope
 
