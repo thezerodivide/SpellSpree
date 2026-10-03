@@ -17,6 +17,7 @@ M.GRACE = 20
 function M.run(scriptPath, opts, ...)
     assert(rawget(_G, 'SPELLSPREE_UNIT') == nil, 'SPELLSPREE_UNIT is set: the script would stop at the unit-test hook instead of running')
     local sim = mock.new(opts)
+    sim.summaries, sim.errorRuns = 0, 0
     local realDelay = sim.mq.delay
     sim.mq.delay = function(ms)
         -- decided before the delay so the frame drawn inside it already sees the run as finished
@@ -41,10 +42,13 @@ function M.run(scriptPath, opts, ...)
         if line:find('Skipped (', 1, true) then
             sim.summaries = (sim.summaries or 0) + 1
             -- a scenario that presses Run several times (opts.runs) ends after that many summaries
-            if sim.summaries >= (opts and opts.runs or 1) then sim.finished = true; sim.endedBy = sim.endedBy or 'summary' end
+            if sim.summaries + (sim.errorRuns or 0) >= (opts and opts.runs or 1) then sim.finished = true; sim.endedBy = sim.endedBy or 'summary' end
         end
-        -- a run that raises an error never prints the summary: the error line ends the run (D-028 tests)
-        if line:find('Unexpected error', 1, true) and not sim.finished then sim.finished = true; sim.endedBy = sim.endedBy or 'error-line' end
+        -- a run that raises an error never prints the summary: its error line counts as the run's end (D-028 tests)
+        if line:find('Unexpected error', 1, true) then
+            sim.errorRuns = (sim.errorRuns or 0) + 1
+            if (sim.summaries or 0) + sim.errorRuns >= (opts and opts.runs or 1) and not sim.finished then sim.finished = true; sim.endedBy = sim.endedBy or 'error-line' end
+        end
         if line:find('No vendors selected', 1, true) and not sim.noVendorsAt then sim.noVendorsAt = sim.delays end
     end
 

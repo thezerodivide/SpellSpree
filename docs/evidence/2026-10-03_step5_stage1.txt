@@ -1,0 +1,30 @@
+== test_units.lua stage 1 (U24-U34) ==
+=== baseline: spellspree.lua through the unit-test hook ===
+OK   U24 expected fail, got fail -- "n/a": got false, expected true
+OK   U25 expected fail, got fail -- plain: got x, expected multiclass_Benedict
+OK   U26 expected fail, got fail -- the path changed: got false, expected true
+OK   U27 expected fail, got fail -- one identity-change record: got 0, expected 1
+OK   U28 expected fail, got fail -- the character was read once during the sync (header and path use the snapshot): got 0, expected 1
+OK   U29 expected fail, got fail -- one OBS line for three unreadable syncs: got 0, expected 1
+OK   U30 expected fail, got fail -- the old-file transition write fails: logging is off: got false, expected true
+OK   U31 expected fail, got fail -- after the interval: the switch happens: got false, expected true
+OK   U32 expected fail, got fail -- one note for the observed identity: got 0, expected 1
+OK   U33 expected fail, got fail -- the record triggered the sync: got false, expected true
+OK   U34 expected fail, got fail -- one notice: got 2, expected 1
+
+stage 1: 0 mismatch(es) against the expected table
+
+== test_logswitch.lua stage 1 ==
+=== baseline: spellspree.lua against the simulated MQ ===
+OK   W1 expected fail, got fail -- no file was written for Other
+OK   W2 expected pass, got pass
+OK   W3 expected fail, got fail -- no file was written for Other
+OK   W4 expected fail, got fail -- run 1 start line: 2026-10-03 15:50:15 | +650ms | v1.6.0-test.4 | OBS   | run start: zone=poknowledge target=Vicar Ceraen merchantOpen=true stopOnOutOf
+OK   W5 expected fail, got fail -- expected one note in the original file, saw 0
+OK   W6 expected fail, got fail -- throttle 0: no transition record in the original file
+OK   W7 expected pass, got pass
+OK   W8 expected fail, got fail -- expected both files
+OK   W9 expected fail, got fail -- expected one failure notice, saw 0
+OK   W10 expected fail, got fail -- no file for Other
+
+stage 1: 0 mismatch(es) against the expected table

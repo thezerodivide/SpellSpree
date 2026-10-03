@@ -1,0 +1,30 @@
+== test_units.lua stage 0 (U24-U34) ==
+=== baseline: spellspree.lua through the unit-test hook ===
+OK   U24 expected fail, got fail -- the script did not expose logSyncIdentity as a function (got nil)
+OK   U25 expected fail, got fail -- the script did not expose logSyncIdentity as a function (got nil)
+OK   U26 expected fail, got fail -- the script did not expose logSyncIdentity as a function (got nil)
+OK   U27 expected fail, got fail -- the script did not expose logSyncIdentity as a function (got nil)
+OK   U28 expected fail, got fail -- the script did not expose logSyncIdentity as a function (got nil)
+OK   U29 expected fail, got fail -- the script did not expose logSyncIdentity as a function (got nil)
+OK   U30 expected fail, got fail -- the script did not expose logSyncIdentity as a function (got nil)
+OK   U31 expected fail, got fail -- the script did not expose logSyncIdentity as a function (got nil)
+OK   U32 expected fail, got fail -- the script did not expose logSyncIdentity as a function (got nil)
+OK   U33 expected fail, got fail -- the script did not expose logSyncIdentity as a function (got nil)
+OK   U34 expected fail, got fail -- the script did not expose logSyncIdentity as a function (got nil)
+
+stage 0: 0 mismatch(es) against the expected table
+
+== test_logswitch.lua stage 0 ==
+=== baseline: spellspree.lua against the simulated MQ ===
+OK   W1 expected fail, got fail -- no file was written for Other
+OK   W2 expected pass, got pass
+OK   W3 expected fail, got fail -- no file was written for Other
+OK   W4 expected fail, got fail -- run 1 start line: 2026-10-03 15:50:06 | +650ms | v1.6.0-test.4 | OBS   | run start: zone=poknowledge target=Vicar Ceraen merchantOpen=true stopOnOutOf
+OK   W5 expected fail, got fail -- expected one note in the original file, saw 0
+OK   W6 expected fail, got fail -- throttle 0: no transition record in the original file
+OK   W7 expected pass, got pass
+OK   W8 expected fail, got fail -- expected both files
+OK   W9 expected fail, got fail -- expected one failure notice, saw 0
+OK   W10 expected fail, got fail -- no file for Other
+
+stage 0: 0 mismatch(es) against the expected table

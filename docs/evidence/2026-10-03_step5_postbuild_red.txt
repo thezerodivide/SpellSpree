@@ -1,0 +1,13 @@
+== post-build tests (W11-W14, U35) against the script as it was before Step 5 ==
+FAIL   W11 [REQ, NEW] D-028 A' (forced sync at the press): a character change within 2,000 ms after the last sync, then a Run press: the press line is in the new file (the throttle alone would have left it in the old one) -- no file for Other
+FAIL   W12 [REQ, NEW] D-028 C: a character name that reads NULL keeps the current file (no file for NULL), writes one OBS line, and both runs stay in the one file with no transition or header -- expected one OBS line, saw 0
+FAIL   W13 [REQ, NEW] D-028 A' (Revision 3 section 2): two raw names that sanitize to one file ("A_b" then "A b"): one file, one identity-change record and one continued session header in it, no new-file notice -- expected one identity-change record, saw 0
+FAIL   W14 [REQ, NEW] D-028 E'' (the error write is protected): a failure while writing a failed run's error line neither stops the script nor leaves the hold set: the next run after a character change is written to the new file -- the script stopped: ...\AppD
+FAIL   U35 [REQ] D-028 A' (the recursion guard): with the throttle shut off, so that nothing but LOG.syncing stops a nested sync, a switch still writes the transition line, the header and the notice exactly once each. Added after the mutation runs showed the t
+
+== the same tests against the final script ==
+PASS   W11 [REQ, NEW] D-028 A' (forced sync at the press): a character change within 2,000 ms after the last sync, then 
+PASS   W12 [REQ, NEW] D-028 C: a character name that reads NULL keeps the current file (no file for NULL), writes one OB
+PASS   W13 [REQ, NEW] D-028 A' (Revision 3 section 2): two raw names that sanitize to one file ("A_b" then "A b"): one f
+PASS   W14 [REQ, NEW] D-028 E'' (the error write is protected): a failure while writing a failed run's error line neithe
+PASS   U35 [REQ] D-028 A' (the recursion guard): with the throttle shut off, so that nothing but LOG.syncing stops a nes

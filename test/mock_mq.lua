@@ -482,7 +482,7 @@ function M.new(opts)
         if opts.presses and sim.clickPrefix and label:sub(1, #sim.clickPrefix) == sim.clickPrefix then
             sim.pressCount = sim.pressCount or 0
             local notBefore = opts.pressNotBeforeMs and opts.pressNotBeforeMs[sim.pressCount + 1] or 0
-            if sim.pressCount < opts.presses and (sim.summaries or 0) >= sim.pressCount and sim.clockMs >= notBefore then
+            if sim.pressCount < opts.presses and (sim.summaries or 0) + (sim.errorRuns or 0) >= sim.pressCount and sim.clockMs >= notBefore then
                 sim.pressCount = sim.pressCount + 1
                 return true
             end

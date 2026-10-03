@@ -13,7 +13,7 @@
 package.path = 'test/?.lua;' .. package.path
 local U = require('unit')
 
-local SCRIPT = 'spellspree.lua'
+local SCRIPT = os.getenv('SPELLSPREE_SCRIPT') or 'spellspree.lua'   -- the stage-0 red runs use the script as it was before the change under test
 local TMP = (os.getenv('TEMP') or '.') .. '\\spellspree_sim\\units'
 local function readAll(path) local f = assert(io.open(path, 'rb')); local s = f:read('*a'); f:close(); return s end
 local function writeAll(path, s) local f = assert(io.open(path, 'wb')); f:write(s); f:close() end
@@ -69,6 +69,67 @@ local OUT = { SCRIBED = 'bought and scribed', SKIPPED = 'deliberately skipped', 
     NONE = 'NO OUTCOME RECORDED' }
 
 local EXTRA3 = { { 'parseTierRange', 'function' }, { 'validateRange', 'function' }, { 'classifyLevel', 'function' } }
+local EXTRA5 = { { 'logSyncIdentity', 'function' }, { 'logWriteFile', 'function' }, { 'logLine', 'function' }, { 'logObs', 'function' }, { 'logFail', 'function' },
+    { 'logUnavailable', 'function' }, { 'logIdentityKeyFor', 'function' } }
+
+-- ---- helpers for the identity tests (D-028): a controllable MacroQuest (clock, TLO tree) and real files in a temp directory
+local SYNC_TMP = TMP .. '\\sync'
+local function mkdirPath(p) os.execute('mkdir "' .. p .. '" >nul 2>nul') end
+local function nilNode()
+    return setmetatable({}, { __call = function() return nil end, __index = function() return nilNode() end })
+end
+local function newSyncEnv(tag)
+    local dir = SYNC_TMP .. '\\' .. tag
+    os.execute('if exist "' .. dir .. '" rmdir /s /q "' .. dir .. '"')
+    mkdirPath(SYNC_TMP); mkdirPath(dir)
+    local env = { clock = 1000, server = 'SimServer', char = 'Simtest', dir = dir, logs = dir, root = dir, reads = { server = 0, char = 0 } }
+    local TLO = setmetatable({
+        EverQuest = { Server = function()
+            env.reads.server = env.reads.server + 1
+            if env.readFn then return env.readFn('server', env.reads.server) end
+            return env.server
+        end },
+        Me = setmetatable({ CleanName = function()
+            env.reads.char = env.reads.char + 1
+            if env.readFn then return env.readFn('char', env.reads.char) end
+            return env.char
+        end }, { __index = function() return nilNode() end }),
+        MacroQuest = { Path = function(n) return function() if n == 'logs' then return env.logs end return env.root end end },
+    }, { __index = function() return nilNode() end })
+    env.mq = { gettime = function() return env.clock end, TLO = TLO }
+    return env
+end
+local function readLinesOf(path)
+    local f = io.open(path, 'rb')
+    if not f then return {} end
+    local lines = {}
+    for l in f:lines() do lines[#lines + 1] = (l:gsub('\r$', '')) end
+    f:close()
+    return lines
+end
+local function countContaining(lines, plain)
+    local n = 0
+    for _, l in ipairs(lines) do if l:find(plain, 1, true) then n = n + 1 end end
+    return n
+end
+local function countTexts(log, plain)
+    local n = 0
+    for _, e in ipairs(log) do if tostring(e.text):find(plain, 1, true) then n = n + 1 end end
+    return n
+end
+local function listDir(d) return d end
+local function sizeOfAll(dir)
+    local total = 0
+    local p = io.popen('dir /b /a-d "' .. dir .. '" 2>nul')
+    if p then
+        for name in p:lines() do
+            local f = io.open(dir .. '\\' .. name, 'rb')
+            if f then total = total + f:seek('end'); f:close() end
+        end
+        p:close()
+    end
+    return total
+end
 
 local TESTS = {
     { id = 'U1', kind = 'CHAR', src = 'formatCoin splits copper into pp/gp/sp/cp, omits zero parts, adds thousands commas, and shows 0cp for zero',
@@ -216,10 +277,9 @@ local TESTS = {
           if #problems > 0 then error(table.concat(problems, '; '), 0) end
       end },
 
-    -- ---- Step 3 (D-025). `kind` is REQ/CHAR; `new` marks behavior that does not exist before Step 3; `st[n]` is the result expected at
-    -- red-run stage n (D-025 F''), written before the stage was run: 0 = no new exports, 1 = wrong stubs (parseTierRange returns nil,
+    -- ---- Step 3 (D-025; its red-run stage tables were `st[n]` and are retired now that Step 3 is built). `kind` is REQ/CHAR; `new` marks behavior that did not exist before Step 3; at red-run stage n (D-025 F''), written before the stage was run: 0 = no new exports, 1 = wrong stubs (parseTierRange returns nil,
     -- classifyLevel returns "in", validateRange accepts everything), 2 and 3 = correct functions.
-    { id = 'U17', kind = 'REQ', new = true, extra = EXTRA3, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+    { id = 'U17', kind = 'REQ', new = true, extra = EXTRA3,
       src = 'D-025 A\': the four real tier labels parse to their inclusive ranges, and a label whose endpoints are equal is a valid range',
       fn = function(u)
           local function chk(label, lo, hi)
@@ -230,7 +290,7 @@ local TESTS = {
           chk('25-25', 25, 25); chk('1-70', 1, 70)
       end },
 
-    { id = 'U18', kind = 'REQ', new = true, extra = EXTRA3, st = { [0] = 'fail', [1] = 'pass', [2] = 'pass', [3] = 'pass' },
+    { id = 'U18', kind = 'REQ', new = true, extra = EXTRA3,
       src = 'D-025 A\' (Revision 3): a label that does not parse, or parses outside 1-70, or has reversed endpoints, gives nil and a reason',
       fn = function(u)
           for _, bad in ipairs({ 'abc', '61-', '-70', '', '1-80', '0-25', '26-71', '25-1', '1-25x', ' 1-25', '1 -25', '1.5-25', '1-2-3' }) do
@@ -242,7 +302,7 @@ local TESTS = {
           eq((u.parseTierRange(25)), nil, 'a number is not a label')
       end },
 
-    { id = 'U19', kind = 'REQ', new = true, extra = EXTRA3, st = { [0] = 'fail', [1] = 'pass', [2] = 'pass', [3] = 'pass' },
+    { id = 'U19', kind = 'REQ', new = true, extra = EXTRA3,
       src = 'D-025 A\' (Revision 3): validateRange accepts a table whose low and high are whole numbers with 1 <= low <= high <= 70',
       fn = function(u)
           for _, r in ipairs({ { low = 1, high = 25 }, { low = 61, high = 70 }, { low = 25, high = 25 }, { low = 1, high = 70 } }) do
@@ -250,7 +310,7 @@ local TESTS = {
           end
       end },
 
-    { id = 'U20', kind = 'REQ', new = true, extra = EXTRA3, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+    { id = 'U20', kind = 'REQ', new = true, extra = EXTRA3,
       src = 'D-025 A\' (Revision 3): validateRange refuses reversed endpoints, an endpoint outside 1-70, non-integers, text, missing fields and non-tables, with a reason',
       fn = function(u)
           local bad = { { low = 25, high = 1 }, { low = 0, high = 25 }, { low = 1, high = 71 }, { low = 1, high = 80 }, { low = -5, high = 10 },
@@ -263,7 +323,7 @@ local TESTS = {
           eq((u.validateRange(nil)), false, 'nil')
       end },
 
-    { id = 'U21', kind = 'REQ', new = true, extra = EXTRA3, st = { [0] = 'fail', [1] = 'pass', [2] = 'pass', [3] = 'pass' },
+    { id = 'U21', kind = 'REQ', new = true, extra = EXTRA3,
       src = 'D-025 B / R21: levels inside the range, inclusive of both endpoints, are "in" (padded text counts: " 25 " and a tab)',
       fn = function(u)
           for _, c in ipairs({ { '1', 1, 25 }, { '25', 1, 25 }, { '26', 26, 50 }, { '50', 26, 50 }, { '51', 51, 60 }, { '60', 51, 60 },
@@ -272,7 +332,7 @@ local TESTS = {
           end
       end },
 
-    { id = 'U22', kind = 'REQ', new = true, extra = EXTRA3, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+    { id = 'U22', kind = 'REQ', new = true, extra = EXTRA3,
       src = 'D-025 B / R21 / R34: levels just outside a range, above 70, below 1, zero and negative are "outside", with the reason naming the range and the level',
       fn = function(u)
           for _, c in ipairs({ { '0', 1, 25 }, { '26', 1, 25 }, { '25', 26, 50 }, { '51', 26, 50 }, { '50', 51, 60 }, { '61', 51, 60 },
@@ -284,7 +344,7 @@ local TESTS = {
           eq(why, 'outside the selected level range 1-25 (Lvl 63)', 'reason text')
       end },
 
-    { id = 'U23', kind = 'REQ', new = true, extra = EXTRA3, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+    { id = 'U23', kind = 'REQ', new = true, extra = EXTRA3,
       src = 'D-025 B / D-014 item I: text that is not a whole number (blank, --, words, decimals, trailing characters, embedded spaces, nil) is "unreadable", with the trimmed text in the reason',
       fn = function(u)
           for _, t in ipairs({ '', '   ', '--', 'abc', '25x', '2 5', '25.5', '1e1', '+5' }) do
@@ -298,6 +358,266 @@ local TESTS = {
           eq(why, 'level unreadable ("")', 'reason for blank')
           _, why = u.classifyLevel(nil, 1, 25)
           eq(why, 'level unreadable (no value)', 'reason for a missing cell')
+      end },
+
+    -- ---- Step 5 (D-028): the log follows the character. `st[n]` is the expected result at red-run stage n, written before the stage
+    -- was run: 0 = unchanged script (nothing exported); 1 = the new functions exposed as wrong stubs, nothing wired (logSyncIdentity does
+    -- nothing, logUnavailable says false, logIdentityKeyFor says 'x'); 2 = the functions correct but nothing calls them from
+    -- logWriteFile or the run paths (logFail already idempotent); 3 = the full build. `own` = the test builds its own stubs and calls
+    -- withUnit itself.
+    { id = 'U24', kind = 'REQ', new = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-028 C / Revision 2 section 2: an identity value is unavailable when it is nil, "n/a", "NULL" or empty after trimming; ordinary names are available',
+      fn = function(u)
+          for _, v in ipairs({ 'n/a', 'NULL', '', '   ', '\t' }) do eq(u.logUnavailable(v), true, string.format('%q', v)) end
+          eq(u.logUnavailable(nil), true, 'nil')
+          for _, v in ipairs({ 'Benedict', 'multiclass', 'A b', 'null', 'na' }) do eq(u.logUnavailable(v), false, string.format('%q', v)) end
+      end },
+
+    { id = 'U25', kind = 'REQ', new = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-028 A\' (Revision 3 section 2) / Revision 2 section 2: the destination key is the sanitized server and character, as the file name uses them; names that sanitize alike share a key, different names do not',
+      fn = function(u)
+          eq(u.logIdentityKeyFor('multiclass', 'Benedict'), 'multiclass_Benedict', 'plain')
+          eq(u.logIdentityKeyFor('multiclass', 'A b'), u.logIdentityKeyFor('multiclass', 'A_b'), 'a space and an underscore share a key')
+          eq(u.logIdentityKeyFor('multiclass', 'A.b'), 'multiclass_A_b', 'a dot becomes an underscore')
+          eq(u.logIdentityKeyFor('multiclass', 'Benedict') ~= u.logIdentityKeyFor('multiclass', 'Ididnotbuffher'), true, 'different characters')
+          eq(u.logIdentityKeyFor('serverA', 'Benedict') ~= u.logIdentityKeyFor('serverB', 'Benedict'), true, 'different servers')
+      end },
+
+    { id = 'U26', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-028 B / B\': a forced sync after the character changed writes the transition line to the old file, then a session header marked "continued session" and a "Logging to a new file" notice to the new file; the counter is reset; nothing from before is moved',
+      fn = function()
+          local env = newSyncEnv('u26')
+          U.withUnit(SCRIPT, function(u)
+              u.logLine('first record', nil); u.logLine('second record', nil)
+              local oldPath = u.LOG.path
+              local writesBefore = u.LOG.writes
+              env.char = 'Other'; env.clock = env.clock + 10
+              u.logSyncIdentity(true)
+              local oldLines, newLines = readLinesOf(oldPath), readLinesOf(u.LOG.path)
+              eq(u.LOG.path ~= oldPath, true, 'the path changed')
+              eq(u.LOG.path:find('spellspree_SimServer_Other.log', 1, true) ~= nil, true, 'the new file is named for Other')
+              local last = oldLines[#oldLines]
+              eq(last:find('identity changed: SimServer/Simtest -> SimServer/Other; continuing in ' .. u.LOG.path:gsub('%-', '%%-'), 1) ~= nil or last:find('identity changed: SimServer/Simtest -> SimServer/Other', 1, true) ~= nil, true, 'the old file ends with the transition line: ' .. tostring(last))
+              eq(countContaining(oldLines, 'continued session'), 0, 'no header in the old file')
+              eq(countContaining(newLines, 'continued session'), 1, 'one continued session header in the new file')
+              eq(newLines[1]:find('continued session', 1, true) ~= nil, true, 'the new file starts with the header: ' .. tostring(newLines[1]))
+              local envLines = 0
+              for _, l in ipairs(newLines) do if l:find('environment at switch:', 1, true) and l:find('character=Other', 1, true) then envLines = envLines + 1 end end
+              eq(envLines, 1, 'the header has one environment line naming the new character')
+              eq(newLines[#newLines]:find('Logging to a new file for Other: ', 1, true) ~= nil, true, 'the notice is the last line: ' .. tostring(newLines[#newLines]))
+              eq(countContaining(newLines, 'first record'), 0, 'earlier records are not copied')
+              eq(u.LOG.writes < writesBefore + 3 + #newLines, true, 'the counter was reset (now ' .. u.LOG.writes .. ', lines in the new file ' .. #newLines .. ')')
+              eq(u.LOG.writes, #newLines, 'writes since the reset equal the new file\'s lines')
+          end, EXTRA5, { mq = env.mq })
+      end },
+
+    { id = 'U27', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-028 A\' / I\'\': a raw identity that differs but sanitizes to the same file writes the identity-change record and a continued session header to the SAME file, with no file switch, no notice, and the counter not reset (the new lines increment it normally)',
+      fn = function()
+          local env = newSyncEnv('u27'); env.char = 'A_b'
+          U.withUnit(SCRIPT, function(u)
+              u.logLine('before', nil)
+              local path, writesBefore = u.LOG.path, u.LOG.writes
+              local linesBefore = #readLinesOf(path)
+              env.char = 'A b'; env.clock = env.clock + 10
+              u.logSyncIdentity(true)
+              eq(u.LOG.path, path, 'same file')
+              local lines = readLinesOf(path)
+              eq(countContaining(lines, 'identity changed: SimServer/A_b -> SimServer/A b'), 1, 'one identity-change record')
+              eq(countContaining(lines, 'continued session'), 1, 'one continued session header')
+              eq(countContaining(lines, 'Logging to a new file'), 0, 'no new-file notice')
+              eq(u.LOG.writes, writesBefore + (#lines - linesBefore), 'the counter grew by exactly the lines written')
+              eq(u.LOG.identity.char, 'A b', 'the new raw identity is stored')
+          end, EXTRA5, { mq = env.mq })
+      end },
+
+    { id = 'U28', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-028 B\' / A\': one sync reads the server and the character once each and uses that one snapshot for the transition text, the file name, the stored identity and the header; the sync does not start a nested sync from its own writes',
+      fn = function()
+          local env = newSyncEnv('u28')
+          -- the first read after the switch time returns Other, every later read returns Third: a second read would show
+          env.readFn = function(kind, n)
+              if kind == 'server' then return 'SimServer' end
+              if not env.switched then return 'Simtest' end
+              env.afterSwitchReads = (env.afterSwitchReads or 0) + 1
+              return env.afterSwitchReads == 1 and 'Other' or 'Third'
+          end
+          U.withUnit(SCRIPT, function(u)
+              u.logLine('before', nil)
+              local oldPath = u.LOG.path
+              env.switched = true; env.clock = env.clock + 10
+              local charBefore = env.reads.char
+              u.logSyncIdentity(true)
+              eq(env.reads.char - charBefore, 1, 'the character was read once during the sync (header and path use the snapshot)')
+              eq(u.LOG.path:find('_Other.log', 1, true) ~= nil, true, 'the file is named from the snapshot: ' .. tostring(u.LOG.path))
+              local newLines = readLinesOf(u.LOG.path)
+              local envLines = 0
+              for _, l in ipairs(newLines) do if l:find('environment at switch:', 1, true) and l:find('character=Other', 1, true) then envLines = envLines + 1 end end
+              eq(envLines, 1, 'the header environment line shows the snapshot')
+              eq(countContaining(newLines, 'log path resolution:') == 1 and countContaining(newLines, 'server=SimServer, character=Other') == 1, true, 'the resolution line uses the snapshot too')
+              eq(countContaining(newLines, 'Third'), 0, 'no later read leaked into the new file')
+              local oldLines = readLinesOf(oldPath)
+              eq(countContaining(oldLines, 'identity changed: SimServer/Simtest -> SimServer/Other'), 1, 'one transition line, from the snapshot')
+              eq(u.LOG.identity.char, 'Other', 'stored identity is the snapshot')
+          end, EXTRA5, { mq = env.mq })
+      end },
+
+    { id = 'U29', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-028 C: an unavailable identity keeps the current file and writes one OBS line (not one per sync); once it is readable and differs, the file switches',
+      fn = function()
+          local env = newSyncEnv('u29')
+          U.withUnit(SCRIPT, function(u)
+              u.logLine('before', nil)
+              local path = u.LOG.path
+              env.char = 'NULL'
+              for i = 1, 3 do env.clock = env.clock + 3000; u.logSyncIdentity(false) end
+              eq(u.LOG.path, path, 'the file is kept')
+              eq(countContaining(readLinesOf(path), 'identity unreadable'), 1, 'one OBS line for three unreadable syncs')
+              eq(u.LOG.disabled, false, 'logging stays on')
+              env.char = 'Other'; env.clock = env.clock + 3000
+              u.logSyncIdentity(false)
+              eq(u.LOG.path ~= path, true, 'switched once readable')
+          end, EXTRA5, { mq = env.mq })
+      end },
+
+    { id = 'U30', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-028 E / I\'\': a failed transition write, an unresolvable new destination, a failed header write and an unexpected exception each leave logging disabled, both guards cleared, exactly one failure notice and no success notice; a later sync writes nothing',
+      fn = function()
+          local cases = {
+              { name = 'the old-file transition write fails', prep = function(env, u) os.remove(u.LOG.path); mkdirPath(u.LOG.path) end },
+              { name = 'the new destination cannot be resolved', prep = function(env, u) env.logs = env.dir .. '\\bad"dir' end },
+              { name = 'the header write fails', prep = function(env, u) mkdirPath(env.dir .. '\\spellspree\\spellspree_SimServer_Other.log') end },
+              { name = 'an unexpected exception inside the sync', prep = function(env, u) u.LOG.identity = 5 end },
+          }
+          for i, c in ipairs(cases) do
+              local env = newSyncEnv('u30_' .. i)
+              U.withUnit(SCRIPT, function(u)
+                  u.logLine('before', nil)
+                  c.prep(env, u)
+                  env.char = 'Other'; env.clock = env.clock + 3000
+                  u.logSyncIdentity(true)
+                  local label = c.name .. ': '
+                  eq(u.LOG.disabled, true, label .. 'logging is off')
+                  eq(u.LOG.syncing, false, label .. 'LOG.syncing cleared')
+                  eq(u.LOG.hold or false, false, label .. 'LOG.hold cleared')
+                  eq(countTexts(u.S.log, 'File logging is OFF'), 1, label .. 'exactly one failure notice')
+                  eq(countTexts(u.S.log, 'Logging to a new file'), 0, label .. 'no success notice')
+                  local files = listDir(env.dir .. '\\spellspree')
+                  local sizeBefore = sizeOfAll(env.dir .. '\\spellspree')
+                  env.clock = env.clock + 3000
+                  u.logSyncIdentity(true); u.logLine('after', nil)
+                  eq(sizeOfAll(env.dir .. '\\spellspree'), sizeBefore, label .. 'a later sync and record write nothing to any file')
+                  eq(u.LOG.disabled, true, label .. 'logging stays off')
+              end, EXTRA5, { mq = env.mq })
+          end
+      end },
+
+    { id = 'U31', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-028 A\' (Revision 2 section 4): an unforced sync acts at most once every 2,000 ms of mq.gettime(); a forced sync ignores the interval',
+      fn = function()
+          local env = newSyncEnv('u31')
+          U.withUnit(SCRIPT, function(u)
+              u.logLine('before', nil)
+              local path = u.LOG.path
+              env.clock = env.clock + 3000; u.logSyncIdentity(false)       -- takes the reading, no change
+              env.char = 'Other'
+              env.clock = env.clock + 1500; u.logSyncIdentity(false)
+              eq(u.LOG.path, path, 'within 2,000 ms of the last sync: no action')
+              env.clock = env.clock + 600; u.logSyncIdentity(false)
+              eq(u.LOG.path ~= path, true, 'after the interval: the switch happens')
+              local second = u.LOG.path
+              env.char = 'Third'; env.clock = env.clock + 10; u.logSyncIdentity(false)
+              eq(u.LOG.path, second, 'inside the interval again: no action')
+              u.logSyncIdentity(true)
+              eq(u.LOG.path ~= second, true, 'a forced sync ignores the interval')
+          end, EXTRA5, { mq = env.mq })
+      end },
+
+    { id = 'U32', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-028 E\'\': while a run holds the file, detection continues but routing stays pinned: one note per distinct observed identity (observed, original, "records stay"); once the hold is cleared a forced sync switches',
+      fn = function()
+          local env = newSyncEnv('u32')
+          U.withUnit(SCRIPT, function(u)
+              u.logLine('run record', nil)
+              local path = u.LOG.path
+              u.LOG.hold = true
+              env.char = 'Other'
+              env.clock = env.clock + 3000; u.logSyncIdentity(false)
+              env.clock = env.clock + 3000; u.logSyncIdentity(false)       -- same observed identity again: no second note
+              eq(u.LOG.path, path, 'routing stays pinned during the hold')
+              local lines = readLinesOf(path)
+              eq(countContaining(lines, 'identity differs during a run'), 1, 'one note for the observed identity')
+              local note = nil
+              for _, l in ipairs(lines) do if l:find('identity differs during a run', 1, true) then note = l end end
+              eq(note:find('SimServer/Other', 1, true) ~= nil and note:find('SimServer/Simtest', 1, true) ~= nil and note:find('records stay', 1, true) ~= nil, true, 'the note names both identities and says records stay: ' .. tostring(note))
+              env.char = 'Third'
+              env.clock = env.clock + 3000; u.logSyncIdentity(false)
+              eq(countContaining(readLinesOf(path), 'identity differs during a run'), 2, 'a different observed identity gets its own note')
+              u.LOG.hold = false
+              u.logSyncIdentity(true)
+              eq(u.LOG.path ~= path, true, 'after the hold: the forced sync switches')
+              eq(u.LOG.path:find('_Third.log', 1, true) ~= nil, true, 'to the identity in force')
+          end, EXTRA5, { mq = env.mq })
+      end },
+
+    { id = 'U33', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'fail', [3] = 'pass' },
+      src = 'D-028 A\' (Revision 2 section 4): every record passes logWriteFile, which runs the throttled sync first, so a record written after the interval goes to the new file and the transition record to the old one',
+      fn = function()
+          local env = newSyncEnv('u33')
+          U.withUnit(SCRIPT, function(u)
+              u.logLine('before', nil)
+              local oldPath = u.LOG.path
+              env.char = 'Other'; env.clock = env.clock + 3000
+              u.logLine('after the switch', nil)
+              eq(u.LOG.path ~= oldPath, true, 'the record triggered the sync')
+              eq(countContaining(readLinesOf(u.LOG.path), 'after the switch'), 1, 'the record is in the new file')
+              eq(countContaining(readLinesOf(oldPath), 'after the switch'), 0, 'and not in the old')
+              eq(countContaining(readLinesOf(oldPath), 'identity changed'), 1, 'the transition record is in the old')
+          end, EXTRA5, { mq = env.mq })
+      end },
+
+    { id = 'U35', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [3] = 'pass' },
+      src = "D-028 A' (the recursion guard): with the throttle shut off, so that nothing but LOG.syncing stops a nested sync, a switch still writes the transition line, the header and the notice exactly once each. Added after the mutation runs showed the throttle hides the guard in the other tests",
+      fn = function()
+          local copy = TMP .. '\\throttle0.lua'
+          local text = readAll(SCRIPT):gsub('\r\n', '\n')   -- the script under test (a mutant when a mutation is being checked)
+          local at = text:find('LOG_SYNC_EVERY_MS = 2000', 1, true)
+          if at then
+              local f = assert(io.open(copy, 'wb')); f:write(text:sub(1, at - 1) .. 'LOG_SYNC_EVERY_MS = 0' .. text:sub(at + #'LOG_SYNC_EVERY_MS = 2000')); f:close()
+          else
+              copy = SCRIPT -- before the build there is no interval to change; the missing exports fail the test
+          end
+          local env = newSyncEnv('u35')
+          local real = SCRIPT
+          SCRIPT = copy
+          local ok, err = pcall(function()
+              U.withUnit(copy, function(u)
+                  u.logLine('before', nil)
+                  local oldPath = u.LOG.path
+                  env.char = 'Other'; env.clock = env.clock + 10
+                  local before = env.reads.char
+                  u.logSyncIdentity(true)
+                  eq(env.reads.char - before, 1, 'one read of the character in the whole sync')
+                  eq(countContaining(readLinesOf(oldPath), 'identity changed'), 1, 'one transition line')
+                  local newLines = readLinesOf(u.LOG.path)
+                  eq(countContaining(newLines, 'continued session'), 1, 'one header')
+                  eq(countContaining(newLines, 'Logging to a new file'), 1, 'one notice')
+                  eq(u.LOG.syncing, false, 'the guard is released')
+              end, EXTRA5, { mq = env.mq })
+          end)
+          SCRIPT = real
+          if not ok then error(err, 0) end
+      end },
+
+    { id = 'U34', kind = 'REQ', new = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-028 B\' (Revision 3 section 3): logFail is idempotent: the first call turns file logging off and writes one window notice; a second call writes nothing',
+      fn = function(u)
+          u.S.log = {}
+          u.logFail('first reason')
+          u.logFail('second reason')
+          eq(u.LOG.disabled, true, 'disabled')
+          eq(countTexts(u.S.log, 'File logging is OFF'), 1, 'one notice')
+          eq(countTexts(u.S.log, 'second reason'), 0, 'the second reason is not reported')
       end },
 
     { id = 'U16', kind = 'REQ', src = 'D-026 C\'\': a failing test body also leaves the process as found',
@@ -316,7 +636,7 @@ local function evaluate(script)
     local res = {}
     for _, t in ipairs(TESTS) do
         local ok, err = pcall(function()
-            if t.id == 'U13' or t.id == 'U14' or t.id == 'U15' or t.id == 'U16' then
+            if t.id == 'U13' or t.id == 'U14' or t.id == 'U15' or t.id == 'U16' or t.own then
                 -- these call U.withUnit(SCRIPT, ...) themselves; point them at the script under test
                 local real = SCRIPT
                 SCRIPT = script
@@ -359,6 +679,46 @@ local MUTATIONS = {
       from = "    if low > high then return false, 'low is above high' end\n", to = "" },
     { name = 'off by one in the label parse (low + 1)', fails = { 'U17', 'U18' },
       from = "local range = { low = tonumber(a), high = tonumber(b) }", to = "local range = { low = tonumber(a) + 1, high = tonumber(b) }" },
+    -- Step 5 (D-028): sets written before the first run
+    { name = "logSyncIdentity never syncs", fails = { 'U26', 'U27', 'U28', 'U29', 'U30', 'U31', 'U32', 'U33', 'U35' },
+      from = "    if LOG.syncing or LOG.disabled or not LOG.path then return end\n    local now = logClockMs()",
+      to = "    do return end\n    local now = logClockMs()" },
+    { name = "LOG.path is not cleared on a switch", fails = { 'U26', 'U28', 'U29', 'U30', 'U31', 'U32', 'U33' },
+      from = "            LOG.path, LOG.identityKey, LOG.writes = nil, nil, 0",
+      to = "            LOG.identityKey, LOG.writes = nil, 0" },
+    { name = "LOG.writes is not reset on a switch", fails = { 'U26' },
+      from = "            LOG.path, LOG.identityKey, LOG.writes = nil, nil, 0",
+      to = "            LOG.path, LOG.identityKey = nil, nil" },
+    { name = "the identity-changed line is not written", fails = { 'U26', 'U27', 'U28', 'U30', 'U33', 'U35' },
+      from = "        logObs(string.format('identity changed: %s/%s -> %s/%s; %s',",
+      to = "        local _ = (string.format('identity changed: %s/%s -> %s/%s; %s'," },
+    { name = "an unreadable identity is not recognised (the script switches on it)", fails = { 'U29' },
+      from = "        if logUnavailable(server) or logUnavailable(char) then",
+      to = "        if false then" },
+    { name = "the new file header is not marked as a continued session", fails = { 'U26', 'U27', 'U35' },
+      from = "'session start (continued session): build=v%s source=%s load offset=+%dms'",
+      to = "'session start: build=v%s source=%s load offset=+%dms'" },
+    { name = "there is no recursion guard", fails = { 'U35' },
+      from = "    if LOG.syncing or LOG.disabled or not LOG.path then return end",
+      to = "    if LOG.disabled or not LOG.path then return end" },
+    { name = "the destination is decided on the raw identity only (the same file is treated as a switch)", fails = { 'U27' },
+      from = "        local sameFile = (key == LOG.identityKey)",
+      to = "        local sameFile = false" },
+    { name = "the path resolution reads the identity again instead of using the snapshot", fails = { 'U28', 'U35' },
+      from = "    local snap = LOG.pendingIdentity\n",
+      to = "    local snap = nil\n" },
+    { name = "the success notice is written even after a failure", fails = { 'U30' },
+      from = "        if not LOG.disabled and not sameFile then\n            logLine(string.format('Logging to a new file",
+      to = "        if not sameFile then\n            logLine(string.format('Logging to a new file" },
+    { name = "logFail is not idempotent", fails = { 'U34' },
+      from = "    if LOG.disabled then return end -- D-028 B': one failure notice, however many failures follow\n",
+      to = "" },
+    { name = "detection is suppressed while a run holds the file", fails = { 'U32' },
+      from = "        if LOG.hold then\n            local id = server",
+      to = "        if LOG.hold then\n            do return end\n            local id = server" },
+    { name = "logWriteFile no longer runs the throttled sync", fails = { 'U33' },
+      from = "    -- D-028 A': the character may have changed since the last record; the sync is throttled and guarded against re-entry\n    logSyncIdentity(false)\n    if LOG.disabled then return end\n",
+      to = "" },
     { name = 'markRemainingNotAttempted no longer skips entries that already have an outcome', fails = { 'U10' },
       from = 'if not entries[i].outcome then setOutcome(entries[i], OUTCOME.NOT_ATTEMPTED, reason) end', to = 'setOutcome(entries[i], OUTCOME.NOT_ATTEMPTED, reason)' },
 }

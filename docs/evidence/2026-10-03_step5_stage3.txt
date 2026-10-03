@@ -1,0 +1,30 @@
+== test_units.lua stage 3 (U24-U34) ==
+=== baseline: spellspree.lua through the unit-test hook ===
+OK   U24 expected pass, got pass
+OK   U25 expected pass, got pass
+OK   U26 expected pass, got pass
+OK   U27 expected pass, got pass
+OK   U28 expected pass, got pass
+OK   U29 expected pass, got pass
+OK   U30 expected pass, got pass
+OK   U31 expected pass, got pass
+OK   U32 expected pass, got pass
+OK   U33 expected pass, got pass
+OK   U34 expected pass, got pass
+
+stage 3: 0 mismatch(es) against the expected table
+
+== test_logswitch.lua stage 3 ==
+=== baseline: spellspree.lua against the simulated MQ ===
+OK   W1 expected pass, got pass
+OK   W2 expected pass, got pass
+OK   W3 expected pass, got pass
+OK   W4 expected pass, got pass
+OK   W5 expected pass, got pass
+OK   W6 expected pass, got pass
+OK   W7 expected pass, got pass
+OK   W8 expected pass, got pass
+OK   W9 expected pass, got pass
+OK   W10 expected pass, got pass
+
+stage 3: 0 mismatch(es) against the expected table

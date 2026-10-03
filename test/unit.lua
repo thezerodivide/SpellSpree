@@ -46,8 +46,12 @@ local function restore(s)
     for _, m in ipairs(MODULES) do package.loaded[m] = s.loaded[m]; package.preload[m] = s.preload[m] end
 end
 
-local function install(unit)
-    local mq = strict('mq', { gettime = function() return 0 end })
+-- `stubs` (optional, D-028): { mq = { field = value, ... } } adds fields to the strict mq stub for a test that needs a richer MacroQuest
+-- (the logging identity tests give it a TLO tree and a clock); everything else stays refused.
+local function install(unit, stubs)
+    local allowed = { gettime = function() return 0 end }
+    for k, v in pairs((stubs and stubs.mq) or {}) do allowed[k] = v end
+    local mq = strict('mq', allowed)
     local imgui = strict('ImGui', {})
     for _, m in ipairs(MODULES) do package.loaded[m] = nil end
     package.loaded['mq'], package.loaded['ImGui'] = mq, imgui
@@ -74,12 +78,12 @@ end
 
 -- variant 'load-outside' is a deliberately weakened wrapper used only to show that the cleanup tests can fail (D-026 C'' mutation)
 function U.new(variant)
-    return function(scriptPath, body, extra)
+    return function(scriptPath, body, extra, stubs)
         assert(rawget(_G, 'SPELLSPREE_UNIT') == nil, 'SPELLSPREE_UNIT is already set: an earlier test leaked it')
         local saved = save()
         local unit = {}
         local function load()
-            install(unit)
+            install(unit, stubs)
             local chunk, lerr = loadfile(scriptPath)
             if not chunk then error('load failed: ' .. tostring(lerr), 0) end
             chunk()
@@ -87,7 +91,7 @@ function U.new(variant)
         end
         local ok, err
         if variant == 'load-outside' then
-            install(unit)
+            install(unit, stubs)
             local chunk, lerr = loadfile(scriptPath)       -- unprotected: an error here skips the restore below
             if not chunk then error('load failed: ' .. tostring(lerr), 0) end
             chunk()
