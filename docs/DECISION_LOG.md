@@ -1190,3 +1190,20 @@ Appended; the entry above is unchanged.
   levels 66-70?), and whether every class follows the same pattern as Cleric (Open 4, likely
   answered by the 14 characters); (3) what "select a tier" should mean once the level is known.
   Neither is decided. They are being asked one at a time.
+
+### D-012 addendum 2 (2026-10-03): the 61-70 vendor lists nothing usable; a 71-80 vendor exists
+
+Appended; earlier text is unchanged. Evidence: the developer's screenshot, saved as
+`docs/evidence/2026-10-03_VicarDiarin_61-70_empty_list.png`.
+
+- **Vicar Diarin, "Cleric Spells 61-70":** the merchant window is open with **"Show only items
+  I can use" ticked and the item list empty** (headers visible: Item Name, Qty, price columns,
+  Lvl; no rows). This answers D-012 Open question 2 for the 61-70 vendor in the sense the
+  developer needs: with the usable-only filter on (the only mode the script runs in), there is
+  nothing to buy there for this character. Not shown: what it would list with the filter off,
+  or for a character of a different class or level. The developer did not add a comment with
+  the screenshot; the AI reads it as the answer to its question and says so.
+- **A "Cleric Spells 71-80" vendor** is visible in the same screenshot (its nameplate is cut off
+  at the top; the name is not readable and the AI does not guess it). The script's `TIERS` /
+  `VENDOR_DATA` have no 71-80 tier. Whether it matters is not known (not asked of the
+  developer yet; likely nothing usable at this character's level).

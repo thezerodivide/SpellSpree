@@ -191,6 +191,9 @@ as the pre-logging baseline in four scenarios.
     confirmed) can tell each spell's level. **Open, developer's call:** what the `61-70` vendor
     holds; whether all classes follow the Cleric pattern; what selecting a tier should mean
     (D-012). No spike needed for this (developer).
+    *Update (developer's screenshot, D-012 addendum 2):* the `61-70` vendor (Vicar Diarin) lists
+    **nothing** with the usable-only filter on; a **71-80** vendor also exists (not in `TIERS`).
+    Still open: other classes, and what a tier selection should mean.
 
 ## Out of scope
 
