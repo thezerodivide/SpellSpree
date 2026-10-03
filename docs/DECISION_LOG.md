@@ -891,3 +891,36 @@ spikes answer what the client actually does.
 - Touches the same scan loop as D-001 (R1, S-1) and the same stale-row behavior recorded in
   the first live log (ledger confirmed-live section). Any adoption is a separate change and
   its own decision entry, one change at a time, with P-1 and P-3 before a live handoff.
+
+### D-010 addendum (2026-10-03): spike built, simulation-checked, ready for a live run
+
+Appended; the entry above is unchanged.
+
+**Built:** `spikes/spellspree_spike.lua`, version `0.1.0-spike.1`, read-only. Probe mode
+answers Open questions 1, 2, 3, 4 and 6 in one run at an open vendor; watch mode answers
+question 5 while the developer buys and scribes ONE spell by hand. Both write to the chat
+and to `<logs>/spellspree/spike_<server>_<character>.log`.
+
+**Checked in simulation only (the mock is the AI's model of MQ):** the spike runs to the
+end in both modes without error and its log reads sensibly: it identifies the name column
+by selecting three rows and comparing cells with `Merchant.SelectedItem.Name`; reads the
+whole list; compares `Merchant.Item(n)` with it; tries exact and non-exact by-name lookups
+(including prefix and inner-fragment probes added after reviewing the first simulated log);
+calls `Merchant.SelectItem` in both forms (without and with a trailing call) and reports
+which one moved the selection and whether it prompted a price tell; and, in watch mode,
+timestamps the buy, the scribe, the spellbook slot appearing, and the row leaving the list,
+naming the rows that came or went. Two faults found while checking it were in the mock
+(a list-box member that returned a bare value instead of a node; an unfiltered/filtered
+index model), not in the spike.
+
+**What the spike cannot establish:** it cannot say what is best to do with the answers; it
+changes nothing in SpellSpree; and it observes one vendor on one day. It never buys, so it
+cannot show how a by-name selection behaves at the moment of purchase. If the probe's
+answers look good, a further spike or a build change would be its own decision.
+
+**Handoff review (P-1, applied to a spike):** the live questions are D-010 Open 1-6. Each
+has a `RESULT Qn` line, except 5, which is the time-ordered `STATE CHANGE` lines. Failure
+paths log why: no merchant open; no readable name column (the cell dump shows what each
+column holds); `Merchant.SelectItem` needing a trailing call (both forms tried and logged).
+
+**Not verified:** everything about the live client.
