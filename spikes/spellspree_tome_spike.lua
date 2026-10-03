@@ -14,7 +14,8 @@
 --        (Zhao V'karin / V`karin / V'karin) is read from the game, not guessed.
 --
 --   /lua run spellspree_tome_spike dump
---        Open a tome vendor's window first (tick "usable items only" as you normally do). It reads every row (name, Qty, price,
+--        Open a tome vendor's window first (tick "usable items only" as you normally do). It reads the vendor's name from the
+--        merchant window itself (the MW_MerchantName label, not your target), then every row (name, Qty, price,
 --        Lvl), tallies the name prefixes, lists the disciplines this character already knows (Me.CombatAbility by index) and,
 --        for each tome, whether the discipline named by the tome (the name without "Tome of ") is known. Run it once at each
 --        vendor you want compared, e.g. both Berserker vendors.
@@ -27,7 +28,7 @@
 -- ============================================================================
 local mq = require('mq')
 
-local SPIKE_VERSION = '0.1.0-spike.2'
+local SPIKE_VERSION = '0.1.0-spike.3'
 local args = { ... }
 local mode = tostring(args[1] or 'names'):lower()
 
@@ -126,6 +127,15 @@ local function runNames()
 end
 
 -- ------------------------------------------------------------------- dump ----
+-- The vendor's name as the merchant window shows it (the MW_MerchantName label in the default EQUI_MerchantWnd.xml); nil when it cannot be read.
+local function vendorNameFromWindow()
+    local raw = tlo(function() return mq.TLO.Window('MerchantWnd').Child('MW_MerchantName').Text() end)
+    if raw == nil then return nil end
+    local t = trim(raw)
+    if t == '' or t:upper() == 'NULL' then return nil end
+    return t
+end
+
 -- wait for the visible list to stop changing (same idea as the build: 8 unchanged polls, 15 s at most)
 local function settle()
     local last, same, waited = nil, 0, 0
@@ -169,12 +179,23 @@ end
 
 local function runDump()
     openLog()
-    if not merchantOpen() then say('dump: no merchant window is open. Open a tome vendor first.'); return end
-    local vendor = tlo(function() return mq.TLO.Target.CleanName() end)
+    if not merchantOpen() then
+        print('\ar[tome-spike]\ax dump FAILED: no merchant window is open. Open a tome vendor first.')
+        log('mode dump; FAILED: no merchant window is open')
+        return
+    end
+    local vendor = vendorNameFromWindow()
+    local target = tlo(function() return mq.TLO.Target.CleanName() end)
+    local vlabel = vendor or '(vendor name unreadable)'
     local rows, timedOut = settle()
-    log(string.format('mode dump; vendor(target)=%q; zone=%s; character=%s; visible rows=%s%s', tostring(vendor),
-        tostring(tlo(function() return mq.TLO.Zone.ShortName() end)), tostring(tlo(function() return mq.TLO.Me.CleanName() end)), tostring(rows), timedOut and ' (the list did not settle in 15 s)' or ''))
-    if not rows or rows < 1 then say('dump: the list has no rows.'); return end
+    log(string.format('mode dump; vendor=%q (merchant window label MW_MerchantName, bytes=%s); target(for comparison only, may be stale)=%q; zone=%s; character=%s; visible rows=%s%s',
+        vlabel, bytes(vlabel), tostring(target), tostring(tlo(function() return mq.TLO.Zone.ShortName() end)), tostring(tlo(function() return mq.TLO.Me.CleanName() end)),
+        tostring(rows), timedOut and ' (the list did not settle in 15 s)' or ''))
+    if not rows or rows < 1 then
+        print(string.format('\ar[tome-spike]\ax dump FAILED for %s: the list has no rows.', vlabel))
+        log(string.format('[%s] dump FAILED: the list has no rows', vlabel))
+        return
+    end
 
     local known, scan = knownDisciplines()
     log(string.format('discipline scan: Me.CombatAbilityCount=%s; scanned up to slot %d; last filled slot=%d', tostring(scan.count > 0 and scan.count or 'unavailable'), scan.limit, scan.lastSlot))
@@ -202,14 +223,24 @@ local function runDump()
         else
             others = others + 1
         end
-        log(string.format('row %d | %q | qty=%s | price=%spp %sgp %ssp %scp | lvl=%s%s', r, tostring(name), tostring(qty), tostring(pp), tostring(gp), tostring(sp), tostring(cp), tostring(lvl), extra))
+        log(string.format('[%s] row %d | %q | qty=%s | price=%spp %sgp %ssp %scp | lvl=%s%s', vlabel, r, tostring(name), tostring(qty), tostring(pp), tostring(gp), tostring(sp), tostring(cp), tostring(lvl), extra))
     end
     local parts = {}
     for p, c in pairs(prefixes) do parts[#parts + 1] = string.format('%s x%d', p, c) end
     table.sort(parts)
-    log(string.format('summary: %d rows; %d start with "Tome of "; %d other rows; the discipline named by the tome is in the known list for %d, not for %d; name prefixes: %s',
-        rows, tomes, others, matched, unmatched, table.concat(parts, '; ')))
-    say(string.format('dump: %d rows, %d tomes, %d other; known disciplines %d (matched to tomes: %d); details in %s', rows, tomes, others, #known, matched, tostring(logPath)))
+    log(string.format('[%s] summary: %d rows; %d start with "Tome of "; %d other rows; the discipline named by the tome is in the known list for %d, not for %d; name prefixes: %s',
+        vlabel, rows, tomes, others, matched, unmatched, table.concat(parts, '; ')))
+    -- the line in the MQ window: green when the dump is complete, yellow when it is saved but something needs a look
+    local problems = {}
+    if not vendor then problems[#problems + 1] = 'the vendor name could not be read from the window' end
+    if timedOut then problems[#problems + 1] = 'the list did not settle within 15 s' end
+    if tomes == 0 then problems[#problems + 1] = 'no row starts with "Tome of "' end
+    local colour = (#problems == 0) and '\ag' or '\ay'
+    local verdict = (#problems == 0) and 'dump OK' or 'dump saved, but check'
+    local line = string.format('%s%s for %s: %d rows, %d tomes, %d other', '', verdict, vlabel, rows, tomes, others)
+    if #problems > 0 then line = line .. ' (' .. table.concat(problems, '; ') .. ')' end
+    print(colour .. '[tome-spike]\ax ' .. line)
+    log(string.format('[%s] %s', vlabel, line))
 end
 
 -- ------------------------------------------------------------------ watch ----

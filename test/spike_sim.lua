@@ -57,7 +57,8 @@ if which == 'tomes' then
     print('##### TOMES names: script ok=' .. tostring(sim.ok) .. ' err=' .. tostring(sim.runErr) .. ' cmds sent=' .. #sim.cmds .. ' purchases=' .. #sim.purchases)
     show(dir)
     dir = fresh('tomes_dump')
-    sim = R.run('spikes/spellspree_tome_spike.lua', { logsRaw = dir, rootRaw = dir, nonSpells = tomes, spells = {} }, 'dump')
+    sim = R.run('spikes/spellspree_tome_spike.lua', { logsRaw = dir, rootRaw = dir, nonSpells = tomes, spells = {}, merchantLabel = 'Beorobin Amondson' }, 'dump')
+    for _, l in ipairs(sim.prints) do if l:find('dump', 1, true) then print('   MQ window: ' .. l) end end
     print('\n##### TOMES dump: script ok=' .. tostring(sim.ok) .. ' err=' .. tostring(sim.runErr) .. ' cmds sent=' .. #sim.cmds .. ' purchases=' .. #sim.purchases)
     show(dir)
     dir = fresh('tomes_watch')

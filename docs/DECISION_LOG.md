@@ -3083,3 +3083,14 @@ spell file (which classes can use the discipline each tome teaches).
 tome whose discipline name cannot be derived (`Diversive Strike`); the check needs a fallback for those (the chat line "You already know this discipline." and the tome on the
 cursor are the observed signs of a known tome); the Berserker overlap makes a run-wide record of tomes already bought, plus the known check, necessary. **Still unobserved:** the
 Warrior and Beastlord vendors, and a new-tome learn.
+
+### D-030 addendum 6 (2026-10-03): spike 0.1.0-spike.3 (vendor name from the window; a result line in the MQ window); `references/` ignored
+
+At the developer's request (after the dumps showed the target label was stale, addendum 5): `references/` is in `.gitignore` (the client spell file, 28 MB, is not committed).
+The tome spike's `dump` mode now (1) reads the **vendor's name from the merchant window's own label, `MW_MerchantName`** (the label exists in every skin's merchant XML under
+the Project Triune `uifiles`; its runtime text is not yet observed live; the spike logs the raw text byte by byte and keeps the target's name only "for comparison, may be stale"),
+(2) tags every row and the summary line in the log with that vendor name, and (3) prints one line in the MQ window: **green "dump OK for <vendor>: N rows, T tomes, O other"**;
+**yellow "dump saved, but check ..."** when the vendor name could not be read, the list did not settle in 15 s, or no row starts with "Tome of "; **red "dump FAILED ..."** when the
+merchant window is not open or the list has no rows. Tested against the mock (all three paths) and the existing suites (unchanged, all passing; one new mock option, `startClosed`, and
+the label, MOCK_MODEL row 37). The watch mode's known-flag defect (addendum 3) was not touched: it was not part of the request. Tag `spike/tomes-0.1.0-spike.3`; the live copy in
+`C:/Users/Public/MacroQuest/lua/` was replaced.

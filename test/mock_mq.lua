@@ -34,6 +34,7 @@ end
 --         return from each simulated time on; a nil or non-string value models an unreadable read); logsUnreadableAfterMs (Path('logs') reads
 --         nil from then on); presses = n and pressNotBeforeMs = { [k] = ms } (the Run button is pressed again for the k-th time once the
 --         previous run's summary has printed and that time has passed); redetectAtMs (the Re-detect button is pressed once at that time).
+--       D-030: merchantLabel = the text of the merchant window's vendor-name label (MW_MerchantName); absent = the label reads nothing.
 --         selectDelay = { name=, ms= } (a click on that row only takes effect that many ms later, every time; until then the
 --           selection stays where it was, and a late landing replaces whatever is selected then; D-026, delayed selection);
 --         stopAtMs (the Stop button is pressed once at that simulated time).
@@ -47,7 +48,7 @@ end
 --       then Run Shopping Spree; NPCs not listed are absent from the zone).
 function M.new(opts)
     local sim = {
-        opts = opts, clockMs = 0, cmds = {}, prints = {}, merchantOpen = true,
+        opts = opts, clockMs = 0, cmds = {}, prints = {}, merchantOpen = not opts.startClosed,
         usableChecked = true, known = {}, targetId = 4242, finished = false,
         scribeRejects = opts.scribeRejectFirst or 0, delays = 0, purchases = {}, buyClicks = {}, pending = {}, ticks = {}, selectClicks = {},
     }
@@ -308,6 +309,12 @@ function M.new(opts)
             return node(true, {
                 Open = function() return sim.merchantOpen end,
                 Child = function(cn)
+                    if cn == 'MW_MerchantName' then
+                        -- the label that shows the vendor's name (D-030): opts.merchantLabel, or the name of the vendor opened in a Plane of Knowledge run
+                        local label = opts.merchantLabel or sim.vendorName
+                        if label == nil then return node(nil) end
+                        return node(label, { Text = function() return label end })
+                    end
                     if cn == 'ItemList' then
                         return node(true, {
                             Items = function() return sim.visibleCount() end,
