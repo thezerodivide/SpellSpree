@@ -2485,3 +2485,13 @@ functions, so a test cannot call them.
 
 ### Dependencies and shared seams
 - Step 3 would add exported functions; Step 2 and Step 1 code is untouched. `docs/MOCK_MODEL.md` is unaffected (unit tests use no mock).
+
+### D-016 addendum 4 (2026-10-03): the label exists for sync, not release tracking
+
+Appended; earlier text is unchanged. **Developer, 2026-10-03:** "The purpose of the labeling isn't to track release readiness,
+it's to ensure that you and chat gpt stay synced in case I mispaste something." This corrects the AI's use of "Step" in D-020
+(where it followed the release steps). **Effect:** `Step` is only a thread identifier: the next unused number is given to each new
+topic opened with ChatGPT, in order of opening. So far: Step 1 = list-then-buy (D-014), Step 2 = the 61-70 routing (D-021),
+Step 3 = the level bound (D-025), **Step 4 = the testing infrastructure (D-026)**. `Decision` stays the decision-log number and
+`Revision` the count of Claude's messages in the thread. The release steps of D-020 R31 keep their own meaning and are not
+affected. Archived: `docs/handoffs/2026-10-03_step4_decision26_rev1_from-claude.md`.
