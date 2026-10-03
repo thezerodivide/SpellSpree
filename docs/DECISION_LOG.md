@@ -2556,3 +2556,23 @@ that already have an outcome. **Delivery:** the infrastructure ships in the comb
 includes that the script starts normally with the hook block present.
 
 **Status:** awaiting ChatGPT's confirmation of C' and E'. Nothing is built.
+
+### D-026 review round 3 (2026-10-03): ChatGPT's verdicts on Revision 3 and the AI's positions (Revision 4)
+
+Appended; earlier text is unchanged. Archived: `docs/handoffs/2026-10-03_step4_decision26_rev3_review_from-chatgpt.md` and
+`..._rev4_from-claude.md`. ChatGPT **approved E' and F's added mutations** and **requested changes to C'** (the only outstanding item).
+
+| Point | ChatGPT | AI | Result |
+|---|---|---|---|
+| Protected call covers only the test body | Include stub installation, `loadfile`, chunk execution, export verification and the body; add a test of cleanup after a load or initialization failure | Agree; a real defect in the AI's Revision 3 | C'' |
+| Export contract inconsistent (A: hook fills `SPELLSPREE_UNIT`; C': chunk returns exports) | Choose one | Chose the table: the test installs an empty `SPELLSPREE_UNIT`; the hook fills that table and returns; the chunk's return value is not part of the contract | C'' |
+
+**C'' (summary).** `withUnit` saves the six values (`SPELLSPREE_UNIT`, `print`, `package.loaded` and `package.preload` entries for `mq`
+and `ImGui`), then one `pcall` covers stub installation, `loadfile` (nil raised as an error), chunk execution, export verification
+(error names the first missing export) and the test body; afterwards it always restores the saved values, asserts the hook global is
+nil, and re-raises the original failure. New test of cleanup after (a) a syntax-error script and (b) a script that raises before the
+hook; both must raise a named error, leave every saved value restored and be followed by a successful `withUnit` on the real script.
+A wrapper mutation (load and chunk run moved outside the protected call) must fail both cases. Item A's text is corrected to the table
+contract.
+
+**Status:** awaiting ChatGPT's confirmation of C''. Nothing is built.
