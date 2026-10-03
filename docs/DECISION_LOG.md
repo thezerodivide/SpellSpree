@@ -32,6 +32,8 @@ Entries that supersede a specification item. Read this first.
 | D-015 | 2026-10-03 | Second-agent review loop: evaluate each recommendation, agree or disagree with reasons | confirmed |
 | D-016 | 2026-10-03 | Handoff labels for messages between Claude and GPT | confirmed, including numbering and revision rule |
 | D-017 | 2026-10-03 | APPROVED: Step 1, list-then-buy replaces repeat passes | approved by the developer; supersedes spec S-1 / D-001 R1; built as 1.6.0-test.3; first live run succeeded (137 spells, one pass per vendor) |
+| D-018 | 2026-10-03 | Step 1 accepted; released as 1.6.0 | accepted by the developer |
+| D-019 | 2026-10-03 | Step 2 direction changed: the four tier boxes stay; the logic underneath changes | direction recorded; design under discussion; nothing built |
 
 ---
 
@@ -1869,3 +1871,72 @@ not settle. The design handles those in the simulation; this run neither confirm
 
 **Status:** simulation-tested and now live-run once with a clean result. Acceptance is the developer's decision
 (D-006: a change is accepted before the version drops its `-test`). Step 2 (D-013) has not started.
+
+---
+
+## D-018 — Step 1 accepted; released as 1.6.0
+
+**Date:** 2026-10-03 · **Status:** accepted by the developer · **Supersedes:** nothing.
+
+### Story
+`1.6.0-test.3` (list-then-buy, D-017) ran live on Cleric 26-50 and 51-60: 137 spells in one pass per vendor, nothing
+skipped or failed, and a second run found nothing left (D-017 addendum 2).
+
+### Requirement (developer, 2026-10-03: "I accept step 1.")
+- R28. Step 1 is accepted. Under D-006 an accepted change drops the pre-release suffix: the accepted code is
+  version **1.6.0**.
+
+### Design choices / Implementation choices
+- The only code change from `v1.6.0-test.3` is the `VERSION` string (`'1.6.0-test.3'` -> `'1.6.0'`), checked by diff.
+  Both simulation suites were re-run on it and pass. Tagged `v1.6.0` (D-007), pushed.
+- The developer's installed copy still says `1.6.0-test.3` until it is replaced; the code is identical.
+
+### Open / Not yet verified
+- Open: Step 2 (D-013, now D-019). Not verified live: the paths listed under D-017 addendum 2 as not exercised.
+
+### Dependencies and shared seams
+- Closes D-017. Step 2 builds on the list Step 1 creates.
+
+---
+
+## D-019 — Step 2 direction changed: the four tier boxes stay; the logic underneath changes
+
+**Date:** 2026-10-03 · **Status:** direction recorded; design under discussion; nothing built ·
+**Revises D-013 R20, R22, R23 and R23a** (D-013 is otherwise unchanged and still the problem statement).
+
+### Story
+D-013 recorded the developer's requirement that a tier box buy only spells in its own level range, and the AI
+proposed changing the boxes to 1-25, 26-50, 51-60 and 61-65 and dropping 61-70. While Step 1 was being released the
+developer corrected that: the current UI still fits the use case; that no 66-70 spells exist in the game does not make
+the 61-70 selection wrong; what has to change is the logic underneath the selection.
+
+### Requirement (developer, 2026-10-03)
+- **R29 (replaces R20 and R23).** The tier boxes stay as they are: **1-25, 26-50, 51-60, 61-70**. No UI change.
+- **R21 stands.** Selecting a range buys only spells whose Lvl is in that range (inclusive, D-014 item I).
+- **R30 (replaces R22).** Which vendor a selected range is bought from changes underneath: **61-70 is bought from the
+  1-25 vendor** (where the 61-65 spells are); 1-25, 26-50 and 51-60 are bought from their own vendors as before. If
+  both 1-25 and 61-70 are ticked, that vendor is visited once and both ranges are bought from it (D-013 R22's
+  one-visit rule stays).
+- R24 stands (the 71-80 vendor is out of scope).
+- **R23a is revised, not dropped.** Its purpose, not having to code the 61-70 vendor locations back in if the server
+  extends the maximum level, still holds. The way to keep it under R29/R30 is a design choice not yet made (see D-019
+  Open).
+
+### Design choices
+None made.
+
+### Implementation choices
+None made. Nothing is built.
+
+### Open
+- How the 61-70 vendor names are kept (they are in `VENDOR_DATA` today and would no longer be visited under R30).
+- Whether the Bazaar path (no boxes, buys what the open vendor sells) stays unchanged.
+- Everything about the filter and the ledger wording; to be designed, then reviewed through the ChatGPT loop (D-015),
+  then approved by the developer before any build.
+
+### Not yet verified
+- The vendor-level facts are the developer's, confirmed on 11 of 12 classes and accepted for all 12 (D-013 addenda).
+
+### Dependencies and shared seams
+- Builds on D-017's built list (the Lvl column is already read and logged). Supersedes the box set in spec S-5 as
+  recorded; S-5 is updated in place.

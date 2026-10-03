@@ -7,11 +7,10 @@ Last reviewed end to end: 2026-10-03 (§18).
 Baseline: commit `f6c29f4`, referred to as **v1.5.0** (that commit's file still says `1.5-reorder-passes`).
 Current: `1.6.0-test.3`: **Step 1, list-then-buy (D-017)** on top of the file logging (D-004) and the outcome-line fix (D-009). Tagged `v1.6.0-test.3` and pushed. Simulation-tested and run live once (clean).
 
-## Where we left off (after the first live run of Step 1, 2026-10-03)
+## Where we left off (Step 1 accepted, 2026-10-03)
 
-- State: `v1.6.0-test.3` (list-then-buy) ran live on Cleric 26-50 and 51-60: **137 spells in one pass per vendor, nothing skipped or failed**, and a second run found nothing left (D-017 addendum 2).
-- Not exercised live: shifting or vanishing rows during a run, selection retries, stacking, the stop paths (simulation only).
-- Next, developer's decision: **accept Step 1** (then D-006 drops the `-test`), and start **Step 2**, the level-range boxes (D-013, approved as a requirement, not started; the 61-70 vendor entries stay commented out).
+- State: **`v1.6.0`** (tag, pushed) is the accepted Step 1 build (list-then-buy; D-018). Live: 137 spells, one pass per vendor.
+- Step 2 (level ranges) is being **discussed, nothing built**. Direction (D-019): the four tier boxes stay as they are; underneath, a box buys only spells whose Lvl is in its range, and 61-70 is bought from the 1-25 vendor. The design then goes through the ChatGPT review loop (D-015) and your approval before any build.
 - Open, developer's call: item 13 (log volume vs rotation; K approved leaving it).
 
 ## Resolved behavior
@@ -25,7 +24,8 @@ Only behavior the developer has explicitly agreed.
 - Test builds raise the pre-release number each handoff; the file stays `spellspree.lua`, no unique filename per build. *(D-006 R14, R15)*
 - Every handed-over build is committed and tagged `v<VERSION>` first. *(D-007 R16)*
 - ~~Repeat passes with close and reopen (D-001 R1)~~ **superseded by list-then-buy (D-017, approved):** build the list once, buy each name at most once by exact-name lookup, verified selection before Buy, ledger of outcomes, log-only final scan. *(In progress.)*
-- **Level-range tier boxes (not built):** 1-25, 26-50, 51-60, 61-65; a range buys only spells whose `Lvl` is in it; 61-65 comes from the 1-25 vendor (opened once if both are ticked); ~~the 61-70 box is removed~~ the 61-70 box is not offered and its vendor entries stay in the source commented out, not deleted. *(D-013 R20-R24, R23a)*
+- ~~**Level-range tier boxes (not built):** 1-25, 26-50, 51-60, 61-65 ... the 61-70 box is not offered ...~~ **Revised (D-019):** the four tier boxes stay (1-25, 26-50, 51-60, 61-70; no UI change); a box buys only spells whose Lvl is in its range; 61-70 is bought from the 1-25 vendor (one visit if 1-25 is also ticked). Not built; design under discussion. *(D-013 R21, R24; D-019 R29, R30)*
+- **Step 1 accepted (D-018):** list-then-buy is released as **1.6.0**.
 
 Inherited behavior of the original (Bazaar mode, `Song:` scrolls, PoK vendor
 walk, buy-and-scribe loop, usable-only filter requirement, stop conditions) is
@@ -195,7 +195,7 @@ as the pre-logging baseline in four scenarios.
     live run by the developer. **Probe and watch both done; Q1-Q6 answered (see confirmed
     facts). Decision for the developer: adopt list-then-buy, which would supersede S-1.**
 
-15. ~~PROBLEM~~ **Requirement agreed (D-013), not built. Vendor-level pattern: developer-tested for Paladin, Shadowknight, Cleric, Necromancer, Beastlord, Magician, Shaman, Ranger, Bard, Wizard, Enchanter (11 of 12); NOT tested on Druid; **the developer accepts the pattern for all 12 classes, Druid included, on his judgment that it is not an outlier (D-013 addendum 4).** ~~(first said: 9 of 12, with Druid, Enchanter and Wizard missing)~~ Was: **PROBLEM (developer-confirmed from buying for 14 characters, D-012):** the tier boxes do not
+15. ~~PROBLEM~~ **Requirement agreed (D-013), direction revised by D-019 (boxes unchanged; logic underneath changes), not built. Vendor-level pattern: developer-tested for Paladin, Shadowknight, Cleric, Necromancer, Beastlord, Magician, Shaman, Ranger, Bard, Wizard, Enchanter (11 of 12); NOT tested on Druid; **the developer accepts the pattern for all 12 classes, Druid included, on his judgment that it is not an outlier (D-013 addendum 4).** ~~(first said: 9 of 12, with Druid, Enchanter and Wizard missing)~~ Was: **PROBLEM (developer-confirmed from buying for 14 characters, D-012):** the tier boxes do not
     match what the vendors sell. The `26-50` and `51-60` vendors hold only those levels; the level
     61-65 spells are on the `1-25` vendor; so `Cleric 1-25` buys spells outside 1-25 and the
     `61-70` vendor is not needed as the script works. The vendor list's `Lvl` column (col 8, header

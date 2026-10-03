@@ -30,19 +30,12 @@ vendors and scribes them. *(INHERITED, from the original header.)*
   cannot prove an action succeeded. A logging failure must not change what the
   script does. *(Exact file location, rotation, line format and levels are
   implementation detail recorded in D-004, not requirements.)*
-- **S-5 (AGREED, D-013 R20-R24; not yet built).** The tier boxes are the level ranges 1-25,
-  26-50, 51-60 and 61-65. Selecting a range buys only spells whose `Lvl` is in that range.
-  Vendors: 1-25 and 61-65 from the 1-25 vendor (opened once if both are selected), 26-50 from
-  the 26-50 vendor, 51-60 from the 51-60 vendor. ~~The 61-70 box is removed.~~ The 61-70 box is not offered and its vendor entries stay in
-  the source **commented out, not deleted**, for if the server raises the maximum level (D-013
-  addendum, R23a). The 71-80 vendor is out of scope. This supersedes inherited item I-1's tier handling.
-- **S-6 (AGREED, D-017; built as 1.6.0-test.3; first live run clean, 137 spells).** When a vendor is open the script waits for its visible usable list
-  to settle (row count unchanged for 8 polls of 250 ms; at most 15 s, else the vendor is skipped and the
-  reason logged), builds a list of its `Spell:` / `Song:` rows once, and buys each name at most once: it
-  finds the row by exact name, selects it, verifies the selected name immediately before Buy (up to 3
-  selection attempts, never re-clicking Buy), then buys and scribes with the existing logic. There is no
-  reopen and no repeat pass. A row that is gone at lookup is skipped and logged. Every built-list entry
-  ends with exactly one logged outcome, and a log-only final scan reports new scrolls and lingering rows.
+- ~~**S-5 (AGREED, D-013 R20-R24; not yet built).** The tier boxes are the level ranges 1-25, 26-50, 51-60 and 61-65 ...
+  The 61-70 box is not offered ...~~ **REVISED by D-019 (2026-10-03), not yet built:**
+- **S-5 (AGREED, D-013 R21 and R24, D-019 R29-R30; not yet built).** The tier boxes stay as they are: 1-25, 26-50,
+  51-60 and 61-70 (no UI change). Selecting a range buys only spells whose `Lvl` is in that range (inclusive).
+  The 61-70 range is bought from the **1-25 vendor**; 1-25, 26-50 and 51-60 from their own vendors; if 1-25 and 61-70
+  are both ticked, that vendor is visited once. The 71-80 vendor is out of scope.
 - **S-4 (AGREED, D-003 R9).** Process requirement: before any build is presented
   for manual testing, its logging is reviewed against what that test needs to
   show (see `WORKING_AGREEMENT.md` P-1).
