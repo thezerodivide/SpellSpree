@@ -1207,3 +1207,10 @@ Appended; earlier text is unchanged. Evidence: the developer's screenshot, saved
   at the top; the name is not readable and the AI does not guess it). The script's `TIERS` /
   `VENDOR_DATA` have no 71-80 tier. Whether it matters is not known (not asked of the
   developer yet; likely nothing usable at this character's level).
+
+### D-012 addendum 3 (2026-10-03): the AI's reading of the screenshot confirmed
+
+Appended; addendum 2 is unchanged. The developer confirmed the AI's reading: the 61-70
+vendor's list appears **empty with "Show only items I can use" selected**. The caveat in
+addendum 2 stands (what it lists with the filter off, or for other classes or levels, is not
+shown).
