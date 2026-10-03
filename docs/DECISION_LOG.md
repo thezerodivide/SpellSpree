@@ -27,6 +27,8 @@ Entries that supersede a specification item. Read this first.
 | D-010 | 2026-10-03 | Proposal: build the vendor's spell list at open, then buy from it (spikes) | proposal; requirement S-1 unchanged until spike evidence is reviewed |
 | D-011 | 2026-10-03 | Operator cues in test runs must not be buried | confirmed |
 | D-012 | 2026-10-03 | Problem: spell vendors do not match the level tiers the script offers | problem confirmed by the developer; design question open (see addendum) |
+| D-013 | 2026-10-03 | Requirement: tier boxes become level ranges that buy only their own levels | requirement agreed; not built |
+| D-014 | 2026-10-03 | Design proposal: list-then-buy replaces repeat passes | proposed; awaiting developer approval per item |
 
 ---
 
@@ -1214,3 +1216,118 @@ Appended; addendum 2 is unchanged. The developer confirmed the AI's reading: the
 vendor's list appears **empty with "Show only items I can use" selected**. The caveat in
 addendum 2 stands (what it lists with the filter off, or for other classes or levels, is not
 shown).
+
+---
+
+## D-013 — Requirement: tier boxes become level ranges that buy only their own levels
+
+**Date:** 2026-10-03 · **Status:** requirement agreed; not built · **Supersedes:** spec
+inherited item I-1 as far as it concerns the tier boxes and `TIERS` / `VENDOR_DATA`; resolves
+D-012's central question.
+
+### Story
+
+D-012: the script's four tiers (`1-25`, `26-50`, `51-60`, `61-70`) do not match what the
+vendors hold. The `1-25` vendor also sells the level 61-65 spells, so `Cleric 1-25` buys spells
+outside 1-25; the `61-70` vendor lists nothing usable (developer's screenshot, confirmed). The
+vendor list has a `Lvl` column (confirmed from the window header), so each spell's level can be
+read from the list.
+
+### Requirement (developer, 2026-10-03: "Yes, that matches what I want ... If I select 1-25 but
+not 61-65, it should only buy spells that fall within that level range.")
+
+- R20. The tier boxes are **level ranges**: **1-25, 26-50, 51-60, 61-65**.
+- R21. Selecting a range buys **only** spells whose `Lvl` is within that range. Selecting 1-25
+  without 61-65 buys nothing above level 25 from that vendor.
+- R22. The vendor each range is bought from: 1-25 from the **1-25 vendor**; 26-50 from the
+  **26-50 vendor**; 51-60 from the **51-60 vendor**; **61-65 from the 1-25 vendor**. If both
+  1-25 and 61-65 are selected, that vendor is opened once and both ranges are bought from it.
+- R23. The old `61-70` box goes away (its vendor lists nothing usable).
+- R24. The **71-80** vendor is out of scope. *(The AI said it stays out of scope unless told
+  otherwise; the developer answered "yes, that matches".)*
+
+### Design choices
+
+None beyond R20-R24. How the Lvl is read and compared is part of the list-then-buy design
+(D-014) or, if built first, of its own change.
+
+### Implementation choices
+
+None made. Order of work is proposed in D-014 (list-then-buy first, then this).
+
+### Open
+
+- **Assumption, not confirmed:** the AI is treating the Cleric vendor pattern (1-25 vendor also
+  holds 61-65; 26-50 and 51-60 hold only their own) as holding for **all 12 classes**. The
+  developer confirmed it from 14 characters but did not say which classes. Developer to correct
+  if any class differs.
+- Boundaries: a spell at exactly level 25, 26, 50, 51, 60, 61 or 65 belongs to the range whose
+  numbers include it (inclusive ranges). A spell with an unreadable `Lvl` is not bought and is
+  logged (the AI's reading of R21; not discussed).
+
+### Not yet verified
+
+- Nothing live. No level data of the AI's own for any spell.
+
+### Dependencies and shared seams
+
+- Needs the vendor list read (D-010 / D-014) or the per-row read in the current scan; a UI change
+  to the class/tier tree; changes `VENDOR_DATA` so the 61-65 range points at the 1-25 vendor.
+
+---
+
+## D-014 — Design proposal: list-then-buy replaces repeat passes
+
+**Date:** 2026-10-03 · **Status:** **proposed; not approved.** Each item below is for the
+developer to approve, change or reject on its own (Development Protocol section 17).
+**Would supersede** spec S-1 / D-001 R1 (repeat passes) and the D-001 close/reopen design.
+
+### Story
+
+D-001 to D-010: a positional line-by-line scan, repeated until a pass buys nothing, is made
+necessary by the vendor list changing under it (batches of rows leaving after scribes; rows
+leaving with nobody acting on them; a partial list right after a reopen). Live: vendor 1 took four
+passes and about 389 row reads to buy 70 spells. Probes show the whole visible list can be read in
+about 2 ms, a row can be found by exact name, and the `Lvl` and price columns are in the list. The
+developer wants the vendor's spell list built when the vendor opens and each item bought from it
+(D-010 addendum 5).
+
+### Requirement
+
+- **Wanted (developer):** build the list of available spells when the vendor opens; buy each item
+  in that list from that vendor; no repeat passes.
+
+### Proposed design choices (each is a separate decision)
+
+| # | Choice | Recommendation | Why / evidence |
+|---|---|---|---|
+| A | Build the list once when the vendor is open and settled: read every visible row (name col 2, Lvl col 8, price cols 4-7, qty col 3) and keep the scroll rows (`Spell:` / `Song:`). | Yes | Probe: 168 rows read in 2 ms. |
+| B | Before building, wait until the row count is the same across a few consecutive reads. | Yes | Observed a partial list (13 then 104 rows) right after a reopen. How long and how many reads are implementation values, not tuned. |
+| C | Buy each item by: find its row by exact name now, `listselect` that row, check `SelectedItem` equals the name, then Buy with the existing buy/scribe code. | Yes | Uses the same click path that bought all 70 spells live; only the way the row number is found changes. `Merchant.SelectItem` also worked in the probe, but Buy after it has never been tried. |
+| D | If the exact-name lookup finds nothing (the row left the list), skip that item and log it; no retry, no re-read. | Yes | Rows left the list unprompted (nine in 180 s). |
+| E | Each name is bought at most once per vendor visit; no close/reopen, no repeat passes. | Yes (this is the developer's proposal) | Removes the stacked-scroll repeat-buy risk (ledger item 4) and the passes. |
+| F | After the last item, read the list once more and **only log** any scroll still listed that was not bought (no purchases). | Yes | Cheap diagnostic; makes a surprise visible. |
+| G | Order of work: this mechanism first, buying exactly what the script buys today; then the level-range boxes (D-013) as a separate change on top. | Yes | One change at a time; level filtering is simpler on the new structure. |
+
+### Implementation choices (the AI's, not for approval)
+
+- Removes `reopenCurrentMerchantForNextPass`, the pass counter, the per-pass seen-set and the
+  row-shift compensation. Keeps the buy, quantity, landing-check and scribe code as it is.
+- Log: the built list (count and names), each item's lookup row, the selection check, and every
+  skip with its reason, plus the usual outcome line.
+- Tests: simulated vendors that reorder, lose rows spontaneously, and keep a stale row for about
+  10 s after a scribe; expected values from this entry and the live logs; mutation checks.
+
+### Open
+
+- Whether to adopt `Merchant.SelectItem` instead of C later (not proposed now).
+- How the 71-80 vendor and 66-70 spells are handled: out of scope (D-013 R24).
+
+### Not yet verified
+
+- Everything about a build. The mechanism rests on probes that never bought: Buy after a
+  by-name lookup and listselect is expected to behave like today's but is unproven until run live.
+
+### Dependencies and shared seams
+
+- Replaces the scan loop of D-001 (S-1). Level filtering (D-013) will use the same list.
