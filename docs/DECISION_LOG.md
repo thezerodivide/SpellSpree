@@ -1348,3 +1348,29 @@ Appended; the entry above is unchanged.
   developer's call if the server changes.
 - Not related to, and not an answer to, the seven proposed choices (A-G) in D-014, which are
   still awaiting the developer's reply.
+
+### D-014 addendum (2026-10-03): choice E approved; a gap found while answering a question
+
+Appended; the entry above is unchanged.
+
+- **Approved by the developer, 2026-10-03: choice E** (buy each name at most once per vendor
+  visit; no reopen and no repeat passes). **A, B, C, D, F and G are not yet answered** and are
+  not approved by this.
+- **Developer question:** if the vendor list ordering changes, will that prevent any spell on
+  the list from being bought? **AI's answer:** no, because under C each purchase looks the row
+  up by exact name immediately before clicking, so row positions do not matter. A spell on the
+  built list can still go unbought only if (1) its row has left the vendor list by the time it is
+  reached (observed: nine rows left unprompted in 180 s, four of them spells), which choice D skips
+  and logs, or (2) it was not on the list when the list was built (a partial list at open, guarded
+  by B; or a spell added later, which F only logs).
+- **Gap found:** between looking a row up by name and the click there is a short window in which
+  the list can shift. The click would then select a different item. C says to check that the
+  selection equals the name, but D-014 did not say what to do on a mismatch. The original
+  author's comment that selecting index N once bought an unrelated item (from the script's own
+  source) shows this class of failure has been seen. The existing post-purchase check (the
+  landed scroll must be named like a scroll) does not stop a wrong *purchase*.
+- **New proposed choice H (for the developer to approve, change or reject):** verify the selection
+  just before Buy, and on a mismatch look the row up and click again, up to a small number of
+  tries (the number is an implementation value, not tuned), then skip the item and log why.
+  Recommendation: yes. Evidence: the failure mode exists; the cost of a wrong purchase is spent
+  currency on an item that is not wanted.

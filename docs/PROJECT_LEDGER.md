@@ -178,7 +178,7 @@ as the pre-logging baseline in four scenarios.
     multi-vendor spree would lose its earliest part. Whether that matters, and what to
     do, is the developer's call; not observed to happen.
 
-14. **DESIGN PROPOSED, awaiting per-item approval (D-014):** list-then-buy replaces repeat passes. Wanted by the developer (D-010 addendum 5); not yet approved item by item; S-1 stands until it is. Was: **PROPOSAL under investigation (D-010):** build the vendor's spell list when it opens
+14. **DESIGN PROPOSED, awaiting per-item approval (D-014; E approved, new choice H proposed, A-D/F/G unanswered):** list-then-buy replaces repeat passes. Wanted by the developer (D-010 addendum 5); not yet approved item by item; S-1 stands until it is. Was: **PROPOSAL under investigation (D-010):** build the vendor's spell list when it opens
     and buy from that list, instead of line-by-line multiple passes. Not an agreed
     requirement; S-1 stands. Blocked on spike results. Spike built: `spikes/spellspree_spike.lua`
     `0.1.0-spike.2` (tag `spike/vendor-0.1.0-spike.2`), simulation-checked only; awaiting a
