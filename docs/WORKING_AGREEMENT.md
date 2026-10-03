@@ -57,6 +57,9 @@ These add to the Development Protocol for this project only.
   From Claude / <date>` with `Answering: <ChatGPT's REVIEW OF label, repeated exactly>`.
   Numbering confirmed: Decision = the decision-log number; Step = order of work; each Claude reply in
   the chain increments the revision number.
+  Delivery: a reply that carries a handoff contains only the labelled message, as plain text starting
+  with the `HANDOFF:` line (no markdown code block, no commentary to the developer in the same reply),
+  because the developer pastes it with the reply's copy button. Notes to the developer go in a separate reply.
 
 ## Sibling projects (Development Protocol §21)
 

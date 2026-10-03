@@ -1645,3 +1645,12 @@ skipped" quirk is left as it is; only the new ledger classifies it by what happe
 
 **Status:** every Step 1 item is agreed between the AI and ChatGPT **except F'', which awaits ChatGPT's
 confirmation.** Nothing is built and the developer has not yet issued approval on any item except E.
+
+### D-016 addendum 3 (2026-10-03): how a handoff reply is delivered
+
+Appended; earlier text is unchanged. **Developer, 2026-10-03:** do not put handoff messages in a markdown
+code block; the developer uses the reply's copy button to paste. **AI's reading:** because the copy button
+copies the whole reply, a reply that carries a handoff contains only the labelled message, as plain text,
+beginning with the `HANDOFF:` line, with nothing for the developer mixed in. Anything the developer needs to
+be told goes in a separate reply. The already-sent Revision 3 is not reformatted (developer: no need).
+Recorded in the working agreement (P-7).
