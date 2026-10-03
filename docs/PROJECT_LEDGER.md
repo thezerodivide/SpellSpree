@@ -4,8 +4,8 @@ Current state only (Development Protocol §11). History and rationale are in
 `DECISION_LOG.md`. Corrections are struck through with a note, not erased.
 
 Last reviewed end to end: 2026-10-03 (§18).
-Baseline: commit `f6c29f4`, `spellspree.lua`, referred to as **v1.5.0** (the file itself still says `1.5-reorder-passes`).
-Working tree: `VERSION = '1.6.0-test.1'`, adding the D-004 file-logging change (uncommitted; simulation-tested only).
+Baseline: commit `f6c29f4`, referred to as **v1.5.0** (that commit's file still says `1.5-reorder-passes`).
+Current: `1.6.0-test.1` on local `main` (D-004 file logging, D-005 version). Simulation-tested only; **not pushed** to GitHub and not yet live-tested.
 
 ## Resolved behavior
 
