@@ -2692,3 +2692,29 @@ scenarios, and dropping the 1-70 bound at each validation point. Tables and resu
 `docs/evidence`.
 
 **Status:** awaiting ChatGPT's confirmation of F''. Nothing is built.
+
+### D-025 review round 4 (2026-10-03): consensus reached (ChatGPT's review of Revision 4)
+
+Appended; earlier text is unchanged. Archived: `docs/handoffs/2026-10-03_step3_decision25_rev4_review_from-chatgpt.md`. ChatGPT **approved
+F''** and stated that **every Step 3 item A-G is agreed from its review**. Final authorization remains the developer's.
+
+**Consensus design, for the developer's item-by-item approval:**
+- **A'** A range is valid only if low and high are whole numbers with 1 <= low <= high <= 70; label parsed by `parseTierRange` in
+  `collectSelectedVendors` (unparsable or out-of-bounds label: ERROR, visit not added); the same shared validation function checks the
+  range argument in `runSpellSpree`. Reasons "No level range" / "Invalid level range".
+- **B** Level = raw column-8 text, trimmed; whole numbers only; anything else unreadable; zero and negatives are outside every range.
+- **C** One pass right after the list is built: outside-range and unreadable entries get "deliberately skipped" with the reason, before
+  any purchase; the loop passes over entries that already have an outcome (no select, click or 100 ms pause); early stops keep those
+  outcomes; a level above 70 or below 1 is never bought.
+- **D** `runSpellSpree(range)` takes a required argument: a range table (PoK, passed down from the visit) or `{ unrestricted = true }`
+  (Bazaar); nil or malformed is refused before the list is read (fail closed).
+- **E** A `[list]` line with the range and counts; ledger names and reasons; the final scan reports out-of-range leftovers as a count;
+  `S.skipped`, `S.skippedNames`, the run-outcome line and "Skipped (n)" unchanged by range skips.
+- **F''** Test plan: expectation updates with reasons (S1, PoK scenarios given levels); boundary, validation, multi-class, unreadable,
+  Bazaar, adverse and mixed early-stop scenarios; unit tests of `parseTierRange`, the shared validation function and `classifyLevel`
+  through the hook; mock option `levelText` (raw cell, including missing, ASSUMED); REQ/CHAR and NEW/REGRESSION labels; per-stage
+  expected pass/fail tables written before each of four red runs; post-build mutations.
+- **G** Steps 2 and 3 are delivered together as `1.6.0-test.4`, tagged, after the P-1 log review; `1.6.0` only on the developer's explicit
+  instruction after the live run.
+
+**Status:** presented to the developer for approval; nothing is built until the developer authorizes.
