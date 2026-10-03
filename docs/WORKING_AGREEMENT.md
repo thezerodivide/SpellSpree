@@ -52,6 +52,9 @@ These add to the Development Protocol for this project only.
   with `HANDOFF: Step <n> / Decision <n> / Revision <n> / From <Claude|GPT> / <date>`, plus
   `Answering: <label of the message answered>` on every revision after the first. Messages are archived
   in `docs/handoffs/`.
+  Flow: Claude `HANDOFF: ... / From Claude / <date>`; ChatGPT `REVIEW OF: ... / From ChatGPT / <date>`
+  (From = the author; numbers are those of the Claude message reviewed); Claude's reply `HANDOFF: ... /
+  From Claude / <date>` with `Answering: <ChatGPT's REVIEW OF label, repeated exactly>`.
 
 ## Sibling projects (Development Protocol §21)
 

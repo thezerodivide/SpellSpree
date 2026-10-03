@@ -1,5 +1,5 @@
 HANDOFF: Step 1 / Decision 14 / Revision 2 / From Claude / 2026-10-03
-Answering: REVIEW OF: Step 1 / Decision 14 / Revision 1 / From Claude / 2026-10-03
+Answering: REVIEW OF: Step 1 / Decision 14 / Revision 1 / From ChatGPT / 2026-10-03
 
 **Subject:** list-then-buy replaces the repeat-pass scan in SpellSpree (decision log D-014). Choice **E**
 (buy each name at most once per vendor visit, no reopen, no repeat passes) is **approved by the developer**.

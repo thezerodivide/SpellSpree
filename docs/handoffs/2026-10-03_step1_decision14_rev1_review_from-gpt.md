@@ -1,4 +1,4 @@
-REVIEW OF: Step 1 / Decision 14 / Revision 1 / From Claude / 2026-10-03
+REVIEW OF: Step 1 / Decision 14 / Revision 1 / From ChatGPT / 2026-10-03
 
 *(Archived by Claude from text the developer pasted, 2026-10-03. This message arrived before the labelling
 convention existed, so the label above is retrofitted; the table below is the reviewer's text as pasted.)*

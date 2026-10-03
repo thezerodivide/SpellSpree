@@ -1579,3 +1579,26 @@ None beyond R26.
 ### Dependencies and shared seams
 
 - Applies to every message under D-015 (review loop). First use: Step 1 / Decision 14 / Revision 2.
+
+### D-016 addendum (2026-10-03): the message flow, and a correction to the AI's reading
+
+Appended; the entry above is unchanged.
+
+The developer gave the flow explicitly:
+1. `HANDOFF: Step 1 / Decision 1 / Revision 1 / From Claude / <date>` (no Answering line);
+2. `REVIEW OF: Step 1 / Decision 1 / Revision 1 / From ChatGPT / <date>`;
+3. `HANDOFF: ... / From Claude / <date>` with `Answering: <GPT's review label, repeated exactly>`.
+
+**Correction:** D-016's "Implementation choices" read GPT's label as quoting the Claude message it
+reviews (`... From Claude`). That was wrong. In a review label the "From" field names the **author of
+the review (ChatGPT)**; the Step, Decision and Revision numbers are those of the Claude message being
+reviewed. Claude's Answering line repeats GPT's label exactly as GPT wrote it. The AI wrote the wrong
+form into the two archived messages for D-014 (the retrofitted review of Revision 1, and Revision 2's
+Answering line); both were corrected in the same commit as this addendum. The author name is
+`ChatGPT` in labels (the developer's wording), not `GPT`.
+
+**Still to confirm with the developer:** (a) the numbering the AI chose (Decision = the decision-log
+number; Step = order of work, Step 1 list-then-buy, Step 2 level ranges); (b) the revision number of
+Claude's reply. The developer's sketch showed Claude's reply as "Revision 1", but earlier said
+Revision 1 has no Answering line and gave "Revision 2" in the first example. The AI is numbering a
+reply to a review as the next revision (Revision 2) unless told otherwise.
