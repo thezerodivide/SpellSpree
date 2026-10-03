@@ -5,7 +5,7 @@ Current state only (Development Protocol §11). History and rationale are in
 
 Last reviewed end to end: 2026-10-03 (§18).
 Baseline: commit `f6c29f4`, referred to as **v1.5.0** (that commit's file still says `1.5-reorder-passes`).
-Current: `1.6.0-test.5`: **Steps 1-3 and Step 5 (the log follows the character, D-028)** (list-then-buy D-017; every 61-70 selection uses the 1-25 vendor D-022; purchases bounded by the selected level range D-025) plus the test infrastructure (D-026). Tagged `v1.6.0-test.5` and pushed. Simulation-tested; Steps 2 and 3 live-tested in `1.6.0-test.4` (Shaman and Enchanter full runs); the character switch awaits a live check.
+Current: **`1.6.0` (released 2026-10-03, D-029)**, which is `1.6.0-test.5` with the release version: **Steps 1-3 and Step 5 (the log follows the character, D-028)** (list-then-buy D-017; every 61-70 selection uses the 1-25 vendor D-022; purchases bounded by the selected level range D-025) plus the test infrastructure (D-026). Tagged `v1.6.0` and pushed. Simulation-tested and run live (Shaman, Enchanter and an eleven-vendor Buffalo run with a character switch).
 
 ## Where we left off (2026-10-03)
 
@@ -15,7 +15,7 @@ Current: `1.6.0-test.5`: **Steps 1-3 and Step 5 (the log follows the character, 
 - **Step 3 (D-025) approved by consensus (D-027) and BUILT; handed over in `1.6.0-test.4`** with Step 2 and the infrastructure. Live check owed (list in D-025's build entry). `1.6.0` is not created: only the developer's explicit instruction creates it.
 - **Testing infrastructure (D-026) BUILT and approved, handed over in `1.6.0-test.4`:** the unit-test hook, the `withUnit` wrapper, `test/test_units.lua` (16 tests, 7 mutation checks), the faster harness exit (Step 2 suite 10 s to 0.4 s), the delayed-selection tests L20-L22. It ships in `1.6.0-test.4` with Steps 2 and 3. Live check still owed: the script starts normally with the hook present.
 - **TDD adopted from Step 3 (D-024, P-9)** with ChatGPT's guardrails; `docs/MOCK_MODEL.md` classifies the mock's behaviors. Next: the Step 3 design, then tests first.
-- **Step 5 (D-028) approved by consensus (D-027), BUILT and handed over as `1.6.0-test.5`:** the log file follows the character. Live check owed (switch characters in one client, confirm two files). `1.6.0` is not created.
+- **Step 5 (D-028) approved by consensus (D-027), BUILT, handed over as `1.6.0-test.5`, checked live (the switch worked); released in `1.6.0` (D-029).**
 - **Live test of `1.6.0-test.4` (2026-10-03):** Shaman 1-25, then a four-tier Shaman run, then a four-tier Enchanter run, all within the ranges (details in D-025's follow-up and the chat). **Gap found:** the log file name is fixed at script start, so a run after a character switch is written under the first character's name (the Enchanter run of 14:57-15:26 is in the Benedict log but belongs to Ididnotbuffher). Fixed by D-028 (Step 5), delivered in `1.6.0-test.5`.
 - Bazaar is its own later pass (D-020 addendum 2), not part of 1.6.0.
 - Open, developer's call: item 13 (log volume vs rotation; K approved leaving it).

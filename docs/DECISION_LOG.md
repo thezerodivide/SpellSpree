@@ -2933,3 +2933,23 @@ never been read in a log), that a switch in one client leaves the script running
 seconds. **Live check for the developer:** run as one character, switch characters in the same client without restarting the script, press Run
 Shopping Spree (or anything that logs), and confirm that the old file ends with an `identity changed` line, a new file named for the second
 character exists and starts with a `continued session` header, and the second character's run is in the new file. `1.6.0` is not created.
+
+## D-029 — RELEASE 1.6.0 (developer's explicit instruction)
+
+Date: 2026-10-03. Source: the developer, in chat, after the live runs: "I think we're good for a release." Recorded as the explicit release instruction
+(D-018 addendum 2 and D-027 reserve the release to the developer).
+
+**Contents (the agreed scope, D-020 R31, plus two later steps):** Step 1 list-then-buy (D-017); Step 2 every ticked 61-70 uses that class's 1-25 vendor,
+the old 61-70 vendor code commented out, not deleted (D-022); Step 3 purchases bounded by the selected level range (D-025); the test hook and
+infrastructure (D-026); the log file following the character that is playing (D-028); the file logging and outcome-line fix of the earlier test builds.
+
+**Evidence at release.** Simulation: all suites pass (`test_units` 35 tests + 26 mutations + the wrapper mutation, `test_step3` 21 + 14, `test_step2` 9 + 5 +
+2 harness mutations, `test_listthenbuy` 22 + 10, `test_logging` 11 + 9, `test_logswitch` 14 + 17). Live (the developer's runs, 2026-10-03): `1.6.0-test.4`:
+Benedict (Shaman 1-25, then a four-tier Shaman run, then a four-tier Enchanter run on a second character): every purchase inside its visit's range, every skipped
+spell outside it, no skipped spell selected, no repeats, no ledger defects; `1.6.0-test.5`: a character switch in one running client (Ididnotbuffher to
+Buffalo): the old file ends with `identity changed`, the new file starts with the `continued session` header, and an eleven-vendor run (Cleric 26-50 to
+61-70, all four Enchanter and Shaman tiers) bought 616 distinct spells, none twice, all within range, Skipped counter 0.
+
+**Known and not exercised live:** an early stop partway through a visit, an unreadable Lvl cell, a character switch during a run (all covered by the
+simulation only); the Bazaar path (unchanged, its own later pass); the 5-second gap between the transition line and the new file's header seen once live
+(cause not confirmed; harmless). **Build:** `VERSION = '1.6.0'`, tag `v1.6.0`; the file is the same as `1.6.0-test.5` apart from the version string.
