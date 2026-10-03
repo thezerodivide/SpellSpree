@@ -11,7 +11,7 @@ Current: `1.6.0-test.3`: **Step 1, list-then-buy (D-017)** on top of the file lo
 
 - State: **`1.6.0-test.3`** is the current code (tag `v1.6.0-test.3`): Step 1 list-then-buy, accepted as a step, live-run clean (137 spells, one pass per vendor). The premature `v1.6.0` tag was deleted and `VERSION` restored (D-018 addendum 2).
 - **1.6.0 = Steps 1-3 (D-020):** Step 2 = every 61-70 selection uses the 1-25 vendor, with the old 61-70 code **commented out, not deleted**; Step 3 = purchases bounded by the selected level range; each selected range is its own visit (all four ticked: vendor 1, 2, 3, then 1 again). Not built.
-- **Step 2 approved (D-022) and being built** (not yet handed over; it is live-tested together with Step 3 as `1.6.0-test.4`). Older: write the Step 2 and Step 3 designs, run them through the ChatGPT loop (D-015), get the developer's approval, then build one at a time. Next test build: `1.6.0-test.4`.
+- **Step 2 approved (D-022), BUILT and simulation-tested (not handed over)** (not yet handed over; it is live-tested together with Step 3 as `1.6.0-test.4`). Older: write the Step 2 and Step 3 designs, run them through the ChatGPT loop (D-015), get the developer's approval, then build one at a time. Next test build: `1.6.0-test.4`.
 - Bazaar is its own later pass (D-020 addendum 2), not part of 1.6.0.
 - Open, developer's call: item 13 (log volume vs rotation; K approved leaving it).
 
@@ -208,6 +208,8 @@ as the pre-logging baseline in four scenarios.
     *Update (developer's screenshot, D-012 addendum 2):* the `61-70` vendor (Vicar Diarin) lists
     **nothing** with the usable-only filter on; a **71-80** vendor also exists (not in `TIERS`).
     Still open: other classes (see below), and what a tier selection should mean.
+
+16. **OBSERVATION (D-017 B' as approved, found in simulation):** a vendor whose usable list is completely empty never "settles" (the rule needs at least one row), so a visit to it waits 15 s and stops with `Vendor list did not settle`, not "nothing to buy". Harmless; no live vendor has been empty (they all sell non-scroll items) and the empty 61-70 vendors are no longer visited. Not changed (approved item); a candidate small change if it ever matters.
 
 ## Out of scope
 

@@ -36,7 +36,7 @@ Entries that supersede a specification item. Read this first.
 | D-019 | 2026-10-03 | Step 2 direction changed: the four tier boxes stay; the logic underneath changes | direction recorded; design under discussion; nothing built |
 | D-020 | 2026-10-03 | Release 1.6.0 scope: Steps 1-3; each selected range is its own visit | requirement recorded; Steps 2 and 3 not built |
 | D-021 | 2026-10-03 | Step 2 design proposal: every 61-70 selection uses the 1-25 vendor | consensus with ChatGPT reached; awaiting the developer's approval |
-| D-022 | 2026-10-03 | APPROVED: Step 2, every 61-70 selection uses the 1-25 vendor | approved by the developer; supersedes D-021's pending status; building |
+| D-022 | 2026-10-03 | APPROVED: Step 2, every 61-70 selection uses the 1-25 vendor | approved by the developer; built and simulation-tested; not handed over (live-tested with Step 3) |
 
 ---
 
@@ -2207,3 +2207,45 @@ build's addendum.
 
 ### Dependencies and shared seams
 - Step 3 builds on the second visit this step creates.
+
+### D-022 addendum (2026-10-03): Step 2 built; evidence
+
+Appended; the entry above is unchanged.
+
+**Built (`spellspree.lua`):** a `TIER_VENDOR` table (`61-70` -> `1-25`, the others to themselves) with the old
+`['61-70']='61-70'` entry kept beside it as a comment and a restoration note (delete the active `['61-70']='1-25'` entry and
+un-comment the old one so exactly one is active); the 12 `['61-70']` vendor names in `VENDOR_DATA` wrapped in inline
+`--[[ ]]` comments in place, with an explanatory comment above the table; `collectSelectedVendors` looks the vendor up
+through the mapping, keeps the old lookup as a comment, and logs a WARN naming the class and tier instead of skipping
+silently when a mapping or vendor name is missing; the visit label says `using the <tier> vendor` when the vendor tier
+differs from the ticked tier. `TIERS`, the UI, the Bazaar path and all buying code are untouched. `VERSION` stays
+`1.6.0-test.3`; Step 2 is not handed over and is not tagged (D-022 delivery: live-tested with Step 3 as `1.6.0-test.4`).
+
+**Evidence, simulation only:**
+- `test/test_step2.lua`: 8 tests (S1-S8), each citing D-022 / D-021 / D-020 R34, all passing; 5 mutation checks, each caught by
+  the tests predicted. Cases: four Cleric tiers ticked (vendor 1, 2, 3, then 1 again, old 61-70 vendor never targeted, two
+  separate outcome lines for vendor 1, the second visit bought 0); only 61-70; 1-25 plus 61-70 (two visits, not merged);
+  Cleric plus Wizard (each class's own 1-25 vendor, in class order); the visit labels; a missing mapping (WARN, no visit);
+  the source check (12 old names kept inside comments, no active 61-70 vendor entry, exactly one active mapping, restoration
+  note present); every spell bought exactly once.
+- Two of my mutation predictions were incomplete and were corrected, not the tests: mutation 1 also fails S6 (that test
+  simulates a missing mapping by deleting the active 61-70 line, which the mutation had already changed) and mutation 4
+  also fails S8 (Vicar Delin is never visited, so its spell is never bought).
+- The Step 1 suite (18 tests, 9 mutations) and the logging suite (11 tests, 9 mutations) pass. `eligibility_check` against
+  `v1.6.0-test.3`: the same set of spells bought and the same money left in all five scenarios.
+- **One existing test changed with the approved behavior:** `T11` in `test/test_logging.lua` assumed one visit per vendor in a
+  four-tier Cleric spree; under R34 `Vicar Ceraen` is visited twice, so it now expects two outcome lines for it (the first
+  bought 3, the second 0, spree total 3). Its purpose (an outcome line must not report another vendor's totals) is unchanged.
+- Log review: the four-visit flow reads `Vendor 4/4: Vicar Ceraen (Cleric 61-70, using the 1-25 vendor)`; the multi-class
+  case reads `Vicar Ceraen (Cleric 61-70, ...)` then `Channeler Olaemos (Wizard 61-70, ...)`.
+
+**An observation the log review surfaced (no change made):** in an early version of the test the fourth visit ended
+`Stopped, reason="Vendor list did not settle"`. Cause: the simulated vendor had no rows left after everything was bought,
+and the approved settle rule (D-017 B': "at least 1 row, unchanged for 8 polls") never treats an empty list as settled, so
+the visit waits the full 15 s and reports "did not settle". Every live vendor so far also sold non-scroll items, so its
+list was never empty, and the old 61-70 vendors (the empty ones) are no longer visited; so this has not happened live. The
+simulated vendors now also sell a non-scroll item, as live vendors do. Recorded in the ledger as an open observation; the
+rule is an approved item and was not changed.
+
+**Not verified:** everything live. The second visit to the same vendor within one spree has run live only as a separate
+second spree.
