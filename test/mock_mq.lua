@@ -27,6 +27,8 @@ end
 --         neverSettles (the count keeps changing); events = { {atMs=, kind='vanish'|'appear', name=, price=} };
 --         misselect = { name=, times= } (a click on that row selects a different row that many times);
 --         driftOnce = { name=, afterMs= } (the selection moves away from that item shortly after it is made);
+--         selectDelay = { name=, ms= } (a click on that row only takes effect that many ms later, every time; until then the
+--           selection stays where it was, and a late landing replaces whatever is selected then; D-026, delayed selection);
 --         stopAtMs (the Stop button is pressed once at that simulated time).
 --       Step 2 (vendor routing, D-022): classes = {'CLR','WIZ'} (what the Inventory window reports, so the class
 --         boxes for those classes are drawn); openTrees = { Cleric = true } (that class's tier boxes are drawn);
@@ -114,6 +116,11 @@ function M.new(opts)
                 sim.misselected = (sim.misselected or 0) + 1
                 local other = sim.visible[tonumber(row) % #sim.visible + 1]
                 if other then sim.selected = other; return end
+            end
+            if r and opts.selectDelay and r.name == opts.selectDelay.name then
+                sim.lateSelects = sim.lateSelects or {}
+                sim.lateSelects[#sim.lateSelects + 1] = { atMs = sim.clockMs + (opts.selectDelay.ms or 0), row = r }
+                return
             end
             if r then
                 sim.selected = r
@@ -245,6 +252,12 @@ function M.new(opts)
             if not p.done and sim.clockMs >= p.atMs then
                 p.done = true
                 for i, r in ipairs(sim.visible) do if r.name == p.name then table.remove(sim.visible, i); break end end
+            end
+        end
+        for _, l in ipairs(sim.lateSelects or {}) do
+            if not l.done and sim.clockMs >= l.atMs then
+                l.done = true
+                for _, r in ipairs(sim.visible) do if r == l.row then sim.selected = r; break end end
             end
         end
         if sim.driftAt and sim.clockMs >= sim.driftAt and not sim.drifted then

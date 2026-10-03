@@ -1,0 +1,2 @@
+FAIL   L21 D-017 H' (3 selection attempts; Buy is never retried): a selection 500 ms late misses the first 360 ms check, is accepted on the second attempt, and Beta is bought once with one Buy click -- expected exactly 2 selection attempts for Beta, saw 1
+FAIL   L22 D-017 H' / F'' outcome 3 (adverse): a selection that lands 1300 ms late, after all 3 attempts for Beta have run out and while later items are being bought, leaves Beta "attempted, not bought" and never makes the script buy something other than what it said it was buying -- the mock saw 5 purchases, expected 4

@@ -43,6 +43,9 @@ local SCENARIOS = {
     emptyvendor = function(d) return { logsRaw = d, rootRaw = d, nonSpells = {}, spells = {} } end,
     misselect1 = function(d) return base(d, { misselect = { name = 'Spell: Beta', times = 1 } }) end,
     misselect3 = function(d) return base(d, { misselect = { name = 'Spell: Beta', times = 3 } }) end,
+    late150    = function(d) return base(d, { selectDelay = { name = 'Spell: Beta', ms = 150 } }) end,
+    late500    = function(d) return base(d, { selectDelay = { name = 'Spell: Beta', ms = 500 } }) end,
+    late1300   = function(d) return base(d, { selectDelay = { name = 'Spell: Beta', ms = 1300 } }) end,
     drift      = function(d) return base(d, { driftOnce = { name = 'Spell: Beta', afterMs = 200 } }) end,
     prefix     = function(d) return { logsRaw = d, rootRaw = d, nonSpells = { 'Cat Food' },
                     spells = { { name = 'Fear of the Dead', price = 100, level = 30 }, { name = 'Fear', price = 100, level = 5 } } } end,
@@ -284,6 +287,46 @@ local TESTS = {
           return true
       end },
 
+    { id = 'L20', src = 'D-017 H\' (selection is checked for up to 360 ms after the click): a selection that shows up 150 ms late is accepted on the first attempt; all 5 are bought once, one selection click each',
+      fn = function(c)
+          local r = c.late150
+          local ok, why = boughtExactlyOnce(r.sim, ALL5); if not ok then return false, why end
+          local sel = count(r.lines, function(l) return l:find('CMD', 1, true) and l:find('select "Spell: Beta"', 1, true) end)
+          if sel ~= 1 then return false, 'expected exactly 1 selection attempt for Beta, saw ' .. sel end
+          return true
+      end },
+
+    { id = 'L21', src = 'D-017 H\' (3 selection attempts; Buy is never retried): a selection 500 ms late misses the first 360 ms check, is accepted on the second attempt, and Beta is bought once with one Buy click',
+      fn = function(c)
+          local r = c.late500
+          local ok, why = boughtExactlyOnce(r.sim, ALL5); if not ok then return false, why end
+          local sel = count(r.lines, function(l) return l:find('CMD', 1, true) and l:find('select "Spell: Beta"', 1, true) end)
+          if sel ~= 2 then return false, 'expected exactly 2 selection attempts for Beta, saw ' .. sel end
+          if r.sim.buyClicks['Spell: Beta'] ~= 1 then return false, 'Beta got ' .. tostring(r.sim.buyClicks['Spell: Beta']) .. ' Buy clicks, expected 1' end
+          return true
+      end },
+
+    { id = 'L22', src = 'D-017 H\' / F\'\' outcome 3 (adverse): a selection that lands 1300 ms late, after all 3 attempts for Beta have run out and while later items are being bought, leaves Beta "attempted, not bought" and never makes the script buy something other than what it said it was buying',
+      fn = function(c)
+          local r = c.late1300
+          local others = {}; for _, n in ipairs(ALL5) do if n ~= 'Spell: Beta' then others[#others + 1] = n end end
+          local ok, why = boughtExactlyOnce(r.sim, others); if not ok then return false, why end
+          -- the mock's record of what was bought, in order, must equal the script's own "Buying" lines, in order
+          local said = {}
+          for _, l in ipairs(r.lines) do local n = l:match('Buying "(.-)"%.%.%.'); if n then said[#said + 1] = n end end
+          if #said ~= #r.sim.purchases then return false, string.format('the script said it was buying %d item(s), the mock saw %d purchases', #said, #r.sim.purchases) end
+          for i = 1, #said do
+              if said[i] ~= r.sim.purchases[i] then return false, string.format('purchase %d: the script said "%s", the mock sold "%s"', i, said[i], r.sim.purchases[i]) end
+          end
+          local sel = count(r.lines, function(l) return l:find('CMD', 1, true) and l:find('select "Spell: Beta"', 1, true) end)
+          if sel ~= 3 then return false, 'expected exactly 3 selection attempts for Beta, saw ' .. sel end
+          if #grep(r.lines, 'selection not verified in 3 attempts') < 1 then return false, 'Beta\'s outcome detail does not say the selection was not verified in 3 attempts' end
+          local n, counts = ledger(r.lines)
+          if counts[OUT_NOTBOUGHT] ~= 1 then return false, 'Beta is not in the "attempted, not bought" outcome' end
+          if #grep(r.lines, 'just before Buy') < 1 then return false, 'the late landing never reached the pre-Buy check (the scenario no longer exercises it)' end
+          return true
+      end },
+
     { id = 'L18', src = 'D-017 A\': the list read logs each spell\'s Lvl (column 8); the mock gives Gamma level 25',
       fn = function(c)
           local hits = 0
@@ -308,11 +351,13 @@ end
 local MUTATIONS = {
     { name = 'row lookup is not exact (the "=" is dropped)', fails = { 'L9' },
       from = "string.format('=%s,%d', name, LIST_COL.NAME)", to = "string.format('%s,%d', name, LIST_COL.NAME)" },
-    { name = 'the check right before Buy is removed', fails = { 'L8' },
+    -- L22 is meant to catch this too (a late selection landing before Buy); the delay in its scenario was chosen for that
+    { name = 'the check right before Buy is removed', fails = { 'L8', 'L22' },
       from = "    if selectedNameNow() ~= name then\n        logLine(string.format('The selection is no longer", to = "    if false then\n        logLine(string.format('The selection is no longer" },
     { name = 'the list is built after one poll instead of waiting for it to settle', fails = { 'L4', 'L5' },
       from = "local LIST_STABLE_POLLS  = 8", to = "local LIST_STABLE_POLLS  = 1" },
-    { name = 'only one selection attempt instead of 3', fails = { 'L6', 'L7', 'L8' },
+    -- L21 needs the second attempt and L22 reports "in 3 attempts" (predicted before running)
+    { name = 'only one selection attempt instead of 3', fails = { 'L6', 'L7', 'L8', 'L21', 'L22' },
       from = "local SELECT_ATTEMPTS    = 3", to = "local SELECT_ATTEMPTS    = 1" },
     { name = 'entries not reached after a stop get no outcome', fails = { 'L10', 'L11', 'L12', 'L13' },
       from = "        if not entries[i].outcome then setOutcome(entries[i], OUTCOME.NOT_ATTEMPTED, reason) end", to = "        if false then setOutcome(entries[i], OUTCOME.NOT_ATTEMPTED, reason) end" },

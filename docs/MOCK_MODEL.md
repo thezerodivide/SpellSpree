@@ -48,6 +48,7 @@ an ASSUMED row, change its class and cite the evidence.
 | 30 | The ImGui frame is drawn on every `mq.delay`; a button or checkbox is "clicked" once by its label | ASSUMED | a driver for the tests, not a model of ImGui |
 | 31 | Simulated time advances only when the script calls `mq.delay` | ASSUMED | |
 | 32 | The cursor is always empty | ASSUMED | live: empty throughout the runs read so far |
+| 33 | `selectDelay`: a click on a row takes effect only after a set time, the selection stays where it was meanwhile, and a late landing replaces whatever is selected at that moment | ASSUMED | never observed live; every live selection checked so far was already in place by the first read (the logs show the selection check passing at the first poll). A stress model for the adverse case (D-024 Open, approved by the developer 2026-10-03) |
 
 How to read a passing test: rows marked DIFFERS or ASSUMED are where a pass proves least. Live runs remain the only evidence for
 those.
