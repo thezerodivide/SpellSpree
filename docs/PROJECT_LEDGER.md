@@ -161,6 +161,11 @@ as the pre-logging baseline in four scenarios.
     multi-vendor spree would lose its earliest part. Whether that matters, and what to
     do, is the developer's call; not observed to happen.
 
+14. **PROPOSAL under investigation (D-010):** build the vendor's spell list when it opens
+    and buy from that list, instead of line-by-line multiple passes. Not an agreed
+    requirement; S-1 stands. Blocked on spike results (`spikes/spellspree_spike.lua`;
+    questions listed in D-010 Open).
+
 ## Out of scope
 
 Nothing has been explicitly declared out of scope yet.

@@ -24,6 +24,7 @@ Entries that supersede a specification item. Read this first.
 | D-007 | 2026-10-03 | Commit and tag every handed-over build | confirmed |
 | D-008 | 2026-10-03 | Docs are always committed and pushed, without asking | confirmed |
 | D-009 | 2026-10-03 | Fix: `Run outcome` shows per-vendor and spree totals | implemented in `1.6.0-test.2`; simulation-tested, not live |
+| D-010 | 2026-10-03 | Proposal: build the vendor's spell list at open, then buy from it (spikes) | proposal; requirement S-1 unchanged until spike evidence is reviewed |
 
 ---
 
@@ -808,3 +809,85 @@ labelled. Both callers snapshot first. Behavior is otherwise untouched. `VERSION
 Open item 8 is narrowed accordingly.
 
 **Not verified:** anything live. The two-vendor case has only been run in simulation.
+
+---
+
+## D-010 — Proposal: build the vendor's spell list at open, then buy from it (spikes)
+
+**Date:** 2026-10-03 · **Status:** proposal under investigation · **Supersedes:**
+nothing yet. **Would supersede** spec S-1 / D-001 R1 (repeat passes with close and
+reopen) **if adopted**; S-1 stays in force until the developer decides after seeing
+spike results.
+
+### Story
+
+The first live log (v1.6.0-test.1, Cleric 1-25) showed the multi-pass scan working but
+costly: four passes for 70 spells, about 389 row reads of which 319 were non-spells, each
+read paying a `listselect` plus a wait. The developer's explanation (D-001 addendum 3):
+the vendor window shifts rows mid-pass, which the multi-pass design absorbs. The
+developer then asked whether the script can (1) read the vendor's list without going
+through it item by item, and (2) select an item by name. The AI read the MacroQuest
+source (see below) and reported yes to both in principle.
+
+### Requirement
+
+- None changed. **Proposal (developer, 2026-10-03):** "change the mechanism from line by
+  line and multiple passes to building a list of available spells on the vendor upon
+  opening the vendor, and then purchasing each item in the list from that vendor,"
+  which would remove the need for multiple passes. *(A proposal, not yet an agreed
+  requirement.)*
+- **Agreed (developer, 2026-10-03):** build whatever spikes are needed.
+
+### Design choices
+
+None yet. What adopting the proposal would involve is deliberately not designed until the
+spikes answer what the client actually does.
+
+### Implementation choices (spikes)
+
+- Spikes are separate, read-only investigation scripts in `spikes/`, outside the
+  SpellSpree build. They never buy, sell or scribe anything. Selecting a row changes only
+  what is highlighted and prompts the vendor's price tell.
+- `spikes/spellspree_spike.lua`, version `0.1.0-spike.1`. Two modes: a probe, and
+  `watch <spell name>` in which the developer buys and scribes ONE spell by hand while the
+  spike records how the vendor list reacts. Output goes to the screen and to
+  `<logs>/spellspree/spike_<server>_<character>.log`.
+- The AI's tag for a handed-over spike: `spike/vendor-<version>` (P-3 says tag
+  `v<VERSION>`; that namespace is the SpellSpree build's, so a spike gets its own).
+
+### Source facts the spikes build on (read directly, MacroQuest commit `5f8a6eea`)
+
+- `Window(...).Child('ItemList').List(i,col)` returns the text of row `i`, column `col`
+  (1-based); `List('=name,col')` returns the 1-based row index whose cell text matches the
+  name (`=` prefix = exact, per `MaybeExactCompare`, `MQ2Inlines.h:488`); `.Items()` is the
+  row count (`MQ2WindowType.cpp:549-640`).
+- `/notify <window> <list> listselect N` takes a number only (`MQ2Windows.cpp:1272-1283`).
+- `Merchant.Items` / `Merchant.Item(n | name)` read the merchant page-handler items;
+  `Merchant.SelectItem[name]` is a TLO method that finds the item by name, sets the list's
+  current row where column index 1 (0-based) equals the name, and calls `SelectBuySellSlot`
+  (`MQ2MerchantType.cpp:70-113, 205-241`).
+
+### Open (what the spikes must answer; none is known)
+
+1. Which `List` column holds the item name in this UI.
+2. Does `Merchant.Items` / `Merchant.Item(n)` match the filtered `ItemList` (names, count,
+   order), or the vendor's full stock?
+3. Does the by-name lookup return the right row, and does a non-`=` lookup match
+   prefixes (names like `X` and `X (Enchanted)` exist on these vendors)?
+4. Does calling `Merchant.SelectItem` from Lua work (does it need `()`), does it update
+   `SelectedItem`, and does it prompt the same price tell as `listselect`?
+5. After a spell is bought and scribed, how long does its row linger in the list, and can a
+   by-name lookup still find that stale row (watch mode)? This decides whether a
+   list-then-buy design needs its own "already bought" guard.
+6. How long does reading the whole list take (to compare with about 130 ms per row today)?
+
+### Not yet verified
+
+- Everything under Open. The simulation mock used to test the spike is the AI's model of
+  MQ and proves only that the spike runs without error, not what the client does.
+
+### Dependencies and shared seams
+
+- Touches the same scan loop as D-001 (R1, S-1) and the same stale-row behavior recorded in
+  the first live log (ledger confirmed-live section). Any adoption is a separate change and
+  its own decision entry, one change at a time, with P-1 and P-3 before a live handoff.
