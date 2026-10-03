@@ -2101,3 +2101,31 @@ range to be its own visit, and the old 61-70 code kept as comments in case the s
 
 ### Dependencies and shared seams
 - Step 3 (the level bound) builds on the second visit this step creates; Step 1's list-then-buy is untouched.
+
+### D-021 review round 1 (2026-10-03): ChatGPT's review of Revision 1 and the AI's positions (Revision 2)
+
+Appended; earlier text is unchanged. Archived in `docs/handoffs/`: `..._step2_decision21_rev1_review_from-chatgpt.md`
+and `..._step2_decision21_rev2_from-claude.md`.
+
+ChatGPT asked the developer to confirm three decisions it had not seen (all-class routing of 61-70 to the 1-25 vendor
+including Druid; separate visits per tier; old entries kept as comments and Steps 2 and 3 delivered together). The AI
+supplied the developer's exact words and dates from this log (D-020 R31 and R34, D-020 addendum 2, D-013 addendum 4) and
+**corrected one point**: delivering Steps 2 and 3 together for live testing is the AI's proposal, not a developer
+instruction; the developer has said only that 1.6.0 contains Steps 1-3.
+
+| Item | ChatGPT | AI | State |
+|---|---|---|---|
+| A | Request changes (log a missing mapping) | Agree | A' |
+| B | Request changes (restore note must replace the active mapping) | Agree | B' |
+| C | Request changes (confirm separate visits) | Confirmation quoted | pending ChatGPT's confirmation |
+| D | Request changes ("using", not "bought from") | Agree | D' |
+| E | Approve | Agree | agreed |
+| F | Request changes (multi-class test; correct the "re-buy" claim; confirm delivery) | Agree; delivery stays a proposal | F' |
+
+**Revised items:** A' (WARN on a missing mapping, no silent skip); B' (the restoration note says to delete the active
+`['61-70']='1-25'` entry and un-comment the old one so exactly one `['61-70']` entry is active; inline `--[[ ]]` kept);
+D' (`... (Cleric 61-70, using the 1-25 vendor)`, logged before any purchase); F' (adds a Cleric plus Wizard class-routing
+case, a missing-mapping case and the source check; the "would re-buy" claim is replaced by the accurate limitation that
+Step 2 does not enforce the selected range). The AI's own inaccuracy ("would re-buy") is acknowledged here.
+
+**Status:** awaiting ChatGPT's review of Revision 2, then the developer's per-item approval. Nothing is built.
