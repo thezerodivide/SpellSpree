@@ -39,6 +39,7 @@ Entries that supersede a specification item. Read this first.
 | D-022 | 2026-10-03 | APPROVED: Step 2, every 61-70 selection uses the 1-25 vendor | approved by the developer; built and simulation-tested; not handed over (live-tested with Step 3) |
 | D-023 | 2026-10-03 | A question is not permission to change anything | confirmed |
 | D-024 | 2026-10-03 | Adopt TDD with ChatGPT's guardrails, beginning with Step 3 | adopted by the developer |
+| D-025 | 2026-10-03 | Step 3 design proposal: purchases bounded by the selected level range | proposed; ChatGPT review and developer approval pending |
 
 ---
 
@@ -2364,3 +2365,56 @@ None beyond R36-R39.
 
 ### Dependencies and shared seams
 - Applies with P-1 (log review), P-3 (tag every handed-over build), P-6 (review loop) and P-8 (questions are not permission).
+
+---
+
+## D-025 — Step 3 design proposal: purchases bounded by the selected level range
+
+**Date:** 2026-10-03 · **Status:** **proposed; not approved.** Each item A-G is for the developer to approve, change or reject on
+its own, after review by ChatGPT (D-015). **Would implement** D-020 R31 (Step 3), D-013 R21, D-014 item I and D-020 R34. First use
+of TDD (D-024): the test-first plan (item F) is part of the proposal. Nothing is built and no test is written.
+
+### Story
+Step 1 builds the list once and buys everything on it; Step 2 routes every 61-70 selection to the 1-25 vendor. Neither limits
+purchases by level, so a 1-25 selection still buys the level 61-65 spells that vendor sells and a spellbook can fill (developer,
+D-020 addendum: the user must decide which spells are bought). The Lvl (column 8) is already read for every row at build time.
+
+### Requirement (agreed earlier; this step implements it)
+- D-020 R31 Step 3: "Implement bounded by level range to purchases." R21: a range buys only spells whose Lvl is in it, inclusive.
+  Item I: an unreadable level is not bought and is logged. R34: each selected range is its own visit with its own limit. R24: 71-80
+  out of scope. D-019 R29: no UI change. Bazaar: a separate later pass.
+
+### Design choices (the developer approves each separately)
+- **A.** Each visit's range comes from the ticked tier's label (inclusive); an unparsable label refuses the visit with an ERROR.
+- **B.** The level is column 8 of the built list, trimmed, read as a whole number; anything else is unreadable.
+- **C.** In range: buy as today. Outside or unreadable: not selected or clicked; outcome 4 ("deliberately skipped") with the reason,
+  level and range. Above 70 or below 1 is outside every range, so never bought.
+- **D.** PoK visits only; the Bazaar path is unchanged.
+- **E.** One `[list]` line gives the range and the counts (in range, outside, unreadable); the ledger lists the skipped names with
+  reasons as approved; the final scan reports out-of-range leftovers as a count.
+- **F.** The TDD plan: (1) update existing expectations the approved behavior changes, each explained (Step 2's `S1`; PoK scenarios
+  whose simulated spells have no level get levels); (2) write the new tests from R21, item I and R34 (boundaries, outside-range never
+  clicked, unreadable not bought, each visit's own range, single range, above 70 and below 1, multi-class, unparsable label, Bazaar
+  unchanged); (3) keep the adverse scenarios (empty list `L19`, vanished row `L3`, no money, scribe failure) and run vanish and
+  failure cases with a range; (4) run the new tests against the unchanged script and record the red output, confirming each fails for
+  the right reason; (5) implement; (6) targeted mutation checks (the two boundary comparisons, swapped low and high, unreadable
+  treated as in range, range applied to the Bazaar, an off-by-one in the label parse) with the expected failing tests written first;
+  (7) the other suites still pass; (8) three-statement approval evidence, simulation and live kept apart, `docs/MOCK_MODEL.md` updated.
+- **G.** Delivered together with Step 2 as `1.6.0-test.4`, tagged after the log review; the release `1.6.0` only on the developer's
+  explicit instruction after a live run.
+
+### Implementation choices (the AI's)
+- `runSpellSpree` gains a range argument (nil for the Bazaar); `runNavAndShop` and `runShoppingSpree` pass the tier's range down.
+  The range check is one small function. No refactor of existing code (D-024 R39).
+
+### Open
+- The ChatGPT review (handoff Step 3 / Decision 25 / Revision 1, archived in `docs/handoffs/`) and the developer's approval of A-G.
+- Delayed selection has no test (D-024 Open); whether to add one is the developer's call.
+
+### Not yet verified
+- Everything: nothing is built. That column 8 is always a readable number for the spells the user wants has no counter-evidence
+  (every spell row read live had one) but is not proven.
+
+### Dependencies and shared seams
+- Builds on Step 1's built list and Step 2's second visit; changes the expected results of Step 2's `S1`, the logging suite's PoK
+  scenarios and the eligibility check's PoK scenario (data and expectations, each explained in the step's addendum).
