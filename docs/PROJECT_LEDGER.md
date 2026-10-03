@@ -85,11 +85,17 @@ as the pre-logging baseline in four scenarios.
 *Confirmed from the vendor spike probe (`0.1.0-spike.2`, Vicar Thiran, 2026-10-03; log in `docs/evidence/2026-10-03_Benedict_spike-0.1.0-spike.2_probe_VicarThiran.log`; one vendor, one moment; details in D-010 addendum 3):*
 
 - The visible list's item-name column is column 2; the whole list (168 rows) reads in about 2 ms with no selecting.
-- `ItemList.Items()` was one higher than the number of readable rows (168 vs 167).
+- ~~`ItemList.Items()` was one higher than the readable rows (168 vs 167)~~ at the probe; **withdrawn**: the later watch read 173 with row 173 readable; likely a row left the list mid-read.
 - `Merchant.Item(n)` is the vendor's full unfiltered stock (182-183 entries vs 168 visible), in a different order. It is not the usable list.
 - `List('=name,2')` finds the exact row; without `=` it matches substrings. A missing name returns nothing.
 - `Merchant.SelectItem('=name')` works from Lua with no trailing call, selects immediately, and prompts one price tell like `listselect`.
 - Vicar Thiran's list is not alphabetical.
+
+*Confirmed from the vendor spike watch run (`0.1.0-spike.2`, Vicar Thiran, `Spell: Resist Cold` bought and scribed by hand, 2026-10-03; log in `docs/evidence/2026-10-03_Benedict_spike-0.1.0-spike.2_watch_ResistCold.log`; details in D-010 addendum 4):*
+
+- A scribed spell's row stays in the visible list for about **10 s** after the scribe, and an exact by-name lookup still finds it during that time. `Merchant.Item` keeps listing it throughout (unfiltered stock).
+- **The vendor's list changes with nobody acting on it:** 9 rows left during 180 s, including four spells nobody bought; none arrived. Cause unknown (other characters, players, scripts or the server). The list also differed between the probe (168 rows) and the watch (173).
+- Not shown by any spike: that Buy acts on an item chosen by `Merchant.SelectItem` (likely from source, unproven).
 
 *Not exercised in that run:* a purchase that stacks onto an existing copy (Open item 4), the Bazaar (Open item 3), a long multi-vendor spree, a failed scribe.
 
@@ -109,7 +115,7 @@ as the pre-logging baseline in four scenarios.
 1. ~~Does the usable-only filter drop already-scribed spells on reopen?~~
    **Resolved, 2026-10-03 (developer, from direct in-game observation):** yes. This is
    the reason for making multiple passes on one vendor. See the confirmed facts.
-2. **Is `ItemList.Items()` reliable?** *New evidence (spike probe):* at Vicar Thiran it read **one more than the number of readable rows** (168, rows 1-167). The build hard-stops if it reads nil. First
+2. **Is `ItemList.Items()` reliable?** ~~*Spike probe: it read one more than the readable rows (168 vs 167).*~~ **Corrected (D-010 addendum 4):** in the later watch run it read 173 and row 173 was readable; the probe's mismatch is better explained by a row leaving the list while it was read. No evidence now that the count over-reports. The build hard-stops if it reads nil. First
    live log: it never read nil, and its counts were consistent with what the scan
    then selected (pass 4 read all 83 rows with no unreadable selection). Two
    caveats: it can be **partial right after a reopen** (13 then 104; see item 11),
@@ -174,8 +180,8 @@ as the pre-logging baseline in four scenarios.
     and buy from that list, instead of line-by-line multiple passes. Not an agreed
     requirement; S-1 stands. Blocked on spike results. Spike built: `spikes/spellspree_spike.lua`
     `0.1.0-spike.2` (tag `spike/vendor-0.1.0-spike.2`), simulation-checked only; awaiting a
-    live run by the developer. **Probe done (Q1-Q4, Q6 answered, see confirmed facts);
-    watch (Q5, stale rows after a scribe) is next.**
+    live run by the developer. **Probe and watch both done; Q1-Q6 answered (see confirmed
+    facts). Decision for the developer: adopt list-then-buy, which would supersede S-1.**
 
 ## Out of scope
 

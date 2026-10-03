@@ -25,6 +25,7 @@ Entries that supersede a specification item. Read this first.
 | D-008 | 2026-10-03 | Docs are always committed and pushed, without asking | confirmed |
 | D-009 | 2026-10-03 | Fix: `Run outcome` shows per-vendor and spree totals | implemented in `1.6.0-test.2`; simulation-tested, not live |
 | D-010 | 2026-10-03 | Proposal: build the vendor's spell list at open, then buy from it (spikes) | proposal; requirement S-1 unchanged until spike evidence is reviewed |
+| D-011 | 2026-10-03 | Operator cues in test runs must not be buried | confirmed |
 
 ---
 
@@ -970,3 +971,107 @@ design needs an "already bought" guard.
 millisecond-scale sweep, and any row can be selected by exact name. It does not show how a
 buy-from-the-list design behaves over a whole vendor; stale rows after a scribe are the
 unknown that matters. No requirement has changed; S-1 stands.
+
+### D-010 addendum 4 (2026-10-03): watch results (live, Vicar Thiran, `Spell: Resist Cold`) and a correction to addendum 3
+
+Appended; earlier text is unchanged. Evidence: the developer's live run of spike
+`0.1.0-spike.2` in watch mode (180 s); log in
+`docs/evidence/2026-10-03_Benedict_spike-0.1.0-spike.2_watch_ResistCold.log`. The developer
+bought and scribed `Spell: Resist Cold` by hand. Nothing else was bought.
+
+**Timeline (spike clock, ms):** the list held 173 rows at the start, `Resist Cold` at row 9.
+The developer's purchase showed as the scroll in inventory at 55,105; the spell in the
+spellbook (slot 73) at 56,461 (1.4 s later); the row **left the visible list at 66,737**,
+about **10.3 s after the scribe**, together with an unrelated row. Until that moment
+`List('=Spell: Resist Cold,2')` kept returning row 9.
+
+**Q5 answered:** a scribed spell's row **lingers for about 10 s** here, and a by-name lookup
+**does find the stale row** in that time. `Merchant.Item('=Spell: Resist Cold')` kept finding
+the spell for the whole 180 s: it is the unfiltered stock, so scribing never removes it there.
+
+**Unexpected, and the most important observation of the run: the list changed by itself.**
+Rows left the visible list at 7,431, 10,909, 40,317, 66,737 (two), 78,143, 143,039, 169,021
+and 172,518 ms. The developer bought only `Resist Cold`. Names that left: `Hive Fiend's
+Brain (Enchanted)`, `Bonded Loam`, `Fire Arachnid Silk`, `Old Dragon Horn`, and four
+**spells nobody bought during the run**: `Spell: Hammer of Requital`, `Spell: Armor of
+Faith`, `Spell: Imbue Peridot`, `Spell: Armor of Protection`. `Merchant.Items` fell in step
+(188 to 179). Nothing came into the list during the watch. This is direct evidence for the
+developer's account that the vendor list changes under a running scan (D-001 addendum 3).
+**Cause not known.** The log cannot say whether other characters, other players, another
+script, or the server removed those rows. Not asked yet: whether anything else was
+using or buying from that vendor during the run.
+
+**Between the probe and the watch the list was also different:** 168 rows at the probe
+(11:50), 173 rows at the watch (11:54).
+
+**Correction to addendum 3:** it recorded that `ItemList.Items()` "was one too high" at the
+probe (168 vs 167 readable rows). That is **withdrawn as a claim about `Items()`**. In the
+watch, `Items()` read 173 and row 173 (`Blue Diamond`) was readable. The probe's mismatch is
+better explained by a row leaving the list while the probe was reading it: `Merchant.Items`
+also dropped 183 to 182 during that probe. The observation stands (168 read, 167 readable
+at that moment); the inference that the count over-reports does not. Ledger Open item 2
+corrected accordingly.
+
+**What this says about the proposal (D-010), as observation, not decision:**
+- Reading the usable list once at open and selecting each item by exact name does not depend on
+  row positions, so shifting rows cannot make it skip a spell. The observed batches and
+  spontaneous removals are exactly the thing that does hurt a positional scan.
+- Rows can vanish between building the list and reaching an item (by themselves, or after a
+  scribe). A name that is no longer found by exact lookup would have to be treated as "not
+  available" and skipped, with a log line.
+- A stale row can be found by name for about 10 s after scribing. A list-then-buy design
+  buys each name once, so this does not matter unless a name is looked up again.
+- **Not shown by any spike:** that clicking Buy acts on an item chosen with
+  `Merchant.SelectItem`, and how it behaves at the moment of purchase. The spikes never buy. The
+  source's `Merchant.Buy` uses the merchant window's selected item
+  (`MQ2MerchantType.cpp:115-130`), which `SelectItem` sets, so it is likely, not proven.
+- No requirement has changed. S-1 (repeat passes) stands until the developer decides.
+
+---
+
+## D-011 — Operator cues in test runs must not be buried
+
+**Date:** 2026-10-03 · **Status:** confirmed · **Supersedes:** nothing; extends
+Development Protocol section 8 (test diagnostics) for runs that need the developer to act.
+
+### Story
+
+Spike `0.1.0-spike.2` in watch mode printed every state change and a heartbeat every 5 s to
+the MacroQuest chat window. The one line the developer needed, the cue to buy and scribe
+the spell, scrolled out of view within seconds, because the list kept changing and each
+change printed lines. The developer had to enlarge the chat window to full height and
+scroll up to find the cue, and called the run "near impossible to run as directed."
+
+### Requirement
+
+- R19. When a test run needs the developer to do something (or wait for something), the
+  cue to do so must be unmissable and not buried. Anything chat-printed that the developer
+  does not need in the moment goes to the log file only. *(Developer, 2026-10-03: "We'll
+  need to fix that in the future if you want me to perform commands based upon MQ window
+  output.")*
+
+### Design choices
+
+None beyond R19. How a cue is shown (a single printed line near the end, a repeated line,
+an on-screen window) is an implementation choice for each run.
+
+### Implementation choices
+
+- For the existing spike: not changed; it has finished its job. Any further spike or build
+  that needs an operator action will print only the cue (and a final "done") to chat and
+  send everything else to the log file.
+- The instructions given to the developer must not assume the developer can see a
+  particular line unless the program guarantees it is shown last and stays visible.
+
+### Open
+
+- None.
+
+### Not yet verified
+
+- Nothing live; this is a process rule.
+
+### Dependencies and shared seams
+
+- Applies with P-1 (log review before handoff): a handoff review must also check that any
+  operator cue is visible, not just that the log is complete.

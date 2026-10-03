@@ -40,6 +40,10 @@ These add to the Development Protocol for this project only.
 - **P-4. Docs are always committed and pushed (developer, 2026-10-03; D-008).**
   Changes under `docs/` are committed and pushed without asking permission. This
   covers docs only; code follows the one-change-at-a-time process and P-1/P-3.
+- **P-5. Operator cues must not be buried (developer, 2026-10-03; D-011).** If a run needs
+  the developer to act or wait, the cue is unmissable and the chat window is not spammed:
+  chat gets only the cue and a final "done"; everything else goes to the log file. The P-1
+  handoff review checks this too.
 
 ## Sibling projects (Development Protocol §21)
 

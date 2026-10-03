@@ -1,0 +1,61 @@
++5317ms | spike 0.1.0-spike.2 | === spike start: mode=watch ===
++5318ms | spike 0.1.0-spike.2 | character=Benedict server=multiclass zone=poknowledge target=Vicar Thiran
++5318ms | spike 0.1.0-spike.2 | log file: C:\Users\Public\MacroQuest\Logs/spellspree/spike_multiclass_Benedict.log
++5318ms | spike 0.1.0-spike.2 | ItemList.Items()=173  Merchant.Items=188  usable-only box checked=true
++5318ms | spike 0.1.0-spike.2 | --- Q1: which List column holds the item name (select 3 rows, compare cells with Merchant.SelectedItem.Name) ---
++5546ms | spike 0.1.0-spike.2 | row 1: Merchant.SelectedItem.Name="Spell: Blessing of Faith"; cells: c1=""; c2="Spell: Blessing of Faith" (EQUALS selected name); c3="--"; c4="19"; c5="0"; c6="8"; c7="6"; c8=" 35"
++5801ms | spike 0.1.0-spike.2 | row 86: Merchant.SelectedItem.Name="Spell: Armor of Faith"; cells: c1=""; c2="Spell: Armor of Faith" (EQUALS selected name); c3="--"; c4="12"; c5="4"; c6="8"; c7="6"; c8=" 35"
++6085ms | spike 0.1.0-spike.2 | row 173: Merchant.SelectedItem.Name="Blue Diamond"; cells: c1=""; c2="Blue Diamond" (EQUALS selected name); c3="1"; c4="393"; c5="7"; c6="4"; c7="9"; c8="--"
++6086ms | spike 0.1.0-spike.2 | RESULT Q1: name column = 2 (matched in 3 of 3 tested rows)
++6087ms | spike 0.1.0-spike.2 | "Spell: Resist Cold" is on the vendor list at row 9.
++6088ms | spike 0.1.0-spike.2 | --- Q5: watching "Spell: Resist Cold" for 180 s. BUY AND SCRIBE THAT ONE SPELL BY HAND NOW; do nothing else in the vendor window. ---
++6102ms | spike 0.1.0-spike.2 | STATE CHANGE: rows=173 merchantItems=188 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=nil inInventory=0 cursor=nil merchantOpen=true
++7431ms | spike 0.1.0-spike.2 | STATE CHANGE: rows=172 merchantItems=187 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=nil inInventory=0 cursor=nil merchantOpen=true
++7432ms | spike 0.1.0-spike.2 |   row count 173 -> 172. Names gone: Hive Fiend's Brain (Enchanted). Names new: none
++10909ms | spike 0.1.0-spike.2 | STATE CHANGE: rows=171 merchantItems=186 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=nil inInventory=0 cursor=nil merchantOpen=true
++10910ms | spike 0.1.0-spike.2 |   row count 172 -> 171. Names gone: Bonded Loam. Names new: none
++15995ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=171 merchantItems=186 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=nil inInventory=0 cursor=nil merchantOpen=true
++21069ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=171 merchantItems=186 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=nil inInventory=0 cursor=nil merchantOpen=true
++26141ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=171 merchantItems=186 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=nil inInventory=0 cursor=nil merchantOpen=true
++31259ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=171 merchantItems=186 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=nil inInventory=0 cursor=nil merchantOpen=true
++36322ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=171 merchantItems=186 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=nil inInventory=0 cursor=nil merchantOpen=true
++40317ms | spike 0.1.0-spike.2 | STATE CHANGE: rows=170 merchantItems=185 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=nil inInventory=0 cursor=nil merchantOpen=true
++40318ms | spike 0.1.0-spike.2 |   row count 171 -> 170. Names gone: Fire Arachnid Silk. Names new: none
++43278ms | spike 0.1.0-spike.2 | STATE CHANGE: rows=170 merchantItems=184 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=nil inInventory=0 cursor=nil merchantOpen=true
++48339ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=170 merchantItems=184 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=nil inInventory=0 cursor=nil merchantOpen=true
++53425ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=170 merchantItems=184 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=nil inInventory=0 cursor=nil merchantOpen=true
++55105ms | spike 0.1.0-spike.2 | STATE CHANGE: rows=170 merchantItems=184 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=nil inInventory=1 cursor=nil merchantOpen=true
++56461ms | spike 0.1.0-spike.2 | STATE CHANGE: rows=170 merchantItems=184 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++61878ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=170 merchantItems=184 listLookupRow=9 Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++66737ms | spike 0.1.0-spike.2 | STATE CHANGE: rows=168 merchantItems=183 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++66739ms | spike 0.1.0-spike.2 |   row count 170 -> 168. Names gone: Old Dragon Horn; Spell: Resist Cold. Names new: none
++72035ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=168 merchantItems=183 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++77260ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=168 merchantItems=183 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++77703ms | spike 0.1.0-spike.2 | STATE CHANGE: rows=168 merchantItems=182 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++78143ms | spike 0.1.0-spike.2 | STATE CHANGE: rows=167 merchantItems=182 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++78145ms | spike 0.1.0-spike.2 |   row count 168 -> 167. Names gone: Spell: Hammer of Requital. Names new: none
++83433ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=167 merchantItems=182 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++88864ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=167 merchantItems=182 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++94183ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=167 merchantItems=182 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++99351ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=167 merchantItems=182 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++104685ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=167 merchantItems=182 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++109960ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=167 merchantItems=182 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++115231ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=167 merchantItems=182 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++120530ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=167 merchantItems=182 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++125935ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=167 merchantItems=182 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++131139ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=167 merchantItems=182 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++136427ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=167 merchantItems=182 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++141720ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=167 merchantItems=182 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++143039ms | spike 0.1.0-spike.2 | STATE CHANGE: rows=166 merchantItems=181 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++143040ms | spike 0.1.0-spike.2 |   row count 167 -> 166. Names gone: Spell: Armor of Faith. Names new: none
++148252ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=166 merchantItems=181 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++153637ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=166 merchantItems=181 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++158917ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=166 merchantItems=181 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++164217ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=166 merchantItems=181 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++169021ms | spike 0.1.0-spike.2 | STATE CHANGE: rows=165 merchantItems=180 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++169023ms | spike 0.1.0-spike.2 |   row count 166 -> 165. Names gone: Spell: Imbue Peridot. Names new: none
++172518ms | spike 0.1.0-spike.2 | STATE CHANGE: rows=164 merchantItems=179 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++172521ms | spike 0.1.0-spike.2 |   row count 165 -> 164. Names gone: Spell: Armor of Protection. Names new: none
++177809ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=164 merchantItems=179 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++183041ms | spike 0.1.0-spike.2 | heartbeat (no change): rows=164 merchantItems=179 listLookupRow=nil Merchant.Item=Spell: Resist Cold spellbookSlot=73 inInventory=0 cursor=nil merchantOpen=true
++186434ms | spike 0.1.0-spike.2 | === watch finished. ===
