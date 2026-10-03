@@ -47,6 +47,13 @@ test of the merged build.
   list. `S.bought` is also incremented for a purchase that stacks onto an
   existing copy, which is deliberately not scribed.
 
+*Confirmed live by the developer (direct in-game observation, not from a log of this
+build):*
+
+- With the merchant's usable-only filter on, closing and reopening the vendor
+  rebuilds the list without spells already scribed. *(Stated 2026-10-03; which build
+  and vendor it was seen on were not given.)*
+
 *From MacroQuest source (checkout `Documents\MacroQuest\macroquest`, commit `5f8a6eea`), D-004 addendum:*
 
 - `mq.cmdf` = `string.format` then the same execute path as `mq.cmd`
@@ -75,9 +82,9 @@ as the pre-logging baseline in four scenarios.
 
 ## Open implementation details
 
-1. **Does the usable-only filter drop already-scribed spells on reopen?** Pass
-   termination depends on it. Smallest test: scribe one spell from a vendor,
-   close and reopen, see whether its row is gone (developer, in game).
+1. ~~Does the usable-only filter drop already-scribed spells on reopen?~~
+   **Resolved, 2026-10-03 (developer, from direct in-game observation):** yes. This is
+   the reason for making multiple passes on one vendor. See the confirmed facts.
 2. **Is `ItemList.Items()` reliable?** The build hard-stops if it reads nil.
 3. **Does `/click right target` reopen the merchant in the Bazaar?**
 4. **Stacked-purchase re-buy.** Hypothesis from code reading: a purchase that

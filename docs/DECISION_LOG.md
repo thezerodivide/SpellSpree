@@ -562,3 +562,17 @@ agreed.
 - Builds on D-005 (SemVer) and D-006 (no unique filename). Shares the handoff
   gate with D-003: a handoff needs both the pre-handoff log review and a tagged
   commit.
+
+### D-001 addendum (2026-10-03): Open item resolved by the developer
+
+Appended; the entry above is unchanged.
+
+The Open question "does the usable-only filter drop already-scribed spells on
+reopen?" is **resolved: yes**, per the developer's direct in-game observation
+("this does indeed behave like that; it's the entire purpose of doing multiple
+passes on one vendor"). R1's termination condition therefore rests on a
+confirmed behavior, not an assumption. Not recorded by the developer: which
+build or vendor it was observed on, so it is a developer-stated fact, not
+something a SpellSpree log has shown. Ledger Open item 1 updated accordingly.
+The other D-001 Open items (`ItemList.Items()` reliability, Bazaar reopen,
+stacked-purchase re-buy) remain open.
