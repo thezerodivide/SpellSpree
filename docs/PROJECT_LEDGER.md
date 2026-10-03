@@ -5,14 +5,14 @@ Current state only (Development Protocol §11). History and rationale are in
 
 Last reviewed end to end: 2026-10-03 (§18).
 Baseline: commit `f6c29f4`, referred to as **v1.5.0** (that commit's file still says `1.5-reorder-passes`).
-Current: `1.6.0-test.3`: **Step 1, list-then-buy (D-017)** on top of the file logging (D-004) and the outcome-line fix (D-009). Tagged `v1.6.0-test.3` and pushed. Simulation-tested only; not yet live-tested.
+Current: `1.6.0-test.3`: **Step 1, list-then-buy (D-017)** on top of the file logging (D-004) and the outcome-line fix (D-009). Tagged `v1.6.0-test.3` and pushed. Simulation-tested and run live once (clean).
 
-## Where we left off (Step 1 built, 2026-10-03)
+## Where we left off (after the first live run of Step 1, 2026-10-03)
 
-- State: `v1.6.0-test.3` (tag, pushed) replaces the repeat-pass scan with list-then-buy (D-017, approved item by item after a review loop with ChatGPT). 18 new simulation tests + 9 mutation checks pass; the earlier logging suite still passes; the new build buys the same spells as the previous one in five simulated scenarios. **Not yet run live.**
-- Next: the developer runs it on a live vendor and sends the log. What to read first: the `list settle poll` lines, the `[list] Built the spell list` line, each `select "..."` line (lookup row vs row at build time), and the `Outcome ledger` and `Final scan` lines.
-- After Step 1 is accepted: Step 2, the level-range tier boxes (D-013, approved as a requirement, not started). The 61-70 vendor entries stay commented out.
-- Still open, developer's call: item 13 (log volume vs rotation; K approved leaving it), item 12 is fixed, item 14 is built.
+- State: `v1.6.0-test.3` (list-then-buy) ran live on Cleric 26-50 and 51-60: **137 spells in one pass per vendor, nothing skipped or failed**, and a second run found nothing left (D-017 addendum 2).
+- Not exercised live: shifting or vanishing rows during a run, selection retries, stacking, the stop paths (simulation only).
+- Next, developer's decision: **accept Step 1** (then D-006 drops the `-test`), and start **Step 2**, the level-range boxes (D-013, approved as a requirement, not started; the 61-70 vendor entries stay commented out).
+- Open, developer's call: item 13 (log volume vs rotation; K approved leaving it).
 
 ## Resolved behavior
 
@@ -101,6 +101,14 @@ as the pre-logging baseline in four scenarios.
 - **The vendor's list changes with nobody acting on it:** 9 rows left during 180 s, including four spells nobody bought; none arrived. Cause unknown (other characters, players, scripts or the server). The list also differed between the probe (168 rows) and the watch (173).
 - Not shown by any spike: that Buy acts on an item chosen by `Merchant.SelectItem` (likely from source, unproven).
 
+*Confirmed from the first live run of `1.6.0-test.3` (Cleric 26-50 and 51-60 on Benedict, 2026-10-03; excerpt in `docs/evidence/2026-10-03_Benedict_v1.6.0-test.3_ClericThiran-Delin_excerpt.log`; details in D-017 addendum 2):*
+
+- **List-then-buy works live:** 137 spells (88 at Vicar Thiran, 49 at Vicar Delin) bought and scribed in one pass per vendor; 0 skipped, 0 failed. A second run over the same two vendors found no scrolls left.
+- Exact-name lookup + click + Buy: 137/137 selected on the first attempt, 137/137 paid, 137/137 landed on the first read. Price tell received 137/137. Quantity window opened 136/137; scribe-confirm window 0/137. One scribe needed a second attempt.
+- The list can be **partial at open**: Thiran read 96 rows, then 172 within about 0.57 s; the settle wait (B') caught it.
+- **No row shifted during these runs** (all 137 lookups equalled the build-time row), so live shift-resilience was not exercised. When scribed rows leave the list varies (Thiran's gone by the final scan, Delin's still listed); the earlier "about 10 s" figure does not generalize.
+- The settle window (nominally 2 s) took 1.9-3.3 s in practice. About 2.4-2.6 s per spell.
+
 *Not exercised in that run:* a purchase that stacks onto an existing copy (Open item 4), the Bazaar (Open item 3), a long multi-vendor spree, a failed scribe.
 
 *Claimed by the original author in code comments, not verified by us:*
@@ -180,7 +188,7 @@ as the pre-logging baseline in four scenarios.
     multi-vendor spree would lose its earliest part. Whether that matters, and what to
     do, is the developer's call; not observed to happen.
 
-14. **BUILT (D-017) as `1.6.0-test.3`, simulation-tested, awaiting a live run.** Was: **DESIGN PROPOSED, awaiting per-item approval (D-014; E approved, new choice H proposed, A-D/F/G unanswered):** list-then-buy replaces repeat passes. Wanted by the developer (D-010 addendum 5); not yet approved item by item; S-1 stands until it is. Was: **PROPOSAL under investigation (D-010):** build the vendor's spell list when it opens
+14. **BUILT (D-017) as `1.6.0-test.3`; first live run clean (137 spells, one pass per vendor).** Awaiting the developer's acceptance. Was: **DESIGN PROPOSED, awaiting per-item approval (D-014; E approved, new choice H proposed, A-D/F/G unanswered):** list-then-buy replaces repeat passes. Wanted by the developer (D-010 addendum 5); not yet approved item by item; S-1 stands until it is. Was: **PROPOSAL under investigation (D-010):** build the vendor's spell list when it opens
     and buy from that list, instead of line-by-line multiple passes. Not an agreed
     requirement; S-1 stands. Blocked on spike results. Spike built: `spikes/spellspree_spike.lua`
     `0.1.0-spike.2` (tag `spike/vendor-0.1.0-spike.2`), simulation-checked only; awaiting a

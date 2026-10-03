@@ -1,0 +1,71 @@
+# EXCERPT of a live log, not the full file.
+# Source: C:\Users\Public\MacroQuest\Logs\spellspree\spellspree_multiclass_Benedict.log, the v1.6.0-test.3 run (2,931 lines, 2026-10-03 12:53:24-12:59:38).
+# Character Benedict, server multiclass. First spree: Cleric 26-50 (Vicar Thiran) and 51-60 (Vicar Delin). Second spree, started 12:59:31, ran the same two vendors again.
+# Every line below is copied verbatim and in order from the original; sections are marked '#==='.
+#=== session start and the first spree's structure (grep of the whole run)
+2026-10-03 12:53:24 | +5321ms | v1.6.0-test.3 | OBS   | session start: build=v1.6.0-test.3 source=@C:\Users\Public\MacroQuest\lua\spellspree.lua
+2026-10-03 12:53:31 | +12170ms | v1.6.0-test.3 | INFO  | User pressed Run Shopping Spree.
+2026-10-03 12:53:31 | +12248ms | v1.6.0-test.3 | INFO  | Shopping spree: 2 vendor(s) selected.
+2026-10-03 12:53:31 | +12248ms | v1.6.0-test.3 | INFO  | --- Vendor 1/2: Vicar Thiran (Cleric 26-50) ---
+2026-10-03 12:53:32 | +12677ms | v1.6.0-test.3 | INFO  | Arrived near "Vicar Thiran".
+2026-10-03 12:53:35 | +15813ms | v1.6.0-test.3 | INFO  | [list] The visible list settled at 172 row(s).
+2026-10-03 12:53:35 | +15866ms | v1.6.0-test.3 | INFO  | [list] Built the spell list: 88 scroll(s) to buy from 172 row(s); 84 non-scroll row(s) ignored; 0 unreadable row(s); 0 duplicate name(s).
+2026-10-03 12:57:07 | +227722ms | v1.6.0-test.3 | INFO  | Reached the end of the built list (88 entries).
+2026-10-03 12:57:07 | +227722ms | v1.6.0-test.3 | INFO  | Outcome ledger (88 built-list entries): bought and scribed=88; bought, scribe not completed=0; attempted, not bought=0; deliberately skipped=0; not attempted because the run stopped=0; NO OUTCOME RECORDED=0.
+2026-10-03 12:57:07 | +227724ms | v1.6.0-test.3 | INFO  | Final scan (log only, bought nothing): 84 rows read. New scrolls not on the built list: 0. Rows still listed for bought-and-scribed entries (expected for about 10 s after a scribe): 0. Rows still listed for other outcomes: 0.
+2026-10-03 12:57:07 | +227724ms | v1.6.0-test.3 | INFO  | Run outcome (Nav & Shop "Vicar Thiran"): state=Done, reason="End of the built list". This vendor: bought=88, skipped=0, spent=1,340pp 6gp 4sp 6cp. Spree total so far: bought=88, skipped=0, spent=1,340pp 6gp 4sp 6cp.
+2026-10-03 12:57:07 | +227725ms | v1.6.0-test.3 | INFO  | --- Vendor 2/2: Vicar Delin (Cleric 51-60) ---
+2026-10-03 12:57:08 | +229153ms | v1.6.0-test.3 | INFO  | Arrived near "Vicar Delin".
+2026-10-03 12:57:12 | +233200ms | v1.6.0-test.3 | INFO  | [list] The visible list settled at 137 row(s).
+2026-10-03 12:57:12 | +233325ms | v1.6.0-test.3 | INFO  | [list] Built the spell list: 49 scroll(s) to buy from 137 row(s); 88 non-scroll row(s) ignored; 0 unreadable row(s); 0 duplicate name(s).
+2026-10-03 12:59:21 | +361714ms | v1.6.0-test.3 | INFO  | Reached the end of the built list (49 entries).
+2026-10-03 12:59:21 | +361714ms | v1.6.0-test.3 | INFO  | Outcome ledger (49 built-list entries): bought and scribed=49; bought, scribe not completed=0; attempted, not bought=0; deliberately skipped=0; not attempted because the run stopped=0; NO OUTCOME RECORDED=0.
+2026-10-03 12:59:21 | +361716ms | v1.6.0-test.3 | INFO  | Final scan (log only, bought nothing): 137 rows read. New scrolls not on the built list: 0. Rows still listed for bought-and-scribed entries (expected for about 10 s after a scribe): 49. Rows still listed for other outcomes: 0.
+2026-10-03 12:59:21 | +361717ms | v1.6.0-test.3 | INFO  | Run outcome (Nav & Shop "Vicar Delin"): state=Done, reason="End of the built list". This vendor: bought=49, skipped=0, spent=2,400pp 5sp 6cp. Spree total so far: bought=137, skipped=0, spent=3,740pp 7gp 2cp.
+2026-10-03 12:59:21 | +361717ms | v1.6.0-test.3 | INFO  | Shopping spree: all 2 vendor(s) done.
+2026-10-03 12:59:31 | +371540ms | v1.6.0-test.3 | INFO  | User pressed Run Shopping Spree.
+2026-10-03 12:59:31 | +371602ms | v1.6.0-test.3 | INFO  | Shopping spree: 2 vendor(s) selected.
+2026-10-03 12:59:31 | +371603ms | v1.6.0-test.3 | INFO  | --- Vendor 1/2: Vicar Thiran (Cleric 26-50) ---
+2026-10-03 12:59:32 | +372942ms | v1.6.0-test.3 | INFO  | Arrived near "Vicar Thiran".
+2026-10-03 12:59:34 | +375363ms | v1.6.0-test.3 | INFO  | [list] The visible list settled at 85 row(s).
+2026-10-03 12:59:34 | +375364ms | v1.6.0-test.3 | INFO  | [list] Built the spell list: 0 scroll(s) to buy from 85 row(s); 85 non-scroll row(s) ignored; 0 unreadable row(s); 0 duplicate name(s).
+2026-10-03 12:59:34 | +375364ms | v1.6.0-test.3 | INFO  | Outcome ledger (0 built-list entries): bought and scribed=0; bought, scribe not completed=0; attempted, not bought=0; deliberately skipped=0; not attempted because the run stopped=0; NO OUTCOME RECORDED=0.
+2026-10-03 12:59:34 | +375379ms | v1.6.0-test.3 | INFO  | Final scan (log only, bought nothing): 85 rows read. New scrolls not on the built list: 0. Rows still listed for bought-and-scribed entries (expected for about 10 s after a scribe): 0. Rows still listed for other outcomes: 0.
+2026-10-03 12:59:34 | +375379ms | v1.6.0-test.3 | INFO  | Run outcome (Nav & Shop "Vicar Thiran"): state=Done, reason="End of the built list". This vendor: bought=0, skipped=0, spent=0cp. Spree total so far: bought=0, skipped=0, spent=0cp.
+2026-10-03 12:59:34 | +375380ms | v1.6.0-test.3 | INFO  | --- Vendor 2/2: Vicar Delin (Cleric 51-60) ---
+2026-10-03 12:59:35 | +376299ms | v1.6.0-test.3 | INFO  | Arrived near "Vicar Delin".
+2026-10-03 12:59:38 | +378911ms | v1.6.0-test.3 | INFO  | [list] The visible list settled at 88 row(s).
+2026-10-03 12:59:38 | +378912ms | v1.6.0-test.3 | INFO  | [list] Built the spell list: 0 scroll(s) to buy from 88 row(s); 88 non-scroll row(s) ignored; 0 unreadable row(s); 0 duplicate name(s).
+2026-10-03 12:59:38 | +378913ms | v1.6.0-test.3 | INFO  | Outcome ledger (0 built-list entries): bought and scribed=0; bought, scribe not completed=0; attempted, not bought=0; deliberately skipped=0; not attempted because the run stopped=0; NO OUTCOME RECORDED=0.
+2026-10-03 12:59:38 | +378929ms | v1.6.0-test.3 | INFO  | Final scan (log only, bought nothing): 88 rows read. New scrolls not on the built list: 0. Rows still listed for bought-and-scribed entries (expected for about 10 s after a scribe): 0. Rows still listed for other outcomes: 0.
+2026-10-03 12:59:38 | +378929ms | v1.6.0-test.3 | INFO  | Run outcome (Nav & Shop "Vicar Delin"): state=Done, reason="End of the built list". This vendor: bought=0, skipped=0, spent=0cp. Spree total so far: bought=0, skipped=0, spent=0cp.
+2026-10-03 12:59:38 | +378930ms | v1.6.0-test.3 | INFO  | Shopping spree: all 2 vendor(s) done.
+#=== Vicar Thiran: the list settle polls (96 rows, then 172)
+2026-10-03 12:53:32 | +13406ms | v1.6.0-test.3 | OBS   | list settle poll 1: count=96, same-count polls in a row=1/8, waited 15 ms
+2026-10-03 12:53:33 | +13687ms | v1.6.0-test.3 | OBS   | list settle poll 2: count=96, same-count polls in a row=2/8, waited 296 ms
+2026-10-03 12:53:33 | +13959ms | v1.6.0-test.3 | OBS   | list settle poll 3: count=172, same-count polls in a row=1/8, waited 568 ms
+2026-10-03 12:53:33 | +14227ms | v1.6.0-test.3 | OBS   | list settle poll 4: count=172, same-count polls in a row=2/8, waited 836 ms
+2026-10-03 12:53:34 | +14488ms | v1.6.0-test.3 | OBS   | list settle poll 5: count=172, same-count polls in a row=3/8, waited 1097 ms
+2026-10-03 12:53:34 | +14749ms | v1.6.0-test.3 | OBS   | list settle poll 6: count=172, same-count polls in a row=4/8, waited 1358 ms
+2026-10-03 12:53:34 | +15025ms | v1.6.0-test.3 | OBS   | list settle poll 7: count=172, same-count polls in a row=5/8, waited 1634 ms
+2026-10-03 12:53:34 | +15288ms | v1.6.0-test.3 | OBS   | list settle poll 8: count=172, same-count polls in a row=6/8, waited 1897 ms
+2026-10-03 12:53:35 | +15550ms | v1.6.0-test.3 | OBS   | list settle poll 9: count=172, same-count polls in a row=7/8, waited 2159 ms
+2026-10-03 12:53:35 | +15813ms | v1.6.0-test.3 | OBS   | list settle poll 10: count=172, same-count polls in a row=8/8, waited 2422 ms
+2026-10-03 12:57:09 | +230064ms | v1.6.0-test.3 | OBS   | list settle poll 1: count=137, same-count polls in a row=1/8, waited 127 ms
+2026-10-03 12:57:10 | +230509ms | v1.6.0-test.3 | OBS   | list settle poll 2: count=137, same-count polls in a row=2/8, waited 572 ms
+#=== the one scribe that needed a second attempt
+2026-10-03 12:54:08 | +49170ms | v1.6.0-test.3 | OBS   | scribe attempt 1/20 for "Spell: Resolution": scroll still reads in the slot
+2026-10-03 12:54:10 | +50979ms | v1.6.0-test.3 | OBS   | scribe attempt 2/20 for "Spell: Resolution": scroll no longer reads in the slot (scribe inferred; MQ gives no direct confirmation)
+#=== the first three entries at Vicar Thiran
+2026-10-03 12:53:35 | +15881ms | v1.6.0-test.3 | OBS   | entry 1 "Spell: Blessing of Faith": list row at build time 1, Lvl= 35, Qty=--, price in list=19pp 0gp 8sp 6cp (read from the list; gates nothing)
+2026-10-03 12:53:35 | +15913ms | v1.6.0-test.3 | OBS   | selection check for "Spell: Blessing of Faith": row 1, Merchant.SelectedItem.Name=Spell: Blessing of Faith (attempt 1/3)
+2026-10-03 12:53:37 | +17491ms | v1.6.0-test.3 | OBS   | outcome for "Spell: Blessing of Faith": bought and scribed
+2026-10-03 12:53:37 | +17623ms | v1.6.0-test.3 | OBS   | entry 2 "Spell: Pacify": list row at build time 2, Lvl= 35, Qty=--, price in list=12pp 6gp 5sp 4cp (read from the list; gates nothing)
+2026-10-03 12:53:37 | +17656ms | v1.6.0-test.3 | OBS   | selection check for "Spell: Pacify": row 2, Merchant.SelectedItem.Name=Spell: Pacify (attempt 1/3)
+2026-10-03 12:53:38 | +19256ms | v1.6.0-test.3 | OBS   | outcome for "Spell: Pacify": bought and scribed
+2026-10-03 12:53:38 | +19389ms | v1.6.0-test.3 | OBS   | entry 3 "Spell: Resist Disease": list row at build time 3, Lvl= 30, Qty=--, price in list=7pp 0gp 5sp 1cp (read from the list; gates nothing)
+2026-10-03 12:53:38 | +19423ms | v1.6.0-test.3 | OBS   | selection check for "Spell: Resist Disease": row 3, Merchant.SelectedItem.Name=Spell: Resist Disease (attempt 1/3)
+2026-10-03 12:53:40 | +21023ms | v1.6.0-test.3 | OBS   | outcome for "Spell: Resist Disease": bought and scribed
+2026-10-03 12:57:13 | +233556ms | v1.6.0-test.3 | OBS   | entry 1 "Spell: Banish Summoned": list row at build time 1, Lvl= 56, Qty=--, price in list=27pp 7gp 1sp 9cp (read from the list; gates nothing)
+2026-10-03 12:57:15 | +236158ms | v1.6.0-test.3 | OBS   | entry 2 "Spell: Paralyzing Earth": list row at build time 2, Lvl= 45, Qty=--, price in list=89pp 0gp 5sp 2cp (read from the list; gates nothing)
+2026-10-03 12:57:18 | +238439ms | v1.6.0-test.3 | OBS   | entry 3 "Spell: Reviviscence": list row at build time 3, Lvl= 56, Qty=--, price in list=89pp 3gp 1sp 0cp (read from the list; gates nothing)

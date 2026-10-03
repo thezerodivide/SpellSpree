@@ -31,7 +31,7 @@ Entries that supersede a specification item. Read this first.
 | D-014 | 2026-10-03 | Design proposal: list-then-buy replaces repeat passes | proposed; awaiting developer approval per item |
 | D-015 | 2026-10-03 | Second-agent review loop: evaluate each recommendation, agree or disagree with reasons | confirmed |
 | D-016 | 2026-10-03 | Handoff labels for messages between Claude and GPT | confirmed, including numbering and revision rule |
-| D-017 | 2026-10-03 | APPROVED: Step 1, list-then-buy replaces repeat passes | approved by the developer; supersedes spec S-1 / D-001 R1; built as 1.6.0-test.3, simulation-tested, not yet live |
+| D-017 | 2026-10-03 | APPROVED: Step 1, list-then-buy replaces repeat passes | approved by the developer; supersedes spec S-1 / D-001 R1; built as 1.6.0-test.3; first live run succeeded (137 spells, one pass per vendor) |
 
 ---
 
@@ -1825,3 +1825,47 @@ row the exact-name lookup found and the row the entry had at build time (a diffe
 every settle poll gives its count; every entry gives its outcome and reason; the final scan reports new and lingering
 rows. What the log cannot show: whether a scribe really happened (it is inferred from the scroll leaving its slot),
 and anything about a vendor the run did not reach.
+
+### D-017 addendum 2 (2026-10-03): the first live run of `1.6.0-test.3`
+
+Appended; earlier text is unchanged. Evidence: the developer's live log (the v1.6.0-test.3 run, 12:53:24-12:59:38);
+excerpt in `docs/evidence/2026-10-03_Benedict_v1.6.0-test.3_ClericThiran-Delin_excerpt.log`. The developer ran
+Cleric 26-50 and 51-60 on Benedict, then ran the same two vendors again.
+
+**Result.** Vicar Thiran (26-50): 172 rows, **88 scrolls built, 88 bought and scribed**, 1,340pp 6gp 4sp 6cp, in one
+pass. Vicar Delin (51-60): 137 rows, **49 scrolls built, 49 bought and scribed**, 2,400pp 5sp 6cp, in one pass. Total
+**137 spells, 3,740pp 7gp 2cp, 0 skipped, 0 failed, no ERROR line, no ledger defect.** Both outcome lines read
+correctly (`This vendor` against `Spree total so far`; D-009's fix confirmed live). **The second spree found no scrolls
+at either vendor** (Thiran 85 rows, Delin 88 rows, both with 0 scrolls), which confirms nothing was left behind.
+
+**What the run confirmed live (D-017 Not yet verified):**
+- Exact-name lookup, a row click, and Buy work on the live client: 137 of 137 selections verified on the first
+  attempt, 137 of 137 purchases paid, 137 of 137 scrolls found in the expected slot on the first read, all scribed.
+- The vendor's price tell arrived for every one of the 137 items (`none received`: 0).
+- The quantity window opened for 136 of 137 purchases; the scribe-confirmation window never appeared.
+- The settle wait did real work: at Thiran the first reads were **96 rows, then 172 within about 0.57 s**. A list built
+  from the first read would have missed 76 rows.
+- Speed: 2.41 s per spell at Thiran and 2.62 s at Delin, with no repeat passes (the earlier multi-pass run took about
+  3.5 s per spell over four passes at a different vendor, so this is not a controlled comparison).
+- One scribe (`Spell: Resolution`) needed a second attempt, the known case of the client rejecting the first
+  right-click.
+
+**What this run did NOT exercise live (simulation-only so far):** the vendor reordering or rows vanishing during
+the run: **all 137 exact-name lookups returned the same row the entry had when the list was built**, so no row shifted
+at any point. The retry paths (selection attempts 2 and 3; a mismatch just before Buy), the skip of a vanished row, a
+stacked purchase, every stop path and the ledger categories other than "bought and scribed", and a list that does
+not settle. The design handles those in the simulation; this run neither confirms nor refutes them live.
+
+**Observations that qualify earlier facts:**
+- *Scribed rows leaving the list.* D-010 addendum 4 recorded about 10 s from the one-spell watch. Here, Thiran's 88
+  scribed rows were all gone by the final scan (0 still listed) while Delin's 49 were all still listed (49), and in both
+  runs no row left during the purchasing (no lookup shifted). So when the list drops scribed rows varies; the 10 s
+  figure does not generalize. It does not affect the build, which never relies on it.
+- *The settle window is longer in practice than its nominal 2 s.* Polls were 280 to 460 ms apart (250 ms delay plus
+  overhead), so 8 polls took 1.9 s to 3.3 s. Untuned values; no change proposed (Protocol section 15: a bare
+  observation is not grounds to change a value).
+- Thiran had 84 non-scroll rows at the first run's final scan and 85 at the second run: one non-scroll row appeared
+  between the runs.
+
+**Status:** simulation-tested and now live-run once with a clean result. Acceptance is the developer's decision
+(D-006: a change is accepted before the version drops its `-test`). Step 2 (D-013) has not started.
