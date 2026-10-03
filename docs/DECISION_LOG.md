@@ -3011,3 +3011,25 @@ itself; it also reads each discipline's level and uses `Me.CombatAbilityReady(na
 the scan ended; the watch mode refreshes it every two seconds. Re-run in simulation: clean, no command sent, nothing bought. **What TAC does not settle:** whether the
 discipline names it reads equal the names the tomes carry once "Tome of " is removed (the dump compares them and logs the mismatches), and what the game says on
 learning a tome or right-clicking one already known.
+
+### D-030 addendum 2 (2026-10-03): results of the `names` and `dump` spikes (Kylaeris, `0.1.0-spike.2`)
+
+Evidence: `docs/evidence/2026-10-03_Kylaeris_tome-spike.2_names_and_dump_BeorobinAmondson.log` (a Monk's character; `dump` at Beorobin Amondson). Live observations:
+
+1. **Vendor names.** The build's exact lookup (`npc "=<name>"`) found 9 of the 10 vendors, with `CleanName` equal to the listed name. **Zhao's real name is
+   ``Zhao V`karin`` with a backtick (byte 0x60)**, not an apostrophe or a typographic quote; the apostrophe form is not found. (`Name` is `Zhao_V`karin000`-style,
+   as for the others: `<Name>000` with underscores.) Whether a backtick inside the build's `/target npc "=..."` command works was not tested.
+2. **The vendor sells much more than tomes.** Beorobin Amondson's list had 105 rows: 22 start with `Tome of `, **83 are other items** (food, gems, quest items,
+   weapons and armor). A name rule of `Tome of ` is therefore required; "everything on the list" is not safe.
+3. **Known disciplines can be read.** `Me.CombatAbilityCount` was unavailable on this client; the slot-by-slot scan found 39 disciplines (last filled slot 40, one empty
+   slot inside). `Me.CombatAbility(<name>)()` returns the slot number for a known discipline and nil for an unknown one (the `.Name` of that node is nil).
+4. **Matching a tome to a known discipline: 19 of 22 matched exactly** after removing `Tome of `. The 3 that did not: **`Inner Flame Discipline` vs the known
+   `Innerflame Discipline`** and **`Stone Stance Discipline` vs `Stonestance Discipline`** (the same discipline, spelled with a space in the tome and without one in the
+   ability name), and **`Phantom Shadow`**, which is simply not known by this character (level 65 tome). So an exact derived-name comparison misses some known
+   disciplines; comparing with spaces (and likely case and punctuation) ignored fixes these two, but other classes may hold other spelling differences (unverified).
+5. **Not yet observed:** the two Berserker vendors' inventories (no `dump` at Kurlond Axebringer or Gaddi Buruca yet), the chat text and discipline state when learning a
+   new tome (`watch`), and what the game does when a tome for an already-known discipline is right-clicked (`watch`).
+
+The developer asked whether a second character is needed to test learning again. The AI's reading: no. (a) the already-known case needs only a second copy of a
+tome the character already knows (Tome of Bellow can be bought again), and that is the decision-relevant observation; (b) a new-learn observation can use
+`Tome of Phantom Shadow` (not known by Kylaeris, 40 platinum) if wanted; the developer's confirmation that learning consumes the tome already stands.

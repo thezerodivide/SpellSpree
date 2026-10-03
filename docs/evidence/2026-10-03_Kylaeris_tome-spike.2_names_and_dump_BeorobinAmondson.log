@@ -1,0 +1,134 @@
+2026-10-03 17:54:37 | +5325ms | tome-spike 0.1.0-spike.2 | mode names; zone=poknowledge; character=Kylaeris
+2026-10-03 17:54:37 | +5326ms | tome-spike 0.1.0-spike.2 | Bard | Larquin Julinok | exact lookup npc "=Larquin Julinok": FOUND (ID=124, CleanName="Larquin Julinok", Name="Larquin_Julinok000", Distance=23.043783187866)
+2026-10-03 17:54:37 | +5326ms | tome-spike 0.1.0-spike.2 |     loose match 1 for "Larquin": ID=124 CleanName="Larquin Julinok" bytes=Larquin Julinok
+2026-10-03 17:54:37 | +5326ms | tome-spike 0.1.0-spike.2 | Beastlord | Tana Clawguard | exact lookup npc "=Tana Clawguard": FOUND (ID=122, CleanName="Tana Clawguard", Name="Tana_Clawguard000", Distance=76.769569396973)
+2026-10-03 17:54:37 | +5327ms | tome-spike 0.1.0-spike.2 |     loose match 1 for "Tana": ID=122 CleanName="Tana Clawguard" bytes=Tana Clawguard
+2026-10-03 17:54:37 | +5328ms | tome-spike 0.1.0-spike.2 | Berserker | Kurlond Axebringer | exact lookup npc "=Kurlond Axebringer": FOUND (ID=215, CleanName="Kurlond Axebringer", Name="Kurlond_Axebringer000", Distance=307.61074829102)
+2026-10-03 17:54:37 | +5328ms | tome-spike 0.1.0-spike.2 |     loose match 1 for "Kurlond": ID=215 CleanName="Kurlond Axebringer" bytes=Kurlond Axebringer
+2026-10-03 17:54:37 | +5329ms | tome-spike 0.1.0-spike.2 | Berserker | Gaddi Buruca | exact lookup npc "=Gaddi Buruca": FOUND (ID=216, CleanName="Gaddi Buruca", Name="Gaddi_Buruca000", Distance=306.65283203125)
+2026-10-03 17:54:37 | +5329ms | tome-spike 0.1.0-spike.2 |     loose match 1 for "Gaddi": ID=216 CleanName="Gaddi Buruca" bytes=Gaddi Buruca
+2026-10-03 17:54:37 | +5329ms | tome-spike 0.1.0-spike.2 | Monk | Beorobin Amondson | exact lookup npc "=Beorobin Amondson": FOUND (ID=125, CleanName="Beorobin Amondson", Name="Beorobin_Amondson000", Distance=273.38458251953)
+2026-10-03 17:54:37 | +5330ms | tome-spike 0.1.0-spike.2 |     loose match 1 for "Beorobin": ID=125 CleanName="Beorobin Amondson" bytes=Beorobin Amondson
+2026-10-03 17:54:37 | +5330ms | tome-spike 0.1.0-spike.2 | Paladin | Ulin Velnik | exact lookup npc "=Ulin Velnik": FOUND (ID=126, CleanName="Ulin Velnik", Name="Ulin_Velnik000", Distance=102.52660369873)
+2026-10-03 17:54:37 | +5330ms | tome-spike 0.1.0-spike.2 |     loose match 1 for "Ulin": ID=124 CleanName="Larquin Julinok" bytes=Larquin Julinok
+2026-10-03 17:54:37 | +5330ms | tome-spike 0.1.0-spike.2 |     loose match 2 for "Ulin": ID=128 CleanName="Wisdomseeker Raulin" bytes=Wisdomseeker Raulin
+2026-10-03 17:54:37 | +5331ms | tome-spike 0.1.0-spike.2 |     loose match 3 for "Ulin": ID=126 CleanName="Ulin Velnik" bytes=Ulin Velnik
+2026-10-03 17:54:37 | +5331ms | tome-spike 0.1.0-spike.2 | Ranger | Keshyk Wardorn | exact lookup npc "=Keshyk Wardorn": FOUND (ID=234, CleanName="Keshyk Wardorn", Name="Keshyk_Wardorn000", Distance=160.72694396973)
+2026-10-03 17:54:37 | +5331ms | tome-spike 0.1.0-spike.2 |     loose match 1 for "Keshyk": ID=234 CleanName="Keshyk Wardorn" bytes=Keshyk Wardorn
+2026-10-03 17:54:37 | +5331ms | tome-spike 0.1.0-spike.2 | Rogue | Blane Darkblade | exact lookup npc "=Blane Darkblade": FOUND (ID=123, CleanName="Blane Darkblade", Name="Blane_Darkblade000", Distance=38.715187072754)
+2026-10-03 17:54:37 | +5332ms | tome-spike 0.1.0-spike.2 |     loose match 1 for "Blane": ID=123 CleanName="Blane Darkblade" bytes=Blane Darkblade
+2026-10-03 17:54:37 | +5332ms | tome-spike 0.1.0-spike.2 | Shadowknight | Zhao V'karin | exact lookup npc "=Zhao V'karin": not found (ID=0, CleanName="nil", Name="nil", Distance=nil)
+2026-10-03 17:54:37 | +5332ms | tome-spike 0.1.0-spike.2 |     loose match 1 for "Zhao": ID=233 CleanName="Zhao V`karin" bytes=Zhao V<0x60>karin
+2026-10-03 17:54:37 | +5333ms | tome-spike 0.1.0-spike.2 | Warrior | Heldin Swordbreaker | exact lookup npc "=Heldin Swordbreaker": FOUND (ID=235, CleanName="Heldin Swordbreaker", Name="Heldin_Swordbreaker000", Distance=18.091663360596)
+2026-10-03 17:54:37 | +5333ms | tome-spike 0.1.0-spike.2 |     loose match 1 for "Heldin": ID=235 CleanName="Heldin Swordbreaker" bytes=Heldin Swordbreaker
+2026-10-03 17:54:37 | +5334ms | tome-spike 0.1.0-spike.2 | names: 9 of 10 vendors found by the exact lookup the build uses; details in C:\Users\Public\MacroQuest\Logs/spellspree/spike_multiclass_Kylaeris.log
+2026-10-03 17:56:03 | +7331ms | tome-spike 0.1.0-spike.2 | mode dump; vendor(target)="Beorobin Amondson"; zone=poknowledge; character=Kylaeris; visible rows=105
+2026-10-03 17:56:03 | +7332ms | tome-spike 0.1.0-spike.2 | discipline scan: Me.CombatAbilityCount=unavailable; scanned up to slot 400; last filled slot=40
+2026-10-03 17:56:03 | +7332ms | tome-spike 0.1.0-spike.2 | known disciplines by Me.CombatAbility(index): 39: Focused Will Discipline; Resistant Discipline; Provoke; Fearless Discipline; Phantom Wind; Phantom Zephyr; Throw Stone; Bellow; Evasive Discipline; Charge Discipline; Defensive Discipline; Berate; Furious Discipline; Precision Discipline; Fortitude Discipline; Fellstrike Discipline; Aggressive Discipline; Stonewall Discipline; Incite; Spirit of Rage Discipline; Healing Will Discipline; Ashenhand Discipline; Earthwalk Discipline; Hundred Fists Discipline; Innerflame Discipline; Phantom Call; Phantom Echo; Planeswalk Discipline; Speed Focus Discipline; Stonestance Discipline; Thunderkick Discipline; Voiddance Discipline; Whirlwind Discipline; Silentfist Discipline; Mighty Strike Discipline; Bellow of the Mastruq; Elbow Strike; Commanding Voice; Champion's Aura
+2026-10-03 17:56:03 | +7333ms | tome-spike 0.1.0-spike.2 | row 1 | "Akheva Blood" | qty=1 | price=3pp 1gp 4sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7333ms | tome-spike 0.1.0-spike.2 | row 2 | "Alabaster Beak" | qty=1 | price=31pp 4gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7333ms | tome-spike 0.1.0-spike.2 | row 3 | "Battle Worn Trinket" | qty=1 | price=212pp 6gp 2sp 4cp | lvl=--
+2026-10-03 17:56:03 | +7333ms | tome-spike 0.1.0-spike.2 | row 4 | "Batwing Crunchies" | qty=1 | price=0pp 0gp 2sp 8cp | lvl=--
+2026-10-03 17:56:03 | +7333ms | tome-spike 0.1.0-spike.2 | row 5 | "Boar Meat" | qty=1 | price=1pp 2gp 6sp 0cp | lvl=--
+2026-10-03 17:56:03 | +7333ms | tome-spike 0.1.0-spike.2 | row 6 | "Bracketed Chitin Mail" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7334ms | tome-spike 0.1.0-spike.2 | row 7 | "Brick of Bloodmetal" | qty=1 | price=62pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7334ms | tome-spike 0.1.0-spike.2 | row 8 | "Bronze Medallion of Service" | qty=2 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 17:56:03 | +7334ms | tome-spike 0.1.0-spike.2 | row 9 | "Bubonian Head" | qty=1 | price=70pp 8gp 7sp 5cp | lvl=--
+2026-10-03 17:56:03 | +7334ms | tome-spike 0.1.0-spike.2 | row 10 | "Crysotherium" | qty=1 | price=15pp 7gp 4sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7334ms | tome-spike 0.1.0-spike.2 | row 11 | "Crystallized Sulfur" | qty=3 | price=0pp 3gp 0sp 2cp | lvl=--
+2026-10-03 17:56:03 | +7335ms | tome-spike 0.1.0-spike.2 | row 12 | "Dark Skeleton Remains" | qty=1 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 17:56:03 | +7349ms | tome-spike 0.1.0-spike.2 | row 13 | "Dark Steel Long Sword (Enchanted)" | qty=1 | price=113pp 3gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7349ms | tome-spike 0.1.0-spike.2 | row 14 | "Dark Steel Two Handed Sword (Enchanted)" | qty=1 | price=132pp 3gp 0sp 0cp | lvl=--
+2026-10-03 17:56:03 | +7349ms | tome-spike 0.1.0-spike.2 | row 15 | "Dark Steel Warhammer" | qty=1 | price=108pp 6gp 7sp 4cp | lvl=--
+2026-10-03 17:56:03 | +7350ms | tome-spike 0.1.0-spike.2 | row 16 | "Dathor Scale Helm" | qty=3 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7350ms | tome-spike 0.1.0-spike.2 | row 17 | "Dathor Scale Helm (Enchanted)" | qty=3 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7350ms | tome-spike 0.1.0-spike.2 | row 18 | "Death Mask of the Elysians" | qty=2 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7350ms | tome-spike 0.1.0-spike.2 | row 19 | "Diaku Forged Axe" | qty=1 | price=26pp 2gp 4sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7351ms | tome-spike 0.1.0-spike.2 | row 20 | "Diaku Forged Maul" | qty=1 | price=26pp 2gp 4sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7351ms | tome-spike 0.1.0-spike.2 | row 21 | "Diamond" | qty=3 | price=315pp 0gp 0sp 0cp | lvl=--
+2026-10-03 17:56:03 | +7351ms | tome-spike 0.1.0-spike.2 | row 22 | "Dreamstone" | qty=2 | price=354pp 3gp 7sp 4cp | lvl=--
+2026-10-03 17:56:03 | +7352ms | tome-spike 0.1.0-spike.2 | row 23 | "Elven Blood" | qty=1 | price=1pp 0gp 5sp 0cp | lvl=--
+2026-10-03 17:56:03 | +7352ms | tome-spike 0.1.0-spike.2 | row 24 | "Elysian Skull" | qty=1 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 17:56:03 | +7352ms | tome-spike 0.1.0-spike.2 | row 25 | "Emberstone" | qty=2 | price=20pp 4gp 7sp 5cp | lvl=--
+2026-10-03 17:56:03 | +7352ms | tome-spike 0.1.0-spike.2 | row 26 | "Essence of Darkness" | qty=14 | price=5pp 2gp 5sp 0cp | lvl=--
+2026-10-03 17:56:03 | +7353ms | tome-spike 0.1.0-spike.2 | row 27 | "Essence of Rathe" | qty=1 | price=2pp 8gp 3sp 4cp | lvl=--
+2026-10-03 17:56:03 | +7353ms | tome-spike 0.1.0-spike.2 | row 28 | "Exquisite Velium Gem Dusted Rune" | qty=1 | price=6pp 1gp 4sp 2cp | lvl=--
+2026-10-03 17:56:03 | +7353ms | tome-spike 0.1.0-spike.2 | row 29 | "Flame of Fennin" | qty=2 | price=6pp 2gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7353ms | tome-spike 0.1.0-spike.2 | row 30 | "Flesh Eater's Eye" | qty=2 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7353ms | tome-spike 0.1.0-spike.2 | row 31 | "Flesh Eater's Eye (Enchanted)" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7354ms | tome-spike 0.1.0-spike.2 | row 32 | "Froglok Poison Gland" | qty=1 | price=0pp 0gp 7sp 8cp | lvl=--
+2026-10-03 17:56:03 | +7354ms | tome-spike 0.1.0-spike.2 | row 33 | "Galorian Flesh" | qty=1 | price=9pp 4gp 5sp 0cp | lvl=--
+2026-10-03 17:56:03 | +7354ms | tome-spike 0.1.0-spike.2 | row 34 | "Gantru Charm" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7354ms | tome-spike 0.1.0-spike.2 | row 35 | "Gantru Charm (Enchanted)" | qty=3 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7354ms | tome-spike 0.1.0-spike.2 | row 36 | "Half of Rallos' Plans" | qty=1 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 17:56:03 | +7354ms | tome-spike 0.1.0-spike.2 | row 37 | "Helm of Raldukan" | qty=2 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7355ms | tome-spike 0.1.0-spike.2 | row 38 | "Iolite" | qty=2 | price=275pp 6gp 2sp 5cp | lvl=--
+2026-10-03 17:56:03 | +7355ms | tome-spike 0.1.0-spike.2 | row 39 | "Large Bone Chips" | qty=1 | price=4pp 7gp 2sp 5cp | lvl=--
+2026-10-03 17:56:03 | +7355ms | tome-spike 0.1.0-spike.2 | row 40 | "Large Zelniak Tooth" | qty=4 | price=9pp 4gp 5sp 0cp | lvl=--
+2026-10-03 17:56:03 | +7355ms | tome-spike 0.1.0-spike.2 | row 41 | "Lucidem" | qty=1 | price=0pp 0gp 1sp 0cp | lvl=--
+2026-10-03 17:56:03 | +7356ms | tome-spike 0.1.0-spike.2 | row 42 | "Mace of the Fallen Crusader (Enchanted)" | qty=1 | price=17pp 9gp 3sp 4cp | lvl=--
+2026-10-03 17:56:03 | +7356ms | tome-spike 0.1.0-spike.2 | row 43 | "Minor Signet of the Dark Sorcerer" | qty=1 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 17:56:03 | +7356ms | tome-spike 0.1.0-spike.2 | row 44 | "Moist Marrow" | qty=1 | price=65pp 6gp 2sp 5cp | lvl=--
+2026-10-03 17:56:03 | +7356ms | tome-spike 0.1.0-spike.2 | row 45 | "Nodding Blue Lily" | qty=2 | price=0pp 8gp 3sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7356ms | tome-spike 0.1.0-spike.2 | row 46 | "Obsidianwood Sap" | qty=1 | price=7pp 8gp 7sp 4cp | lvl=--
+2026-10-03 17:56:03 | +7368ms | tome-spike 0.1.0-spike.2 | row 47 | "Ogre Meat" | qty=1 | price=0pp 0gp 1sp 5cp | lvl=--
+2026-10-03 17:56:03 | +7368ms | tome-spike 0.1.0-spike.2 | row 48 | "Peridot" | qty=1 | price=15pp 7gp 4sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7368ms | tome-spike 0.1.0-spike.2 | row 49 | "Phosphorous Powder" | qty=12 | price=3pp 3gp 0sp 7cp | lvl=--
+2026-10-03 17:56:03 | +7368ms | tome-spike 0.1.0-spike.2 | row 50 | "Planes Rift" | qty=8 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 17:56:03 | +7368ms | tome-spike 0.1.0-spike.2 | row 51 | "Platinum Medallion of Service" | qty=1 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 17:56:03 | +7369ms | tome-spike 0.1.0-spike.2 | row 52 | "Pliable Goo" | qty=3 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 17:56:03 | +7369ms | tome-spike 0.1.0-spike.2 | row 53 | "Prismatic Crystal" | qty=1 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 17:56:03 | +7369ms | tome-spike 0.1.0-spike.2 | row 54 | "Putrid Belt of Rotten Hide (Enchanted)" | qty=1 | price=9pp 1gp 3sp 5cp | lvl=--
+2026-10-03 17:56:03 | +7369ms | tome-spike 0.1.0-spike.2 | row 55 | "Raldukan Boots" | qty=1 | price=5pp 2gp 5sp 0cp | lvl=--
+2026-10-03 17:56:03 | +7369ms | tome-spike 0.1.0-spike.2 | row 56 | "Raw Diamond" | qty=1 | price=315pp 0gp 0sp 0cp | lvl=--
+2026-10-03 17:56:03 | +7370ms | tome-spike 0.1.0-spike.2 | row 57 | "Raw Indigo Nihilite" | qty=1 | price=0pp 1gp 0sp 4cp | lvl=--
+2026-10-03 17:56:03 | +7370ms | tome-spike 0.1.0-spike.2 | row 58 | "Refined Binding Powder" | qty=1 | price=6pp 7gp 7sp 2cp | lvl=--
+2026-10-03 17:56:03 | +7370ms | tome-spike 0.1.0-spike.2 | row 59 | "Rhodocrosite" | qty=1 | price=3pp 9gp 3sp 7cp | lvl=--
+2026-10-03 17:56:03 | +7370ms | tome-spike 0.1.0-spike.2 | row 60 | "Rune of Ap`Sagor" | qty=1 | price=8pp 4gp 0sp 0cp | lvl=--
+2026-10-03 17:56:03 | +7370ms | tome-spike 0.1.0-spike.2 | row 61 | "Rune of Impulse" | qty=1 | price=8pp 1gp 8sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7371ms | tome-spike 0.1.0-spike.2 | row 62 | "Rune of Synergy" | qty=1 | price=7pp 3gp 4sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7371ms | tome-spike 0.1.0-spike.2 | row 63 | "Sarcoscypha Fungus" | qty=1 | price=0pp 1gp 0sp 4cp | lvl=--
+2026-10-03 17:56:03 | +7371ms | tome-spike 0.1.0-spike.2 | row 64 | "Shadow Weave Ring" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7371ms | tome-spike 0.1.0-spike.2 | row 65 | "Shadowy Assassin Sash" | qty=3 | price=2100pp 0gp 0sp 0cp | lvl=--
+2026-10-03 17:56:03 | +7371ms | tome-spike 0.1.0-spike.2 | row 66 | "Shadowy Assassin Sash (Enchanted)" | qty=2 | price=2100pp 0gp 0sp 0cp | lvl=--
+2026-10-03 17:56:03 | +7371ms | tome-spike 0.1.0-spike.2 | row 67 | "Shadowy Assassin's Cape" | qty=4 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7371ms | tome-spike 0.1.0-spike.2 | row 68 | "Shadowy Dirk (Legendary)" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7372ms | tome-spike 0.1.0-spike.2 | row 69 | "Skill: Fists of Wu" | qty=-- | price=520pp 9gp 3sp 1cp | lvl= 68
+2026-10-03 17:56:03 | +7372ms | tome-spike 0.1.0-spike.2 | row 70 | "Skill: Master's Aura" | qty=-- | price=627pp 2gp 6sp 8cp | lvl= 70
+2026-10-03 17:56:03 | +7372ms | tome-spike 0.1.0-spike.2 | row 71 | "Skull Marked Shield" | qty=4 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7372ms | tome-spike 0.1.0-spike.2 | row 72 | "Skull Marked Shield (Enchanted)" | qty=2 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7372ms | tome-spike 0.1.0-spike.2 | row 73 | "Smashed War Grubs" | qty=2 | price=6pp 2gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7373ms | tome-spike 0.1.0-spike.2 | row 74 | "Smolder (Enchanted)" | qty=1 | price=10pp 7gp 7sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7373ms | tome-spike 0.1.0-spike.2 | row 75 | "Strand of Ether" | qty=2 | price=3pp 1gp 4sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7373ms | tome-spike 0.1.0-spike.2 | row 76 | "Sunshard Ore" | qty=2 | price=0pp 0gp 7sp 8cp | lvl=--
+2026-10-03 17:56:03 | +7373ms | tome-spike 0.1.0-spike.2 | row 77 | "Symbol of the Diaku" | qty=1 | price=165pp 3gp 7sp 5cp | lvl=--
+2026-10-03 17:56:03 | +7373ms | tome-spike 0.1.0-spike.2 | row 78 | "Tainted Planar Essence" | qty=4 | price=6pp 2gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7374ms | tome-spike 0.1.0-spike.2 | row 79 | "Tome of Ashenhand Discipline" | qty=-- | price=117pp 7gp 5sp 3cp | lvl= 60 | derived="Ashenhand Discipline" | in known list=YES | Me.CombatAbility(derived)=23 Name=nil
+2026-10-03 17:56:03 | +7385ms | tome-spike 0.1.0-spike.2 | row 80 | "Tome of Earthwalk Discipline" | qty=-- | price=207pp 5gp 5sp 7cp | lvl= 65 | derived="Earthwalk Discipline" | in known list=YES | Me.CombatAbility(derived)=24 Name=nil
+2026-10-03 17:56:03 | +7386ms | tome-spike 0.1.0-spike.2 | row 81 | "Tome of Elbow Strike" | qty=-- | price=0pp 0gp 5sp 8cp | lvl=  5 | derived="Elbow Strike" | in known list=YES | Me.CombatAbility(derived)=38 Name=nil
+2026-10-03 17:56:03 | +7386ms | tome-spike 0.1.0-spike.2 | row 82 | "Tome of Fearless Discipline" | qty=-- | price=21pp 0gp 9sp 0cp | lvl= 40 | derived="Fearless Discipline" | in known list=YES | Me.CombatAbility(derived)=4 Name=nil
+2026-10-03 17:56:03 | +7386ms | tome-spike 0.1.0-spike.2 | row 83 | "Tome of Focused Will Discipline" | qty=-- | price=0pp 1gp 9sp 3cp | lvl= 10 | derived="Focused Will Discipline" | in known list=YES | Me.CombatAbility(derived)=1 Name=nil
+2026-10-03 17:56:03 | +7387ms | tome-spike 0.1.0-spike.2 | row 84 | "Tome of Healing Will Discipline" | qty=-- | price=168pp 4gp 8sp 5cp | lvl= 63 | derived="Healing Will Discipline" | in known list=YES | Me.CombatAbility(derived)=22 Name=nil
+2026-10-03 17:56:03 | +7387ms | tome-spike 0.1.0-spike.2 | row 85 | "Tome of Hundred Fists Discipline" | qty=-- | price=96pp 7gp 0sp 2cp | lvl= 57 | derived="Hundred Fists Discipline" | in known list=YES | Me.CombatAbility(derived)=25 Name=nil
+2026-10-03 17:56:03 | +7387ms | tome-spike 0.1.0-spike.2 | row 86 | "Tome of Inner Flame Discipline" | qty=-- | price=89pp 0gp 2sp 5cp | lvl= 56 | derived="Inner Flame Discipline" | in known list=no | Me.CombatAbility(derived)=nil Name=nil
+2026-10-03 17:56:03 | +7387ms | tome-spike 0.1.0-spike.2 | row 87 | "Tome of Phantom Call" | qty=-- | price=178pp 8gp 7sp 3cp | lvl= 64 | derived="Phantom Call" | in known list=YES | Me.CombatAbility(derived)=27 Name=nil
+2026-10-03 17:56:03 | +7388ms | tome-spike 0.1.0-spike.2 | row 88 | "Tome of Phantom Echo" | qty=-- | price=118pp 8gp 7sp 6cp | lvl= 57 | derived="Phantom Echo" | in known list=YES | Me.CombatAbility(derived)=28 Name=nil
+2026-10-03 17:56:03 | +7388ms | tome-spike 0.1.0-spike.2 | row 89 | "Tome of Phantom Shadow" | qty=-- | price=40pp 6gp 1sp 4cp | lvl= 65 | derived="Phantom Shadow" | in known list=no | Me.CombatAbility(derived)=nil Name=nil
+2026-10-03 17:56:03 | +7388ms | tome-spike 0.1.0-spike.2 | row 90 | "Tome of Phantom Wind" | qty=-- | price=71pp 3gp 9sp 1cp | lvl= 50 | derived="Phantom Wind" | in known list=YES | Me.CombatAbility(derived)=5 Name=nil
+2026-10-03 17:56:03 | +7389ms | tome-spike 0.1.0-spike.2 | row 91 | "Tome of Phantom Zephyr" | qty=-- | price=18pp 8gp 0sp 7cp | lvl= 35 | derived="Phantom Zephyr" | in known list=YES | Me.CombatAbility(derived)=6 Name=nil
+2026-10-03 17:56:03 | +7389ms | tome-spike 0.1.0-spike.2 | row 92 | "Tome of Planeswalk Discipline" | qty=-- | price=150pp 6gp 8sp 9cp | lvl= 61 | derived="Planeswalk Discipline" | in known list=YES | Me.CombatAbility(derived)=29 Name=nil
+2026-10-03 17:56:03 | +7389ms | tome-spike 0.1.0-spike.2 | row 93 | "Tome of Resistant Discipline" | qty=-- | price=6pp 9gp 9sp 7cp | lvl= 30 | derived="Resistant Discipline" | in known list=YES | Me.CombatAbility(derived)=2 Name=nil
+2026-10-03 17:56:03 | +7390ms | tome-spike 0.1.0-spike.2 | row 94 | "Tome of Silentfist Discipline" | qty=-- | price=109pp 7gp 7sp 3cp | lvl= 59 | derived="Silentfist Discipline" | in known list=YES | Me.CombatAbility(derived)=35 Name=nil
+2026-10-03 17:56:03 | +7390ms | tome-spike 0.1.0-spike.2 | row 95 | "Tome of Speed Focus Discipline" | qty=-- | price=170pp 4gp 6sp 3cp | lvl= 63 | derived="Speed Focus Discipline" | in known list=YES | Me.CombatAbility(derived)=30 Name=nil
+2026-10-03 17:56:03 | +7390ms | tome-spike 0.1.0-spike.2 | row 96 | "Tome of Stone Stance Discipline" | qty=-- | price=59pp 8gp 7sp 7cp | lvl= 51 | derived="Stone Stance Discipline" | in known list=no | Me.CombatAbility(derived)=nil Name=nil
+2026-10-03 17:56:03 | +7391ms | tome-spike 0.1.0-spike.2 | row 97 | "Tome of Throw Stone" | qty=-- | price=0pp 0gp 4sp 2cp | lvl=  1 | derived="Throw Stone" | in known list=YES | Me.CombatAbility(derived)=7 Name=nil
+2026-10-03 17:56:03 | +7391ms | tome-spike 0.1.0-spike.2 | row 98 | "Tome of Thunderkick Discipline" | qty=-- | price=64pp 8gp 8sp 7cp | lvl= 52 | derived="Thunderkick Discipline" | in known list=YES | Me.CombatAbility(derived)=32 Name=nil
+2026-10-03 17:56:03 | +7391ms | tome-spike 0.1.0-spike.2 | row 99 | "Tome of Voiddance Discipline" | qty=-- | price=76pp 0gp 9sp 9cp | lvl= 54 | derived="Voiddance Discipline" | in known list=YES | Me.CombatAbility(derived)=33 Name=nil
+2026-10-03 17:56:03 | +7392ms | tome-spike 0.1.0-spike.2 | row 100 | "Tome of Whirlwind Discipline" | qty=-- | price=71pp 6gp 5sp 6cp | lvl= 53 | derived="Whirlwind Discipline" | in known list=YES | Me.CombatAbility(derived)=34 Name=nil
+2026-10-03 17:56:03 | +7392ms | tome-spike 0.1.0-spike.2 | row 101 | "Troll Parts" | qty=1 | price=0pp 0gp 1sp 5cp | lvl=--
+2026-10-03 17:56:03 | +7392ms | tome-spike 0.1.0-spike.2 | row 102 | "Umbracite" | qty=1 | price=188pp 9gp 9sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7392ms | tome-spike 0.1.0-spike.2 | row 103 | "Uncut Demantoid" | qty=1 | price=0pp 1gp 0sp 4cp | lvl=--
+2026-10-03 17:56:03 | +7393ms | tome-spike 0.1.0-spike.2 | row 104 | "Windstone" | qty=8 | price=26pp 7gp 7sp 4cp | lvl=--
+2026-10-03 17:56:03 | +7393ms | tome-spike 0.1.0-spike.2 | row 105 | "Words of Edification" | qty=1 | price=7pp 1gp 3sp 9cp | lvl=--
+2026-10-03 17:56:03 | +7393ms | tome-spike 0.1.0-spike.2 | summary: 105 rows; 22 start with "Tome of "; 83 other rows; the discipline named by the tome is in the known list for 19, not for 3; name prefixes: Akheva Blood x1; Alabaster Beak x1; Battle Worn x1; Batwing Crunchies x1; Boar Meat x1; Bracketed Chitin x1; Brick of x1; Bronze Medallion x1; Bubonian Head x1; Crysotherium x1; Crystallized Sulfur x1; Dark Skeleton x1; Dark Steel x3; Dathor Scale x2; Death Mask x1; Diaku Forged x2; Diamond x1; Dreamstone x1; Elven Blood x1; Elysian Skull x1; Emberstone x1; Essence of x2; Exquisite Velium x1; Flame of x1; Flesh Eater's x2; Froglok Poison x1; Galorian Flesh x1; Gantru Charm x2; Half of x1; Helm of x1; Iolite x1; Large Bone x1; Large Zelniak x1; Lucidem x1; Mace of x1; Minor Signet x1; Moist Marrow x1; Nodding Blue x1; Obsidianwood Sap x1; Ogre Meat x1; Peridot x1; Phosphorous Powder x1; Planes Rift x1; Platinum Medallion x1; Pliable Goo x1; Prismatic Crystal x1; Putrid Belt x1; Raldukan Boots x1; Raw Diamond x1; Raw Indigo x1; Refined Binding x1; Rhodocrosite x1; Rune of x3; Sarcoscypha Fungus x1; Shadow Weave x1; Shadowy Assassin x2; Shadowy Assassin's x1; Shadowy Dirk x1; Skill: Fists x1; Skill: Master's x1; Skull Marked x2; Smashed War x1; Smolder (Enchanted) x1; Strand of x1; Sunshard Ore x1; Symbol of x1; Tainted Planar x1; Tome of x22; Troll Parts x1; Umbracite x1; Uncut Demantoid x1; Windstone x1; Words of x1
+2026-10-03 17:56:03 | +7394ms | tome-spike 0.1.0-spike.2 | dump: 105 rows, 22 tomes, 83 other; known disciplines 39 (matched to tomes: 19); details in C:\Users\Public\MacroQuest\Logs/spellspree/spike_multiclass_Kylaeris.log
