@@ -3055,3 +3055,31 @@ you to see exactly what it does."). So right-clicking a tome for an already-know
 cursor. Consequence: the build's existing rule (an item on the cursor means an action did not complete cleanly, so it stops the run) would fire on such a tome. The design for
 tomes must therefore either keep known tomes from being right-clicked (the known check) or recognise this exact outcome and clear the cursor safely; which one, and how the
 cursor is cleared, are design decisions not yet made.
+
+### D-030 addendum 5 (2026-10-03): the vendor dumps, read against the client spell file
+
+Evidence: `docs/evidence/2026-10-03_Kylaeris_tome-spike.2_all_dumps.log` (all of Kylaeris's spike runs: names, one watch, and 11 dumps, most with "show only items I can use"
+off) and `references/spells_us.txt` (not committed; the client's spell file, 40,914 spells, 236 fields per line; verified against the live client: all 39 disciplines the client
+reported are in it under the same spelling, and field 110, the Monk level, equals the tome level for all 22 Monk tomes). The class of each inventory below is inferred from the
+spell file (which classes can use the discipline each tome teaches).
+
+1. **The vendor label in the dump is unreliable.** The header's `vendor(target)=` repeated "Heldin Swordbreaker" for eight dumps and "Blane Darkblade" for three, though the
+   inventories show they were different vendors: the dump reads `Target.CleanName`, and the target did not follow the merchant window. Vendors below are identified by what they sell.
+2. **Eleven dumps, eight distinct inventories:** Monk (22 tomes, twice: 105 rows with the filter on, 126 with it off), Paladin (5), Shadowknight (5), Ranger (4), Rogue (19), Bard (4,
+   twice), a Berserker vendor with **45** tomes (twice) and a second Berserker vendor with **17** tomes. **No inventory fits the Warrior (Heldin Swordbreaker) or the Beastlord (Tana
+   Clawguard): those two vendors are not in the log yet.**
+3. **The two Berserker vendors overlap:** all **17** tomes of the smaller vendor (the axe tomes, `Distracting Strike`, `Diversive Strike`, `Head Crush`/`Pummel`/`Strike`, `Leg Cut`/`Strike`)
+   are also sold by the 45-tome vendor, at the **same level and the same price** for all 17 (about 277 platinum in total). Visiting both vendors therefore offers those 17 tomes twice,
+   and a second purchase of a known tome is wasted platinum and puts the tome on the cursor (addendum 3 and 4). Cross-vendor handling is required, not optional.
+4. **The tome-name rule held everywhere:** across the dumps there are 83 distinct tome names; none of the non-tome rows starts with `Tome`. The vendors also list ordinary
+   `Spell:` and `Song:` scrolls (up to 6 per vendor, other classes' scrolls) among the non-tome rows, so a tome visit must take `Tome of ` rows only and a spell scroll must never be
+   bought there.
+5. **Matching a tome to its discipline name:** of the 83 distinct tomes, **80 match a spell name exactly** once "Tome of " is removed; **2 match only when spaces are ignored** (`Inner Flame`
+   and `Stone Stance`, the client names being `Innerflame` and `Stonestance`); **1 matches nothing: `Tome of Diversive Strike`** (no spell of that name exists in the client file; the
+   17-tome Berserker vendor sells it). The spell file and the live known list agree on names, so this is a property of the tome item names, not of the spell file. Whether another
+   spelling difference exists for a tome not in these dumps is unverified; the Warrior and Beastlord inventories are missing.
+
+**Consequences for the design (the AI's reading, to be reviewed):** a known-tome check by name must compare with spaces (and likely case and punctuation) ignored and must allow for a
+tome whose discipline name cannot be derived (`Diversive Strike`); the check needs a fallback for those (the chat line "You already know this discipline." and the tome on the
+cursor are the observed signs of a known tome); the Berserker overlap makes a run-wide record of tomes already bought, plus the known check, necessary. **Still unobserved:** the
+Warrior and Beastlord vendors, and a new-tome learn.
