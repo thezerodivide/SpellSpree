@@ -22,6 +22,7 @@ Entries that supersede a specification item. Read this first.
 | D-005 | 2026-10-03 | Versioning: keep v1.5 line, SemVer from now on | confirmed; see addendum 2026-10-03 for the strings |
 | D-006 | 2026-10-03 | Test-build numbering agreed; unique filenames no longer required | confirmed; version-to-commit tie open |
 | D-007 | 2026-10-03 | Commit and tag every handed-over build | confirmed |
+| D-008 | 2026-10-03 | Docs are always committed and pushed, without asking | confirmed |
 
 ---
 
@@ -670,3 +671,45 @@ approach as a defect and attached a fix, when the evidence only supported
 "the vendor window shifts rows mid-pass and passes absorb it". Next time, state the
 observation first and let the developer decide whether it is a problem (Protocol
 sections 3 and 13).
+
+---
+
+## D-008 — Docs are always committed and pushed, without asking
+
+**Date:** 2026-10-03 · **Status:** confirmed · **Supersedes:** nothing. Replaces
+the AI's habit, in this session, of asking before committing or pushing docs.
+
+### Story
+
+After each docs change the AI asked whether to push, including for plain
+record-keeping commits. The developer: docs should always be committed and pushed,
+and the AI does not need permission.
+
+### Requirement
+
+- R17. Changes to `docs/` are committed and pushed without asking. *(Developer,
+  2026-10-03.)*
+
+### Design choices
+
+- Scope is `docs/` (specification, ledger, decision log, working agreement,
+  evidence). Code changes still follow the one-change-at-a-time process, separate
+  commits, and the handoff gate (P-1, P-3). Whether code commits may be pushed
+  without asking is **not** covered by this decision; so far the developer has
+  approved each code push (and P-3 requires the tagged handoff build to be pushed).
+
+### Implementation choices
+
+None.
+
+### Open
+
+- None.
+
+### Not yet verified
+
+- None.
+
+### Dependencies and shared seams
+
+- Shares the push step with D-007 (tagged builds are pushed at handoff).

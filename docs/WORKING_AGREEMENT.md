@@ -37,6 +37,9 @@ These add to the Development Protocol for this project only.
   Before a build is handed over for live testing it is committed and the commit
   is tagged `v<VERSION>` (annotated, pushed). Handoff therefore needs: the P-1
   log review, and a tagged commit whose `VERSION` equals the tag.
+- **P-4. Docs are always committed and pushed (developer, 2026-10-03; D-008).**
+  Changes under `docs/` are committed and pushed without asking permission. This
+  covers docs only; code follows the one-change-at-a-time process and P-1/P-3.
 
 ## Sibling projects (Development Protocol §21)
 
