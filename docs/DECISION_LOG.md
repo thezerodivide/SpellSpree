@@ -31,6 +31,7 @@ Entries that supersede a specification item. Read this first.
 | D-014 | 2026-10-03 | Design proposal: list-then-buy replaces repeat passes | proposed; awaiting developer approval per item |
 | D-015 | 2026-10-03 | Second-agent review loop: evaluate each recommendation, agree or disagree with reasons | confirmed |
 | D-016 | 2026-10-03 | Handoff labels for messages between Claude and GPT | confirmed, including numbering and revision rule |
+| D-017 | 2026-10-03 | APPROVED: Step 1, list-then-buy replaces repeat passes | approved by the developer; supersedes spec S-1 / D-001 R1 for the scan mechanism; building |
 
 ---
 
@@ -1699,3 +1700,86 @@ observed classes, and there is no reason to believe Druid is an outlier.
 - **Not changed:** Step 2 is still not built and not yet approved as a build; the developer's approval of the
   Step 1 items (A-K) is still pending. The Step 2 idea of logging each vendor's level counts on first visit
   is kept as ordinary logging (it does not buy or gate anything), not as a condition.
+
+---
+
+## D-017 — APPROVED: Step 1, list-then-buy replaces repeat passes
+
+**Date:** 2026-10-03 · **Status:** approved by the developer; build in progress ·
+**SUPERSEDES spec S-1 and D-001 R1 (repeat passes with close and reopen) for the scan mechanism.**
+Also supersedes D-001's design choice D1 and the D-001 implementation choices that existed only for
+the multi-pass scan (the row-removal compensation, the per-pass seen-set, the reopen sequence,
+`MAX_SCAN_PASSES`). What is not superseded: the usable-only requirement, the buy / scribe / landing
+logic, the stop conditions, and everything in D-004 to D-009 (logging and the outcome line).
+
+### Story
+
+D-001 to D-016: the vendor window changes under a positional scan, so the scan repeated until a pass
+bought nothing. Live: four passes and about 389 row reads for 70 spells; rows left the list in batches
+and unprompted. Probes showed the visible list reads in about 2 ms, a row is found by exact name, and
+`Lvl` and the price are in the list. The developer wanted the list built at open and each item bought
+from it. The AI's design (D-014) was reviewed by ChatGPT over three revisions (archived in
+`docs/handoffs/`); the AI and ChatGPT reached consensus.
+
+### Requirement (developer, 2026-10-03: "I approve the decisions as reached by consensus.")
+
+All of these are approved as written in D-014 review rounds 1-3 and Revision 3:
+
+- **A'** Build the list from the **visible usable list only** (`MerchantWnd` -> `ItemList`), read after
+  the existing usable-only check; never `Merchant.Item(n)`. Keep the `Spell:` / `Song:` name rule.
+  A name that appears twice: keep the first, log the others. Price, quantity and Lvl are read and logged;
+  an unreadable value is recorded as unknown and gates nothing (affordability stays as today).
+- **B'** Before building, poll the row count every **250 ms**; settled when it is at least 1 and unchanged
+  for **8 consecutive polls (2 s)**; maximum wait **15 s**; if not settled, skip that vendor and log why.
+  A stable count is a heuristic. Values untuned; every poll logged.
+- **C** Buy each item by finding its row by **exact name**, clicking that row, then using the existing
+  buy, quantity, landing and scribe code.
+- **D** If the row is gone at lookup, skip the item and log it; no retry.
+- **E** Each name at most once per vendor visit; no reopen; no repeat passes. *(approved earlier)*
+- **F''** (a) An **outcome ledger**: every built-list entry ends with exactly one logged outcome, from the
+  script's own records: 1 bought and scribed; 2 bought, scribe not completed (stacked; scribe failed after
+  the retries; scroll not located after payment); 3 attempted, not bought (selection not verified in 3
+  attempts, or no payment observed); 4 deliberately skipped (row gone at lookup; duplicate name;
+  unaffordable by quote when set to skip; in Step 2 outside the range); 5 not attempted because the run
+  stopped, with the stop reason; 6 no outcome recorded (should never happen; logged as an ERROR). Logged at
+  the end and on any early stop, whether or not the window is open. (b) A **final scan** while the window is
+  open, log only, never buys: scrolls not on the built list (new since the build); lingering rows of
+  bought-and-scribed entries (expected for about 10 s); rows still listed for outcomes 2-5 (informational).
+- **G** This mechanism first, buying exactly what is bought today; the level-range boxes (D-013) are a
+  separate Step 2.
+- **H'** Up to **3 selection attempts** per entry; verify `Merchant.SelectedItem.Name` equals the exact
+  expected name **immediately before the Buy click**; on a mismatch redo lookup and click (counts toward
+  the 3); **never retry the Buy click**; after 3 failed verifications skip and log why.
+- **I** (Step 2) Ranges inclusive; a spell whose level cannot be read is not bought and is logged.
+- **J'** Class coverage does not block Step 1; the developer accepts the vendor-level pattern for all 12
+  classes (D-013 addendum 4).
+- **K** Log rotation unchanged.
+
+### Design choices
+
+As above. Nothing else is decided here.
+
+### Implementation choices (the AI's; recorded so they can be questioned)
+
+- The skip and failure counters shown in the window (`S.skipped`, `S.skippedNames`) keep their existing
+  meaning (unaffordable, no payment, not located after payment). A row that vanished (D) or a selection that
+  could not be verified is **not** added to them; it appears in the ledger instead.
+- A vendor whose list does not settle is reported as a stop with reason `Vendor list did not settle`, which
+  the spree does not treat as fatal, so the spree moves to the next vendor.
+- The old close/reopen code, the pass counter, the seen-set and the row-shift compensation are removed.
+- The version of this build is `1.6.0-test.3` (D-006: the 1.6.0 changes are not yet accepted).
+
+### Open
+
+- Step 2 (level ranges) is approved as a requirement (D-013) but its build is not started; it begins after
+  Step 1 is accepted. The 61-70 vendor entries stay commented out (D-013 R23a).
+
+### Not yet verified
+
+- Everything live. The mechanism rests on probes that never bought: Buy after an exact-name lookup and a row
+  click is expected to behave like today's, and is unproven until a live run.
+
+### Dependencies and shared seams
+
+- Replaces the scan loop of D-001. Keeps D-004 logging, D-009's outcome line. Step 2 (D-013) builds on the
+  list this step creates.

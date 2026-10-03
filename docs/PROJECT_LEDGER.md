@@ -23,6 +23,7 @@ Only behavior the developer has explicitly agreed.
 - Stay on the v1.5 version line; use SemVer from now on; the baseline counts as 1.5.0. *(D-005 R12, R13 and addendum)*
 - Test builds raise the pre-release number each handoff; the file stays `spellspree.lua`, no unique filename per build. *(D-006 R14, R15)*
 - Every handed-over build is committed and tagged `v<VERSION>` first. *(D-007 R16)*
+- ~~Repeat passes with close and reopen (D-001 R1)~~ **superseded by list-then-buy (D-017, approved):** build the list once, buy each name at most once by exact-name lookup, verified selection before Buy, ledger of outcomes, log-only final scan. *(In progress.)*
 - **Level-range tier boxes (not built):** 1-25, 26-50, 51-60, 61-65; a range buys only spells whose `Lvl` is in it; 61-65 comes from the 1-25 vendor (opened once if both are ticked); ~~the 61-70 box is removed~~ the 61-70 box is not offered and its vendor entries stay in the source commented out, not deleted. *(D-013 R20-R24, R23a)*
 
 Inherited behavior of the original (Bazaar mode, `Song:` scrolls, PoK vendor
@@ -178,7 +179,7 @@ as the pre-logging baseline in four scenarios.
     multi-vendor spree would lose its earliest part. Whether that matters, and what to
     do, is the developer's call; not observed to happen.
 
-14. **DESIGN PROPOSED, awaiting per-item approval (D-014; E approved, new choice H proposed, A-D/F/G unanswered):** list-then-buy replaces repeat passes. Wanted by the developer (D-010 addendum 5); not yet approved item by item; S-1 stands until it is. Was: **PROPOSAL under investigation (D-010):** build the vendor's spell list when it opens
+14. **APPROVED (D-017), building as `1.6.0-test.3`.** Was: **DESIGN PROPOSED, awaiting per-item approval (D-014; E approved, new choice H proposed, A-D/F/G unanswered):** list-then-buy replaces repeat passes. Wanted by the developer (D-010 addendum 5); not yet approved item by item; S-1 stands until it is. Was: **PROPOSAL under investigation (D-010):** build the vendor's spell list when it opens
     and buy from that list, instead of line-by-line multiple passes. Not an agreed
     requirement; S-1 stands. Blocked on spike results. Spike built: `spikes/spellspree_spike.lua`
     `0.1.0-spike.2` (tag `spike/vendor-0.1.0-spike.2`), simulation-checked only; awaiting a
