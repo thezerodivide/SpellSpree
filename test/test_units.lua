@@ -68,6 +68,8 @@ end
 local OUT = { SCRIBED = 'bought and scribed', SKIPPED = 'deliberately skipped', STOP = 'not attempted because the run stopped',
     NONE = 'NO OUTCOME RECORDED' }
 
+local EXTRA3 = { { 'parseTierRange', 'function' }, { 'validateRange', 'function' }, { 'classifyLevel', 'function' } }
+
 local TESTS = {
     { id = 'U1', kind = 'CHAR', src = 'formatCoin splits copper into pp/gp/sp/cp, omits zero parts, adds thousands commas, and shows 0cp for zero',
       fn = function(u)
@@ -214,6 +216,90 @@ local TESTS = {
           if #problems > 0 then error(table.concat(problems, '; '), 0) end
       end },
 
+    -- ---- Step 3 (D-025). `kind` is REQ/CHAR; `new` marks behavior that does not exist before Step 3; `st[n]` is the result expected at
+    -- red-run stage n (D-025 F''), written before the stage was run: 0 = no new exports, 1 = wrong stubs (parseTierRange returns nil,
+    -- classifyLevel returns "in", validateRange accepts everything), 2 and 3 = correct functions.
+    { id = 'U17', kind = 'REQ', new = true, extra = EXTRA3, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-025 A\': the four real tier labels parse to their inclusive ranges, and a label whose endpoints are equal is a valid range',
+      fn = function(u)
+          local function chk(label, lo, hi)
+              local a, b = u.parseTierRange(label)
+              eq(a, lo, label .. ' low'); eq(b, hi, label .. ' high')
+          end
+          chk('1-25', 1, 25); chk('26-50', 26, 50); chk('51-60', 51, 60); chk('61-70', 61, 70)
+          chk('25-25', 25, 25); chk('1-70', 1, 70)
+      end },
+
+    { id = 'U18', kind = 'REQ', new = true, extra = EXTRA3, st = { [0] = 'fail', [1] = 'pass', [2] = 'pass', [3] = 'pass' },
+      src = 'D-025 A\' (Revision 3): a label that does not parse, or parses outside 1-70, or has reversed endpoints, gives nil and a reason',
+      fn = function(u)
+          for _, bad in ipairs({ 'abc', '61-', '-70', '', '1-80', '0-25', '26-71', '25-1', '1-25x', ' 1-25', '1 -25', '1.5-25', '1-2-3' }) do
+              local lo, why = u.parseTierRange(bad)
+              eq(lo, nil, '"' .. bad .. '" must not parse')
+              eq(type(why), 'string', '"' .. bad .. '" gives a reason')
+          end
+          eq((u.parseTierRange(nil)), nil, 'nil label')
+          eq((u.parseTierRange(25)), nil, 'a number is not a label')
+      end },
+
+    { id = 'U19', kind = 'REQ', new = true, extra = EXTRA3, st = { [0] = 'fail', [1] = 'pass', [2] = 'pass', [3] = 'pass' },
+      src = 'D-025 A\' (Revision 3): validateRange accepts a table whose low and high are whole numbers with 1 <= low <= high <= 70',
+      fn = function(u)
+          for _, r in ipairs({ { low = 1, high = 25 }, { low = 61, high = 70 }, { low = 25, high = 25 }, { low = 1, high = 70 } }) do
+              eq((u.validateRange(r)), true, r.low .. '-' .. r.high .. ' is valid')
+          end
+      end },
+
+    { id = 'U20', kind = 'REQ', new = true, extra = EXTRA3, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-025 A\' (Revision 3): validateRange refuses reversed endpoints, an endpoint outside 1-70, non-integers, text, missing fields and non-tables, with a reason',
+      fn = function(u)
+          local bad = { { low = 25, high = 1 }, { low = 0, high = 25 }, { low = 1, high = 71 }, { low = 1, high = 80 }, { low = -5, high = 10 },
+              { low = 1.5, high = 25 }, { low = 1, high = 25.5 }, { low = '1', high = 25 }, { low = 1 }, { high = 25 }, {}, 'x', 25, true }
+          for i, r in ipairs(bad) do
+              local ok, why = u.validateRange(r)
+              eq(ok, false, 'bad range #' .. i .. ' must be refused')
+              eq(type(why), 'string', 'bad range #' .. i .. ' gives a reason')
+          end
+          eq((u.validateRange(nil)), false, 'nil')
+      end },
+
+    { id = 'U21', kind = 'REQ', new = true, extra = EXTRA3, st = { [0] = 'fail', [1] = 'pass', [2] = 'pass', [3] = 'pass' },
+      src = 'D-025 B / R21: levels inside the range, inclusive of both endpoints, are "in" (padded text counts: " 25 " and a tab)',
+      fn = function(u)
+          for _, c in ipairs({ { '1', 1, 25 }, { '25', 1, 25 }, { '26', 26, 50 }, { '50', 26, 50 }, { '51', 51, 60 }, { '60', 51, 60 },
+              { '61', 61, 70 }, { '70', 61, 70 }, { ' 25 ', 1, 25 }, { '\t25', 1, 25 }, { ' 25', 1, 25 }, { '007', 1, 25 } }) do
+              eq((u.classifyLevel(c[1], c[2], c[3])), 'in', string.format('%q in %d-%d', c[1], c[2], c[3]))
+          end
+      end },
+
+    { id = 'U22', kind = 'REQ', new = true, extra = EXTRA3, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-025 B / R21 / R34: levels just outside a range, above 70, below 1, zero and negative are "outside", with the reason naming the range and the level',
+      fn = function(u)
+          for _, c in ipairs({ { '0', 1, 25 }, { '26', 1, 25 }, { '25', 26, 50 }, { '51', 26, 50 }, { '50', 51, 60 }, { '61', 51, 60 },
+              { '60', 61, 70 }, { '71', 61, 70 }, { '0', 61, 70 }, { '-3', 1, 25 }, { '99', 1, 70 }, { '99999999999999999999', 1, 70 } }) do
+              local v = u.classifyLevel(c[1], c[2], c[3])
+              eq(v, 'outside', string.format('%q vs %d-%d', c[1], c[2], c[3]))
+          end
+          local _, why = u.classifyLevel('63', 1, 25)
+          eq(why, 'outside the selected level range 1-25 (Lvl 63)', 'reason text')
+      end },
+
+    { id = 'U23', kind = 'REQ', new = true, extra = EXTRA3, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-025 B / D-014 item I: text that is not a whole number (blank, --, words, decimals, trailing characters, embedded spaces, nil) is "unreadable", with the trimmed text in the reason',
+      fn = function(u)
+          for _, t in ipairs({ '', '   ', '--', 'abc', '25x', '2 5', '25.5', '1e1', '+5' }) do
+              local v = u.classifyLevel(t, 1, 70)
+              eq(v, 'unreadable', string.format('%q', t))
+          end
+          eq((u.classifyLevel(nil, 1, 70)), 'unreadable', 'nil')
+          local _, why = u.classifyLevel('--', 1, 25)
+          eq(why, 'level unreadable ("--")', 'reason for --')
+          _, why = u.classifyLevel('  ', 1, 25)
+          eq(why, 'level unreadable ("")', 'reason for blank')
+          _, why = u.classifyLevel(nil, 1, 25)
+          eq(why, 'level unreadable (no value)', 'reason for a missing cell')
+      end },
+
     { id = 'U16', kind = 'REQ', src = 'D-026 C\'\': a failing test body also leaves the process as found',
       fn = function()
           local before = U.save()
@@ -238,7 +324,7 @@ local function evaluate(script)
                 SCRIPT = real
                 if not ok2 then error(e2, 0) end
             else
-                U.withUnit(script, t.fn)
+                U.withUnit(script, t.fn, t.extra)
             end
         end)
         res[t.id] = { pass = ok, msg = (not ok) and tostring(err) or nil }
@@ -258,6 +344,21 @@ local MUTATIONS = {
       from = '    if entry.outcome then\n        logLine(string.format(\'LEDGER DEFECT: an outcome was recorded twice', to = '    if false then\n        logLine(string.format(\'LEDGER DEFECT: an outcome was recorded twice' },
     { name = 'the ledger counts line reports 0 for every outcome', fails = { 'U11' },
       from = "string.format('%s=%d', o, #groups[o])", to = "string.format('%s=%d', o, 0)" },
+    -- Step 3 (D-025): sets written before the first run
+    { name = 'a level at the low end of a range is no longer in range', fails = { 'U21' },
+      from = "if n >= low and n <= high then", to = "if n > low and n <= high then" },
+    { name = 'a level at the high end of a range is no longer in range', fails = { 'U21' },
+      from = "if n >= low and n <= high then", to = "if n >= low and n < high then" },
+    { name = 'unreadable text is treated as in range', fails = { 'U23' },
+      from = "    return 'unreadable', string.format('level unreadable (\"%s\")', trimmed)", to = "    return 'in', ''" },
+    { name = 'surrounding whitespace is no longer trimmed from the level text', fails = { 'U21', 'U23' },
+      from = "local trimmed = tostring(levelText):match('^%s*(.-)%s*$')", to = "local trimmed = tostring(levelText)" },
+    { name = 'the 1-70 bound is dropped from validateRange', fails = { 'U18', 'U20' },
+      from = "if low < RANGE_MIN or high > RANGE_MAX then return false, string.format(", to = "if false then return false, string.format(" },
+    { name = 'reversed endpoints are accepted by validateRange', fails = { 'U18', 'U20' },
+      from = "    if low > high then return false, 'low is above high' end\n", to = "" },
+    { name = 'off by one in the label parse (low + 1)', fails = { 'U17', 'U18' },
+      from = "local range = { low = tonumber(a), high = tonumber(b) }", to = "local range = { low = tonumber(a) + 1, high = tonumber(b) }" },
     { name = 'markRemainingNotAttempted no longer skips entries that already have an outcome', fails = { 'U10' },
       from = 'if not entries[i].outcome then setOutcome(entries[i], OUTCOME.NOT_ATTEMPTED, reason) end', to = 'setOutcome(entries[i], OUTCOME.NOT_ATTEMPTED, reason)' },
 }
@@ -271,6 +372,26 @@ end
 print('=== baseline: spellspree.lua through the unit-test hook ===')
 local base = evaluate(SCRIPT)
 for _, t in ipairs(TESTS) do report(t.id .. ' [' .. t.kind .. '] ' .. t.src, base[t.id].pass, base[t.id].msg) end
+
+if arg[1] == 'stage' then
+    -- D-025 F'': compare each new test's result with the result expected at this red-run stage (written before the run)
+    local stage = tonumber(arg[2])
+    local mismatches = 0
+    for _, t in ipairs(TESTS) do
+        if t.st then
+            local got = base[t.id].pass and 'pass' or 'fail'
+            local want = t.st[stage]
+            local same = got == want
+            if not same then mismatches = mismatches + 1 end
+            print(string.format('%-4s %s expected %s, got %s%s', same and 'OK' or 'DIFF', t.id, want, got, (got == 'fail' and base[t.id].msg) and (' -- ' .. base[t.id].msg:sub(1, 140)) or ''))
+        elseif not base[t.id].pass then
+            mismatches = mismatches + 1
+            print('DIFF ' .. t.id .. ' (an existing test) expected pass, got fail -- ' .. tostring(base[t.id].msg))
+        end
+    end
+    print(string.format('\nstage %d: %d mismatch(es) against the expected table', stage, mismatches))
+    os.exit(mismatches == 0 and 0 or 1)
+end
 
 if arg[1] == 'baseline' then
     print(string.format('\n%s: %d failure(s) (baseline only, mutations skipped)', failures == 0 and 'ALL OK' or 'NOT OK', failures))
