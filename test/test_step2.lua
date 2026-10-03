@@ -92,6 +92,41 @@ local function between(text, from, to)
 end
 local function stripBlockComments(t) return (t:gsub('%-%-%[%[.-%]%]', '')) end
 
+-- Runs the S6 scenario (Cleric 61-70 ticked, mapping deleted) on a copy of the real script, after `transform` changed its text.
+local function runWithTransform(transform)
+    local mutated = SOURCE:gsub("    %['61%-70'%] = '1%-25',\n", '', 1)
+    if mutated == SOURCE then error('could not simulate the missing mapping (active line not found)', 0) end
+    mutated = transform(mutated)
+    local path = TMP .. '\\no_mapping.lua'
+    local f = assert(io.open(path, 'wb')); f:write(mutated); f:close()
+    local dir = TMP .. '\\nomapping'
+    mkdir(dir)
+    os.remove(dir .. '\\spellspree\\' .. LOGNAME)
+    local sim = R.run(path, SCENARIOS.only61(dir))
+    return sim, R.readLines(dir .. '\\spellspree\\' .. LOGNAME) or {}
+end
+
+-- All the checks for "no vendor is configured": returns true, or false plus every problem found (so a test can see which kinds).
+local function noVendorCheck(sim, lines)
+    local problems = {}
+    local w = grep(lines, 'No vendor is configured for Cleric 61-70')
+    if #w ~= 1 then problems[#problems + 1] = 'expected one WARN naming Cleric 61-70, saw ' .. #w
+    elseif not w[1]:find('| WARN ', 1, true) then problems[#problems + 1] = 'the line is not at WARN level' end
+    local function cmdCount(prefix) local n = 0; for _, cmd in ipairs(sim.cmds) do if cmd:sub(1, #prefix) == prefix then n = n + 1 end end; return n end
+    if #visited(sim) ~= 0 then problems[#problems + 1] = 'a visit was made with no vendor configured (/target npc)' end
+    if cmdCount('/nav') ~= 0 then problems[#problems + 1] = 'a /nav command was sent (' .. cmdCount('/nav') .. ')' end
+    if cmdCount('/notify MerchantWnd MW_Buy_Button') ~= 0 then problems[#problems + 1] = 'a Buy click was sent' end
+    if #sim.purchases ~= 0 then problems[#problems + 1] = 'the mock saw ' .. #sim.purchases .. ' purchase(s)' end
+    local printed = false
+    for _, l in ipairs(sim.prints) do if l:find('No vendors selected', 1, true) then printed = true end end
+    if not printed then problems[#problems + 1] = '"No vendors selected" was not printed' end
+    if not sim.ok then problems[#problems + 1] = 'the script chunk did not finish: ' .. tostring(sim.runErr) end
+    if sim.endedBy ~= 'no-vendors' then problems[#problems + 1] = 'the run did not end through the no-vendors grace (endedBy=' .. tostring(sim.endedBy) .. ')' end
+    if sim.delays >= 1000 then problems[#problems + 1] = 'the run used ' .. sim.delays .. ' delays, expected far fewer than the 400,000 guard' end
+    if #problems > 0 then return false, table.concat(problems, '; ') end
+    return true
+end
+
 local OLD_NAMES = { 'Vicar Diarin', 'Minstrel Silnon', 'Illusionist Acored', 'Channeler Alyrianne', 'Reaver Muron', 'Heretic Ceikon',
     'Mystic Pikor', 'Wanderer Kedrisan', 'Elementalist Siewth', 'Pathfinder Naend', 'Cavalier Cerakor', 'Primalist Loerith' }
 
@@ -144,22 +179,11 @@ local TESTS = {
           return true
       end },
 
-    { id = 'S6', src = 'D-022 A\': a ticked tier with no vendor mapping logs a WARN naming the class and tier and is skipped (configuration error simulated by deleting the active 61-70 mapping)',
+    { id = 'S6', src = 'D-022 A\': a ticked tier with no vendor mapping logs a WARN naming the class and tier and is skipped (configuration error simulated by deleting the active 61-70 mapping); D-026 E\': nothing is navigated to, targeted or bought, and the run ends normally',
       fn = function(c)
-          local mutated = SOURCE:gsub("    %['61%-70'%] = '1%-25',\n", '', 1)
-          if mutated == SOURCE then return false, 'could not simulate the missing mapping (active line not found)' end
-          local path = TMP .. '\\no_mapping.lua'
-          local f = assert(io.open(path, 'wb')); f:write(mutated); f:close()
-          local dir = TMP .. '\\nomapping'
-          mkdir(dir)
-          os.remove(dir .. '\\spellspree\\' .. LOGNAME)
-          local sim = R.run(path, SCENARIOS.only61(dir))
-          local lines = R.readLines(dir .. '\\spellspree\\' .. LOGNAME) or {}
-          local w = grep(lines, 'No vendor is configured for Cleric 61-70')
-          if #w ~= 1 then return false, 'expected one WARN naming Cleric 61-70, saw ' .. #w end
-          if not w[1]:find('| WARN ', 1, true) then return false, 'the line is not at WARN level' end
-          if #visited(sim) ~= 0 then return false, 'a visit was made with no vendor configured' end
-          return true
+          local sim, lines = runWithTransform(function(src) return src end)
+          local ok, why = noVendorCheck(sim, lines)
+          return ok, why
       end },
 
     { id = 'S7', src = 'D-022 B\': the old 61-70 vendor names are kept as comments (all 12), no 61-70 name is active, exactly one active 61-70 mapping entry (to 1-25), and the restoration note is present',
@@ -188,6 +212,27 @@ local TESTS = {
           if #c.all4.sim.purchases ~= 4 then return false, 'the mock saw ' .. #c.all4.sim.purchases .. ' purchases, expected 4' end
           return true
       end },
+
+    { id = 'S9', src = 'D-026 E\': the S6 checks detect a forbidden action during the grace (a modified script sends /nav id on the main-loop pass after "No vendors selected"; the checks must fail and name the navigation)',
+      fn = function(c)
+          local sim, lines = runWithTransform(function(src)
+              local a = "logLine('No vendors selected -- check at least one class/tier box first.', COLOR_WARN)\n        return\n"
+              local b = '    mq.doevents()\n    if S.reDetectRequested then\n'
+              local at = src:find(a, 1, true)
+              assert(at and not src:find(a, at + 1, true), 'forbidden-action hook point A not found exactly once')
+              local bt = src:find(b, 1, true)
+              assert(bt and not src:find(b, bt + 1, true), 'forbidden-action hook point B not found exactly once')
+              local newA = "logLine('No vendors selected -- check at least one class/tier box first.', COLOR_WARN)\n        S.forbiddenNext = true\n        return\n"
+              local newB = "    mq.doevents()\n    if S.forbiddenNext then S.forbiddenNext = false; sendCmd('forbidden action for the grace test', '/nav id 4242') end\n    if S.reDetectRequested then\n"
+              -- B comes after A in the file, so replace B first
+              src = src:sub(1, bt - 1) .. newB .. src:sub(bt + #b)
+              return src:sub(1, at - 1) .. newA .. src:sub(at + #a)
+          end)
+          local ok, why = noVendorCheck(sim, lines)
+          if ok then return false, 'the checks passed although the script navigated during the grace' end
+          if not why:find('/nav', 1, true) then return false, 'the checks failed but did not name the navigation: ' .. why end
+          return true
+      end },
 }
 
 local function evaluate(script)
@@ -204,8 +249,9 @@ end
 -- exactly the named tests must fail for each deliberate defect (written before the first run)
 local MUTATIONS = {
     -- S6 also fails here, legitimately: it simulates a missing mapping by deleting the active 61-70 mapping line, which this
-    -- mutation has already changed (my first prediction missed that dependency).
-    { name = 'a ticked 61-70 goes back to the 61-70 vendor', fails = { 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7' },
+    -- mutation has already changed (my first prediction missed that dependency). S9 uses the same technique, so it fails here too
+    -- (predicted before the run, D-026).
+    { name = 'a ticked 61-70 goes back to the 61-70 vendor', fails = { 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S9' },
       from = "    ['61-70'] = '1-25',\n", to = "    ['61-70'] = '61-70',\n" },
     { name = 'the visit label no longer says which vendor is used', fails = { 'S5' },
       from = "string.format(', using the %s vendor', entry.vendorTier)", to = "''" },
@@ -262,6 +308,31 @@ for i, m in ipairs(MUTATIONS) do
             end
             report('mutation ' .. i .. ' ' .. m.name, #problems == 0, #problems > 0 and table.concat(problems, '; ') or ('caught by ' .. table.concat(m.fails, ',')))
         end
+    end
+end
+
+-- Mutations of the harness itself (D-026 E'): the named tests must fail (expected sets written before the first run).
+local HARNESS_MUTATIONS = {
+    { name = 'no grace after "No vendors selected" (the run ends at the first delay)', fails = { 'S9' }, grace = 0 },
+    { name = 'no early termination (the run drags on to the runaway guard)', fails = { 'S6' }, grace = math.huge },
+}
+for i, m in ipairs(HARNESS_MUTATIONS) do
+    local realGrace = R.GRACE
+    R.GRACE = m.grace
+    local ok, res = pcall(evaluate, SCRIPT)
+    R.GRACE = realGrace
+    if not ok then
+        report('harness mutation ' .. i .. ' ' .. m.name, false, 'harness error: ' .. tostring(res))
+    else
+        local expected = {}
+        for _, id in ipairs(m.fails) do expected[id] = true end
+        local problems = {}
+        for _, t in ipairs(TESTS) do
+            local failed = not res[t.id].pass
+            if expected[t.id] and not failed then problems[#problems + 1] = t.id .. ' should have failed but passed' end
+            if not expected[t.id] and failed then problems[#problems + 1] = t.id .. ' failed unexpectedly (' .. tostring(res[t.id].msg) .. ')' end
+        end
+        report('harness mutation ' .. i .. ' ' .. m.name, #problems == 0, #problems > 0 and table.concat(problems, '; ') or ('caught by ' .. table.concat(m.fails, ',')))
     end
 end
 

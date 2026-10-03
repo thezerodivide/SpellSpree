@@ -1,0 +1,16 @@
+=== baseline: spellspree.lua against the simulated MQ ===
+PASS   S1 D-022 A', C / D-020 R34: with all four Cleric tiers ticked the visits are vendor 1, 2, 3, then vendor 1 again, and the old 61-70 vendor is never targeted
+PASS   S2 D-022 A': ticking only 61-70 visits only the 1-25 vendor
+PASS   S3 D-022 C / D-020 R34: ticking 1-25 and 61-70 is two visits to the 1-25 vendor, not one merged visit
+PASS   S4 D-022 A' / F': a multi-class selection routes each class's 61-70 to that class's own 1-25 vendor, in class order (Cleric, then Wizard)
+PASS   S5 D-022 D': the label of a 61-70 visit says "using the 1-25 vendor" (and does not claim a purchase); the other three visits carry no such note
+FAIL   S6 D-022 A': a ticked tier with no vendor mapping logs a WARN naming the class and tier and is skipped (configuration error simulated by deleting the active 61-70 mapping); D-026 E': nothing is navigated to, targeted or bought, and the run ends normally -- the script chunk did not finish: test/mock_mq.lua:279: simulation 
+PASS   S7 D-022 B': the old 61-70 vendor names are kept as comments (all 12), no 61-70 name is active, exactly one active 61-70 mapping entry (to 1-25), and the restoration note is present
+PASS   S8 D-022 E: nothing else changes (Step 1 behavior kept): in the four-tier Cleric run every spell is bought exactly once
+PASS   S9 D-026 E': the S6 checks detect a forbidden action during the grace (a modified script sends /nav id on the main-loop pass after "No vendors selected"; the checks must fail and name the navigation)
+
+NOT OK: 1 failure(s) (baseline only, mutations skipped)
+
+real	0m10.285s
+user	0m0.015s
+sys	0m0.030s
