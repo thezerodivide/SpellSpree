@@ -1679,3 +1679,23 @@ stays with the developer, and the all-class vendor-coverage assumption stays una
 **Not approved yet:** nothing here is a requirement until the developer approves it. When approved, a new
 decision entry will record the approval and supersede spec S-1 / D-001 R1 for the scan mechanism, the spec
 will be updated, and only then is the build started.
+
+### D-013 addendum 4 (2026-10-03): the developer accepts the vendor-level pattern for all 12 classes
+
+Appended; earlier text is unchanged.
+
+**Developer, 2026-10-03:** Druid does not need to be tested. The observations were consistent across all
+observed classes, and there is no reason to believe Druid is an outlier.
+
+- **Decision (R27):** the vendor-level pattern (the 1-25 vendor also holds levels 61-65; the 26-50 and
+  51-60 vendors hold only their own levels; the 61-70 vendor lists nothing usable) is **accepted for all
+  12 classes with spell vendors**, including Druid. The evidence is the developer's buying on 11 of the 12
+  (all but Druid); Druid is accepted on the developer's judgment that it is not an outlier, not on a test.
+- **Effect:** this resolves D-013's open "assumption, not confirmed" and the Step 2 reservation recorded
+  in D-014 review rounds 2 and 3 (ChatGPT: the all-class assumption "remains unapproved for Step 2";
+  Druid's inventory "would settle" it). The developer, who owns the risk, has chosen to accept it. The
+  worst case, stated for the record: if Druid differs, the 61-65 box (or another range) buys fewer spells
+  for that class than expected; R21 prevents it from buying spells outside the selected range.
+- **Not changed:** Step 2 is still not built and not yet approved as a build; the developer's approval of the
+  Step 1 items (A-K) is still pending. The Step 2 idea of logging each vendor's level counts on first visit
+  is kept as ordinary logging (it does not buy or gate anything), not as a condition.

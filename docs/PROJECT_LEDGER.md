@@ -185,7 +185,7 @@ as the pre-logging baseline in four scenarios.
     live run by the developer. **Probe and watch both done; Q1-Q6 answered (see confirmed
     facts). Decision for the developer: adopt list-then-buy, which would supersede S-1.**
 
-15. ~~PROBLEM~~ **Requirement agreed (D-013), not built. Vendor-level pattern: developer-tested for Paladin, Shadowknight, Cleric, Necromancer, Beastlord, Magician, Shaman, Ranger, Bard, Wizard, Enchanter (11 of 12); NOT yet evidenced for Druid (D-013 addenda 2 and 3).** ~~(first said: 9 of 12, with Druid, Enchanter and Wizard missing)~~ Was: **PROBLEM (developer-confirmed from buying for 14 characters, D-012):** the tier boxes do not
+15. ~~PROBLEM~~ **Requirement agreed (D-013), not built. Vendor-level pattern: developer-tested for Paladin, Shadowknight, Cleric, Necromancer, Beastlord, Magician, Shaman, Ranger, Bard, Wizard, Enchanter (11 of 12); NOT tested on Druid; **the developer accepts the pattern for all 12 classes, Druid included, on his judgment that it is not an outlier (D-013 addendum 4).** ~~(first said: 9 of 12, with Druid, Enchanter and Wizard missing)~~ Was: **PROBLEM (developer-confirmed from buying for 14 characters, D-012):** the tier boxes do not
     match what the vendors sell. The `26-50` and `51-60` vendors hold only those levels; the level
     61-65 spells are on the `1-25` vendor; so `Cleric 1-25` buys spells outside 1-25 and the
     `61-70` vendor is not needed as the script works. The vendor list's `Lvl` column (col 8, header
