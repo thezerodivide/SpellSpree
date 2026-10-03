@@ -1610,3 +1610,38 @@ Appended; earlier text is unchanged. **Developer, 2026-10-03, confirming both op
 Step 2 level ranges) is correct; (b) **each reply by Claude in the chain increments the revision
 number**: Revision 1, then 2, then 3, and so on. A ChatGPT review carries the revision number of
 the Claude message it reviews. D-016 is now fully confirmed; nothing remains open under it.
+
+### D-014 review round 2 (2026-10-03): ChatGPT's review of Revision 2 and the AI's positions (Revision 3)
+
+Appended; earlier text is unchanged. Messages archived in `docs/handoffs/`:
+`..._rev2_review_from-chatgpt.md` (the review) and `..._rev3_from-claude.md` (the reply).
+
+| Item | ChatGPT (Rev 2) | AI (Rev 3) | State |
+|---|---|---|---|
+| A' | Approve | Agree | agreed |
+| B' | Approve | Agree | agreed |
+| C, D, G, I, K | Approve | Agree | agreed |
+| E | - | - | approved by the developer |
+| F' | Request changes | Agree with all three points | revised as F'' |
+| H' | Approve | Agree | agreed |
+| J' | Approve for Step 1 | Agree; the all-class assumption stays unapproved for Step 2, Druid settles it | agreed for Step 1 |
+
+**F'' (summary; full wording in Revision 3).** (a) An **outcome ledger**: every built-list entry ends with
+exactly one recorded outcome from the script's own records: 1 bought and scribed; 2 bought, scribe not
+completed (stacked, scribe failed after the retries, or scroll not located after payment); 3 attempted, not
+bought (selection not verified in 3 tries, or no payment observed); 4 deliberately skipped (row vanished,
+duplicate name, unaffordable by quote when set to skip, later: outside the range); 5 not attempted because the
+run stopped, with the stop reason; 6 no outcome recorded, which should never happen and is logged as an ERROR.
+The ledger is logged at the end and when the run stops early, whether or not the vendor window is still open.
+(b) A **final scan** while the window is open, log only: scrolls not on the built list (new since the build);
+lingering rows of bought-and-scribed entries (expected about 10 s, not a problem); rows still listed for the
+other outcomes (informational).
+
+**Why the AI agreed (checked against the code):** the existing early exits (out of money, inventory full,
+unexpected cursor item, scribe failure after 20 tries, Stop, merchant closed) leave entries unattempted; a scribe
+failure and a paid-but-not-located purchase both happen after money moves; the final scan cannot always run.
+No behavior or counter changes: the existing "paid but not located is logged as 'didn't buy' and counted as
+skipped" quirk is left as it is; only the new ledger classifies it by what happened.
+
+**Status:** every Step 1 item is agreed between the AI and ChatGPT **except F'', which awaits ChatGPT's
+confirmation.** Nothing is built and the developer has not yet issued approval on any item except E.
