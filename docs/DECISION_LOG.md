@@ -1654,3 +1654,28 @@ copies the whole reply, a reply that carries a handoff contains only the labelle
 beginning with the `HANDOFF:` line, with nothing for the developer mixed in. Anything the developer needs to
 be told goes in a separate reply. The already-sent Revision 3 is not reformatted (developer: no need).
 Recorded in the working agreement (P-7).
+
+### D-014 review round 3 (2026-10-03): consensus on Step 1 between the AI and ChatGPT
+
+Appended; earlier text is unchanged. ChatGPT's review of Revision 3 is archived in
+`docs/handoffs/2026-10-03_step1_decision14_rev3_review_from-chatgpt.md`. **ChatGPT approved F''
+and states that every Step 1 proposal is agreed from its review**; final implementation authorization
+stays with the developer, and the all-class vendor-coverage assumption stays unapproved for Step 2.
+
+**Consensus (AI and ChatGPT), awaiting the developer's approval, item by item:**
+- A' (visible usable list as source; name rule kept; duplicates keep the first; unknown values gate nothing)
+- B' (poll every 250 ms; settled = 8 unchanged polls; max wait 15 s; else skip the vendor and log; values untuned)
+- C (find the row by exact name, click it, existing buy and scribe path)
+- D (row gone at lookup: skip and log, no retry)
+- E (each name at most once per visit; no reopen, no repeat passes): **already approved by the developer**
+- F'' (outcome ledger for every built-list entry, six outcomes; then a log-only final scan)
+- G (this mechanism first, same eligibility as today; level ranges as Step 2)
+- H' (3 selection attempts; verify the exact name immediately before Buy; never retry the Buy)
+- I (inclusive ranges; unreadable level not bought and logged): applies to Step 2
+- J' (Step 1 is not blocked by class coverage; the all-class assumption is **not** approved for Step 2;
+  Druid's evidence is the open point)
+- K (log rotation unchanged)
+
+**Not approved yet:** nothing here is a requirement until the developer approves it. When approved, a new
+decision entry will record the approval and supersede spec S-1 / D-001 R1 for the scan mechanism, the spec
+will be updated, and only then is the build started.
