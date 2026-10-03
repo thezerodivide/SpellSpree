@@ -3094,3 +3094,30 @@ the Project Triune `uifiles`; its runtime text is not yet observed live; the spi
 merchant window is not open or the list has no rows. Tested against the mock (all three paths) and the existing suites (unchanged, all passing; one new mock option, `startClosed`, and
 the label, MOCK_MODEL row 37). The watch mode's known-flag defect (addendum 3) was not touched: it was not part of the request. Tag `spike/tomes-0.1.0-spike.3`; the live copy in
 `C:/Users/Public/MacroQuest/lua/` was replaced.
+
+### D-030 addendum 7 (2026-10-03): the ten-vendor dumps with `0.1.0-spike.3`: nine good, one stale (Larquin Julinok)
+
+Evidence: `docs/evidence/2026-10-03_Kylaeris_tome-spike.3_ten_vendor_dumps.log` (ten `dump` runs, vendor names read from the merchant window; the target was stale in eight of them, as expected).
+
+| Vendor (class) | Rows | Tomes | Result |
+|---|---|---|---|
+| Keshyk Wardorn (Ranger) | 105 | 4 | good |
+| Beorobin Amondson (Monk) | 126 | 22 | good (matches the earlier Monk dump) |
+| Zhao V`karin (Shadowknight) | 105 | 5 | good; the window label itself shows the backtick |
+| Gaddi Buruca (Berserker) | 120 | 17 | good |
+| Kurlond Axebringer (Berserker) | 147 | 45 | good |
+| Tana Clawguard (Beastlord) | 105 | 4 | good (Bestial Fury, Fearless, Protective Spirit, Resistant) |
+| Blane Darkblade (Rogue) | 120 | 19 | good |
+| Heldin Swordbreaker (Warrior) | 124 | 22 | good (22 Warrior disciplines, e.g. Bellow, Berate, Charge, Elbow Strike) |
+| Ulin Velnik (Paladin) | 105 | 5 | good |
+| **Larquin Julinok (Bard)** | 124 | 22 | **stale: not usable** |
+
+**Larquin's dump is a copy of Heldin's:** all 124 rows have the same name, price and level in the same order, the 22 tomes are Warrior disciplines, and the spike flagged "the list did
+not settle within 15 s". The window label had changed to Larquin but the list had not. The Bard's real stock is therefore still unobserved: the earlier (unlabelled) `0.1.0-spike.2` dumps
+contain a 4-tome inventory of Bard disciplines (Deftdance, Puretone, Fearless, Resistant) that was probably his, but that cannot be confirmed without a labelled dump.
+
+**Berserker overlap, now vendor-attributed:** Gaddi Buruca's 17 tomes are all sold by Kurlond Axebringer, with the same level and price. Across the nine good dumps, 99 distinct tomes appear:
+96 match a client spell name exactly after removing "Tome of ", 2 only when spaces are ignored (Inner Flame, Stone Stance), 1 not at all (`Diversive Strike`); the Warrior and Beastlord
+inventories add no new mismatches.
+
+**Open:** a fresh, settled dump at Larquin Julinok (close and reopen his window, let the list settle, then run `dump`).
