@@ -51,7 +51,7 @@
 local mq    = require('mq')
 local ImGui = require('ImGui')
 
-local VERSION = '1.5-reorder-passes'
+local VERSION = '1.6.0-test.1'
 local open    = true
 
 -- ============================================================================
