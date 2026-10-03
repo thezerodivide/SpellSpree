@@ -5,7 +5,7 @@ Current state only (Development Protocol §11). History and rationale are in
 
 Last reviewed end to end: 2026-10-03 (§18).
 Baseline: commit `f6c29f4`, referred to as **v1.5.0** (that commit's file still says `1.5-reorder-passes`).
-Current: `1.6.0-test.1` on local `main` (D-004 file logging, D-005 version). Simulation-tested only; **not pushed** to GitHub and not yet live-tested.
+Current: `1.6.0-test.1` (D-004 file logging, D-005 version), pushed to GitHub and tagged `v1.6.0-test.1` (on `b8a6d53`; docs-only commits follow it, `spellspree.lua` is identical). Simulation-tested only; not yet live-tested.
 
 ## Resolved behavior
 
@@ -16,6 +16,7 @@ Only behavior the developer has explicitly agreed.
 - The merged build must not lose anything the original does. *(D-001 R2)*
 - Stay on the v1.5 version line; use SemVer from now on; the baseline counts as 1.5.0. *(D-005 R12, R13 and addendum)*
 - Test builds raise the pre-release number each handoff; the file stays `spellspree.lua`, no unique filename per build. *(D-006 R14, R15)*
+- Every handed-over build is committed and tagged `v<VERSION>` first. *(D-007 R16)*
 
 Inherited behavior of the original (Bazaar mode, `Song:` scrolls, PoK vendor
 walk, buy-and-scribe loop, usable-only filter requirement, stop conditions) is
@@ -81,8 +82,8 @@ as the pre-logging baseline in four scenarios.
 5. ~~**Build identity.**~~ **Resolved (D-005, D-006).** Baseline = 1.5.0; the
    logging build is `1.6.0-test.1`; test builds raise the pre-release number per
    handoff; no unique filename needed (supersedes Protocol §9 filename clause for
-   this project). **Still open:** how a handed-over build is tied to an exact
-   commit (AI suggestion in D-006: commit and tag each handed-over build).
+   this project). The build-to-commit tie is resolved by D-007: each handed-over
+   build is committed and tagged `v<VERSION>`.
 6. ~~File logging to `macroquest\logs\spellspree\` (§8) is absent.~~ **Built,
    awaiting live confirmation (D-004).** Remaining live questions: what
    `MacroQuest.Path('logs')` returns in the client (relative `"Logs"` vs

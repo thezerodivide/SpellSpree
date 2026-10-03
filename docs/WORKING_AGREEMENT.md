@@ -33,6 +33,10 @@ These add to the Development Protocol for this project only.
   always `spellspree.lua`. Test builds raise the pre-release number on each
   handoff (`1.6.0-test.1`, `-test.2`, ...); MINOR/PATCH change only when a change
   is accepted.
+- **P-3. Commit and tag every handed-over build (developer, 2026-10-03; D-007).**
+  Before a build is handed over for live testing it is committed and the commit
+  is tagged `v<VERSION>` (annotated, pushed). Handoff therefore needs: the P-1
+  log review, and a tagged commit whose `VERSION` equals the tag.
 
 ## Sibling projects (Development Protocol §21)
 
