@@ -2997,3 +2997,17 @@ real client returns for `Me.CombatAbility`, `NearestSpawn` or the chat patterns;
 tome names; and what the game says on learning a new tome and on right-clicking a tome for a discipline already known.
 
 **Status:** spike handed over; no design or implementation yet.
+
+### D-030 addendum (2026-10-03): TAC already scans a character's disciplines; the spike now does it the same way (spike.2)
+
+The developer remarked that **TAC (Triune Autocombat, the reference project gennro/TriuneAutocombat) has a way to identify which disciplines a character knows**:
+"doesn't solve it completely, but it does help." Read in the TAC source (`TAC/lua/tac/buttons.lua`, `scanDiscs`, quoted from the public repository, nothing copied
+into SpellSpree): TAC lists known disciplines with `Me.CombatAbilityCount` when the client has it ("not available on every client"), otherwise it probes
+`Me.CombatAbility(i)` slot by slot up to 400 and stops only after a run of 60 empty slots, reading the name from `.Name()` with a fallback to calling the node
+itself; it also reads each discipline's level and uses `Me.CombatAbilityReady(name)` and `Me.CombatAbilityTimer(name)` by name elsewhere.
+
+**Consequence for the spike.** The first version (`0.1.0-spike.1`) probed slot by slot and stopped after 5 empty slots, which could undercount if the list has gaps.
+`0.1.0-spike.2` (tag `spike/tomes-0.1.0-spike.2`) uses TAC's approach (count when available, else 400 slots with a 60-slot empty limit, the name fallback) and logs how
+the scan ended; the watch mode refreshes it every two seconds. Re-run in simulation: clean, no command sent, nothing bought. **What TAC does not settle:** whether the
+discipline names it reads equal the names the tomes carry once "Tome of " is removed (the dump compares them and logs the mismatches), and what the game says on
+learning a tome or right-clicking one already known.

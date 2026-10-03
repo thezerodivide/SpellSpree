@@ -27,7 +27,7 @@
 -- ============================================================================
 local mq = require('mq')
 
-local SPIKE_VERSION = '0.1.0-spike.1'
+local SPIKE_VERSION = '0.1.0-spike.2'
 local args = { ... }
 local mode = tostring(args[1] or 'names'):lower()
 
@@ -140,18 +140,31 @@ local function settle()
     return last, true
 end
 
+-- The way TAC (Triune Autocombat, gennro/TriuneAutocombat, TAC/lua/tac/buttons.lua scanDiscs) lists the disciplines a character knows:
+-- Me.CombatAbilityCount when the client has it, otherwise slot by slot up to 400, stopping only after a run of 60 empty slots; the name is
+-- read from .Name(), falling back to calling the node itself. Returns the names, plus how the scan ended.
+local DISC_MAX_SLOTS, DISC_EMPTY_LIMIT = 400, 60
 local function knownDisciplines()
-    local list, misses = {}, 0
-    for i = 1, 600 do
-        local nm = tlo(function() return mq.TLO.Me.CombatAbility(i).Name() end)
-        if nm and trim(nm) ~= '' and tostring(nm) ~= 'NULL' then
-            list[#list + 1] = tostring(nm); misses = 0
+    local list, seen, emptyRun, last = {}, {}, 0, 0
+    local count = tonumber(tlo(function() return mq.TLO.Me.CombatAbilityCount() end)) or 0
+    local limit = (count > 0) and count or DISC_MAX_SLOTS
+    for i = 1, limit do
+        local name = tlo(function()
+            local ca = mq.TLO.Me.CombatAbility(i)
+            if not ca then return nil end
+            local n = ca.Name and ca.Name()
+            if (n == nil or n == '' or tostring(n):upper() == 'NULL') and type(ca) == 'function' then n = ca() end
+            return n
+        end)
+        if name and trim(name) ~= '' and tostring(name):upper() ~= 'NULL' then
+            emptyRun, last = 0, i
+            if not seen[tostring(name)] then seen[tostring(name)] = true; list[#list + 1] = tostring(name) end
         else
-            misses = misses + 1
-            if misses >= 5 then break end
+            emptyRun = emptyRun + 1
+            if count == 0 and emptyRun >= DISC_EMPTY_LIMIT then break end
         end
     end
-    return list
+    return list, { count = count, limit = limit, lastSlot = last }
 end
 
 local function runDump()
@@ -163,7 +176,8 @@ local function runDump()
         tostring(tlo(function() return mq.TLO.Zone.ShortName() end)), tostring(tlo(function() return mq.TLO.Me.CleanName() end)), tostring(rows), timedOut and ' (the list did not settle in 15 s)' or ''))
     if not rows or rows < 1 then say('dump: the list has no rows.'); return end
 
-    local known = knownDisciplines()
+    local known, scan = knownDisciplines()
+    log(string.format('discipline scan: Me.CombatAbilityCount=%s; scanned up to slot %d; last filled slot=%d', tostring(scan.count > 0 and scan.count or 'unavailable'), scan.limit, scan.lastSlot))
     local knownSet = {}
     for _, k in ipairs(known) do knownSet[trim(k):lower()] = true end
     log(string.format('known disciplines by Me.CombatAbility(index): %d: %s', #known, table.concat(known, '; ')))
@@ -219,12 +233,14 @@ local function runWatch()
     say(string.format('watch: recording for %d s. Buy "%s" and right-click it to learn it, by hand.', seconds, tostring(tome)))
     local lastKey = nil
     local waited = 0
+    local knownCount, tick = 0, 0
     while waited < seconds * 1000 do
         mq.doevents()
         local copies = tonumber(tlo(function() return mq.TLO.FindItemCount('=' .. tome)() end)) or 0
         local byName = tlo(function() return mq.TLO.Me.CombatAbility(derived).Name() end)
         local known = (byName ~= nil and trim(byName) ~= '' and tostring(byName) ~= 'NULL')
-        local knownCount = #knownDisciplines()
+        if tick % 4 == 0 then knownCount = #knownDisciplines() end
+        tick = tick + 1
         local cursor = tlo(function() return mq.TLO.Cursor.Name() end)
         local key = table.concat({ copies, copperOnHand(), tostring(known), knownCount, tostring(cursor), tostring(merchantOpen()) }, '|')
         if key ~= lastKey then
