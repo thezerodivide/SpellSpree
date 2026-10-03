@@ -2776,3 +2776,24 @@ in the ledger's "deliberately skipped" line (one long line); that is the approve
 **Not verified (simulation does not show it):** the live client's Lvl column for every spell row (every live row read so far had a number);
 that the script starts normally with the unit-test hook present; the whole run on the live vendor window. The combined live run of
 `1.6.0-test.4` covers them. Version bumped to `1.6.0-test.4` with this handoff (P-2, P-3); `1.6.0` is not created.
+
+## D-028 — Design proposal: the log file follows the character that is playing (Step 5, Revision 1)
+
+Date: 2026-10-03. Source: the developer's live test of `1.6.0-test.4` and their decision, "that is a real gap, that needs fixed."
+
+**Observation.** The log path is resolved on the first write and kept (`LOG.path`). The script was started as Benedict (14:45) and kept running
+after the developer switched to Ididnotbuffher in the same client (the elapsed-time column is continuous; no new startup lines), so the whole
+Enchanter run (15:11:30-15:25:50, 6,044 lines) is in `spellspree_multiclass_Benedict.log`, and no Ididnotbuffher file exists. The developer first
+read that as "logging failed completely"; all the data was there, under the wrong name. The run is attributed only by memory and by inference
+(a Shaman spell was bought and scribed on the first character and still offered to the second). **That run belongs to Ididnotbuffher.**
+
+**Proposal (handoff `docs/handoffs/2026-10-03_step5_decision28_rev1_from-claude.md`, sent to ChatGPT per D-015; consensus is approval per D-027).**
+A. re-read server and character at run boundaries (before a run is dispatched; at the Run buttons before the "User pressed" line), not on every
+write. B. on a change: a line in the old file, reset the path and write counter, a session header marked `continued session` in the new file
+(the startup block becomes one shared function), one INFO line to the window and file. C. an unreadable identity keeps the current file. D. the
+`run start` line gains `character=` and `server=`. E. contained in `pcall`; mid-run switches are not handled. F. nothing else changes; existing
+files are not rewritten. G. rejected alternative: the character in every line. H. ships as `1.6.0-test.5`; whether `1.6.0` includes it is the
+developer's call. I. TDD plan with mock additions (identity change at a set time; a second Run press), per-stage expectations, unit tests of the
+pure parts through the hook, seven targeted mutations.
+
+**Status:** awaiting ChatGPT's review. Nothing is built.

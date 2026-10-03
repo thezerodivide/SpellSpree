@@ -15,6 +15,7 @@ Current: `1.6.0-test.4`: **Steps 1-3** (list-then-buy D-017; every 61-70 selecti
 - **Step 3 (D-025) approved by consensus (D-027) and BUILT; handed over in `1.6.0-test.4`** with Step 2 and the infrastructure. Live check owed (list in D-025's build entry). `1.6.0` is not created: only the developer's explicit instruction creates it.
 - **Testing infrastructure (D-026) BUILT and approved, handed over in `1.6.0-test.4`:** the unit-test hook, the `withUnit` wrapper, `test/test_units.lua` (16 tests, 7 mutation checks), the faster harness exit (Step 2 suite 10 s to 0.4 s), the delayed-selection tests L20-L22. It ships in `1.6.0-test.4` with Steps 2 and 3. Live check still owed: the script starts normally with the hook present.
 - **TDD adopted from Step 3 (D-024, P-9)** with ChatGPT's guardrails; `docs/MOCK_MODEL.md` classifies the mock's behaviors. Next: the Step 3 design, then tests first.
+- **Live test of `1.6.0-test.4` (2026-10-03):** Shaman 1-25, then a four-tier Shaman run, then a four-tier Enchanter run, all within the ranges (details in D-025's follow-up and the chat). **Gap found:** the log file name is fixed at script start, so a run after a character switch is written under the first character's name (the Enchanter run of 14:57-15:26 is in the Benedict log but belongs to Ididnotbuffher). Fix proposed as D-028 (Step 5), under review.
 - Bazaar is its own later pass (D-020 addendum 2), not part of 1.6.0.
 - Open, developer's call: item 13 (log volume vs rotation; K approved leaving it).
 
