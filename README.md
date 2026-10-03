@@ -124,3 +124,5 @@ If something goes wrong, send the log file when you ask for help.
 
 - The decisions behind the project are in [`docs/`](docs/): the decision log, the project ledger, the specification and the working agreement.
 - The test suites run against a model of MacroQuest, not the live client, using LuaJIT: `luajit test/test_units.lua`, `test_step3.lua`, `test_step2.lua`, `test_listthenbuy.lua`, `test_logging.lua`, `test_logswitch.lua`. They show how the script behaves against that model; live runs are the evidence for the real game.
+
+Release notes are in [`RELEASE_NOTES.md`](RELEASE_NOTES.md).
