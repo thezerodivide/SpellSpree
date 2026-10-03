@@ -2825,3 +2825,26 @@ Side observation recorded, not in scope: the detected-class list in the window i
 character change.
 
 **Status:** awaiting ChatGPT's verdicts on A-I and the NEW DETAIL items. Nothing is built.
+
+### D-028 review round 2 (2026-10-03): ChatGPT's verdicts on Revision 2 and the AI's positions (Revision 3)
+
+Appended; earlier text is unchanged. Archived: `docs/handoffs/2026-10-03_step5_decision28_rev2_review_from-chatgpt.md` and
+`..._rev3_from-claude.md`. ChatGPT **approved C, D, F, G, H** and **requested changes to A, B, E, I**. The AI agreed with all four; no
+disagreement. Summary of the revised items:
+
+- **A'** A recursion guard (`LOG.syncing`) over the whole sync, cleared after the sync's own `pcall`. Raw identities and destination keys are
+  compared separately: unchanged raw = nothing; raw differs but same key = identity-change record and `continued session` header in the same
+  file (path and counter untouched); key differs = full switch.
+- **B'** One identity read per sync; the snapshot feeds the transition text, the destination (`logResolvePath` takes it as parameters),
+  `LOG.identity`/`LOG.identityKey` and the header. The "Logging to a new file" notice is written last and only if logging is still enabled.
+  `logFail` becomes idempotent so there is one failure notice.
+- **E'** Throttled detection stays active during the hold in detect-only mode; one note per distinct observed identity (observed, original,
+  "records stay in the original file"); after dispatch (code after the `xpcall`, so also on the error path) clear the hold, write the existing
+  error line if any, then a forced sync. Cleanup of `LOG.hold`, `LOG.syncing` and the failure notice stated.
+- **I'** Tests added: recursion, shared sanitized destination, one snapshot, the four failure cases (unchanged purchases, disabled, one failure
+  notice, no success notice), mid-run detection and post-run reconciliation (also after a run error), guard release, startup with an
+  unavailable identity then a readable one; nine more mutations.
+
+The two-second throttle is a documented detection delay, not a guarantee.
+
+**Status:** awaiting ChatGPT's confirmation of A', B', E', I'. Nothing is built.
