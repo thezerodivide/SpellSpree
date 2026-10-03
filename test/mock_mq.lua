@@ -21,6 +21,8 @@ end
 --       (bool: a bought scroll stacks onto an existing copy), preScrolls
 --       (names already sitting unscribed in bag 1), scribeRejectFirst (n),
 --       logsRaw / rootRaw / logsUnreadable (log path scenarios), zone,
+--       manualBuy = { name=, buyAtMs=, scribeAtMs=, removeAtMs= } (the developer buys and
+--       scribes one spell by hand while the spike watches; the row leaves the list late),
 --       vendors = { [npcName] = { spells=, nonSpells= } } (Plane of Knowledge
 --       shopping spree: each NPC has its own stock; click the Cleric class box,
 --       then Run Shopping Spree; NPCs not listed are absent from the zone).
@@ -174,6 +176,32 @@ function M.new(opts)
         -- /windowstate etc: accepted, no model
     end
 
+    -- a spell bought, scribed and removed from the list by hand (spike watch mode)
+    sim.book = {}
+    if opts.manualBuy then
+        local mb, done = opts.manualBuy, {}
+        local function find(list) for i, r in ipairs(list) do if r.name == mb.name then return i, r end end end
+        sim.tick = function()
+            if not done.buy and sim.clockMs >= mb.buyAtMs then
+                done.buy = true
+                local _, r = find(sim.rows)
+                sim.money = sim.money - (r and r.price or 0)
+                sim.bag[#sim.bag + 1] = { name = mb.name, stack = 1 }
+            end
+            if done.buy and not done.scribe and sim.clockMs >= mb.scribeAtMs then
+                done.scribe = true
+                for slot, it in pairs(sim.bag) do if it.name == mb.name then sim.bag[slot] = nil; break end end
+                sim.known[mb.name] = true
+                sim.book[(mb.name:gsub('^Spell:%s*', ''))] = 17
+            end
+            if done.scribe and not done.remove and sim.clockMs >= mb.removeAtMs then
+                done.remove = true
+                local i = find(sim.visible)
+                if i then table.remove(sim.visible, i) end
+            end
+        end
+    end
+
     -- ---------------------------------------------------------------- mq
     local mq = { configDir = 'C:/sim/config' }
     function mq.cmd(c) handleCmd(c) end
@@ -186,6 +214,7 @@ function M.new(opts)
         sim.delays = sim.delays + 1
         if sim.delays > 400000 then error('simulation runaway: too many delays') end
         sim.clockMs = sim.clockMs + (tonumber(ms) or 0)
+        if sim.tick then sim.tick() end
         if sim.draw then sim.draw() end
     end
 
@@ -194,7 +223,37 @@ function M.new(opts)
             return node(true, {
                 Open = function() return sim.merchantOpen end,
                 Child = function(cn)
-                    if cn == 'ItemList' then return node(true, { Items = function() return #sim.visible end }) end
+                    if cn == 'ItemList' then
+                        return node(true, {
+                            Items = function() return #sim.visible end,
+                            SelectedIndex = function()
+                                for i, r in ipairs(sim.visible) do if r == sim.selected then return i end end
+                            end,
+                            -- List('row,col') -> cell text; List('=name,col') / List('name,col') -> 1-based row.
+                            -- Columns in this model: 1 = icon (empty), 2 = item name, 3 = price text; others absent.
+                            List = function(spec)
+                                -- real MQ returns a TLO node here (callers do List(x)()), so wrap the value
+                                local function ret(v) return node(v) end
+                                local body, col = tostring(spec):match('^(.*),(%d+)$')
+                                col = tonumber(col)
+                                if not body then return ret(nil) end
+                                if tonumber(body) then
+                                    local r = sim.visible[tonumber(body)]
+                                    if not r then return ret(nil) end
+                                    if col == 1 then return ret('') elseif col == 2 then return ret(r.name) elseif col == 3 then return ret(tostring(r.price) .. 'cp') end
+                                    return ret(nil)
+                                end
+                                if col ~= 2 then return ret(nil) end
+                                local exact = body:sub(1, 1) == '='
+                                local want = (exact and body:sub(2) or body):lower()
+                                for i, r in ipairs(sim.visible) do
+                                    local nm = r.name:lower()
+                                    if (exact and nm == want) or (not exact and nm:sub(1, #want) == want) then return ret(i) end
+                                end
+                                return ret(nil)
+                            end,
+                        })
+                    end
                     if cn == 'MW_UsableButton' then return node(true, { Checked = function() return sim.usableChecked end }) end
                     return node(nil)
                 end,
@@ -253,6 +312,38 @@ function M.new(opts)
             return node(nil)
         end,
     }
+    mq.TLO.FindItemCount = function(spec)
+        local exact = tostring(spec):sub(1, 1) == '='
+        local want = (exact and tostring(spec):sub(2) or tostring(spec)):lower()
+        local n = 0
+        for _, it in pairs(sim.bag) do if it.name:lower() == want then n = n + (it.stack or 1) end end
+        return node(n)
+    end
+    mq.TLO.Me.Book = function(name) return node(sim.book[name]) end
+    mq.TLO.Merchant.Items = function() return #sim.rows end   -- model: the vendor's full stock, unfiltered
+    mq.TLO.Merchant.Item = function(key)
+        local r
+        if tonumber(key) then r = sim.rows[tonumber(key)]
+        else
+            local exact = tostring(key):sub(1, 1) == '='
+            local want = (exact and tostring(key):sub(2) or tostring(key)):lower()
+            for _, x in ipairs(sim.rows) do
+                local nm = x.name:lower()
+                if (exact and nm == want) or (not exact and nm:sub(1, #want) == want) then r = x; break end
+            end
+        end
+        if not r then return node(nil) end
+        return node(r.name, { Name = function() return r.name end, ID = function() return r.id end })
+    end
+    mq.TLO.Merchant.SelectItem = function(key)
+        local exact = tostring(key):sub(1, 1) == '='
+        local want = (exact and tostring(key):sub(2) or tostring(key)):lower()
+        for _, r in ipairs(sim.visible) do
+            local nm = r.name:lower()
+            if (exact and nm == want) or (not exact and nm:sub(1, #want) == want) then sim.selected = r; break end
+        end
+        return node(true)
+    end
     setmetatable(mq.TLO.Merchant, { __index = function(_, k)
         if k == 'SelectedItem' then
             local r = sim.selected

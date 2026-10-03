@@ -8,7 +8,7 @@ local mock = require('mock_mq')
 
 -- scriptPath: file to run. opts: see mock_mq.new. Returns the sim table with
 -- .ok/.runErr (did the script chunk finish), .prints, .cmds, .purchases.
-function M.run(scriptPath, opts)
+function M.run(scriptPath, opts, ...)
     local sim = mock.new(opts)
     package.loaded['mq'], package.loaded['ImGui'] = sim.mq, sim.ImGui
     package.preload['mq'] = function() return sim.mq end
@@ -28,7 +28,7 @@ function M.run(scriptPath, opts)
 
     local chunk, err = loadfile(scriptPath)
     if not chunk then _G.print = realPrint; error('load failed: ' .. tostring(err)) end
-    local ok, runErr = pcall(chunk)
+    local ok, runErr = pcall(chunk, ...)
     _G.print = realPrint
     sim.ok, sim.runErr = ok, runErr
     return sim
