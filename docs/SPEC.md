@@ -32,8 +32,9 @@ vendors and scribes them. *(INHERITED, from the original header.)*
 - **S-5 (AGREED, D-013 R20-R24; not yet built).** The tier boxes are the level ranges 1-25,
   26-50, 51-60 and 61-65. Selecting a range buys only spells whose `Lvl` is in that range.
   Vendors: 1-25 and 61-65 from the 1-25 vendor (opened once if both are selected), 26-50 from
-  the 26-50 vendor, 51-60 from the 51-60 vendor. The 61-70 box is removed. The 71-80 vendor is
-  out of scope. This supersedes inherited item I-1's tier handling.
+  the 26-50 vendor, 51-60 from the 51-60 vendor. ~~The 61-70 box is removed.~~ The 61-70 box is not offered and its vendor entries stay in
+  the source **commented out, not deleted**, for if the server raises the maximum level (D-013
+  addendum, R23a). The 71-80 vendor is out of scope. This supersedes inherited item I-1's tier handling.
 - **S-4 (AGREED, D-003 R9).** Process requirement: before any build is presented
   for manual testing, its logging is reviewed against what that test needs to
   show (see `WORKING_AGREEMENT.md` P-1).

@@ -23,7 +23,7 @@ Only behavior the developer has explicitly agreed.
 - Stay on the v1.5 version line; use SemVer from now on; the baseline counts as 1.5.0. *(D-005 R12, R13 and addendum)*
 - Test builds raise the pre-release number each handoff; the file stays `spellspree.lua`, no unique filename per build. *(D-006 R14, R15)*
 - Every handed-over build is committed and tagged `v<VERSION>` first. *(D-007 R16)*
-- **Level-range tier boxes (not built):** 1-25, 26-50, 51-60, 61-65; a range buys only spells whose `Lvl` is in it; 61-65 comes from the 1-25 vendor (opened once if both are ticked); the 61-70 box is removed. *(D-013 R20-R24)*
+- **Level-range tier boxes (not built):** 1-25, 26-50, 51-60, 61-65; a range buys only spells whose `Lvl` is in it; 61-65 comes from the 1-25 vendor (opened once if both are ticked); ~~the 61-70 box is removed~~ the 61-70 box is not offered and its vendor entries stay in the source commented out, not deleted. *(D-013 R20-R24, R23a)*
 
 Inherited behavior of the original (Bazaar mode, `Song:` scrolls, PoK vendor
 walk, buy-and-scribe loop, usable-only filter requirement, stop conditions) is

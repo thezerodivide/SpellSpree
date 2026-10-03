@@ -1331,3 +1331,20 @@ developer wants the vendor's spell list built when the vendor opens and each ite
 ### Dependencies and shared seams
 
 - Replaces the scan loop of D-001 (S-1). Level filtering (D-013) will use the same list.
+
+### D-013 addendum (2026-10-03): the 61-70 vendors are commented out, not deleted (revises R23)
+
+Appended; the entry above is unchanged.
+
+- **Developer, 2026-10-03:** do not delete the code that takes the script to the 61-70 vendors;
+  comment it out. If the server ever raises the maximum level to 70 it may put the right spells
+  on those vendors, and the developer does not want to code the vendor locations back in.
+- **R23 revised (R23a):** the `61-70` box is **not offered**, and the `61-70` vendor entries in
+  `VENDOR_DATA` (and the tier name in `TIERS`) are **kept in the source as commented-out
+  lines**, with a comment saying why, so re-enabling is uncommenting them. Nothing is deleted.
+  This does not change R20-R22 or R24.
+- Scope note: this applies to the 61-70 vendor names and the tier entry. How a future 61-70
+  range would be bought (its own `Lvl` range, its own vendor) is not designed; it is the
+  developer's call if the server changes.
+- Not related to, and not an answer to, the seven proposed choices (A-G) in D-014, which are
+  still awaiting the developer's reply.
