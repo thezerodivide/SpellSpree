@@ -1246,6 +1246,44 @@ local function waitForListToSettle()
 end
 
 -- A'. Reads the visible list once and keeps the scroll rows, one entry per name (first occurrence).
+-- D-025 A', B. The level bounding of a visit. A range is { low, high, label }; it is valid only if both are whole numbers with
+-- 1 <= low <= high <= 70, and the same function checks a range wherever one is received, so the two places cannot drift apart.
+local RANGE_MIN, RANGE_MAX = 1, 70
+
+local function validateRange(range)
+    if type(range) ~= 'table' then return false, 'the range is not a table' end
+    local low, high = range.low, range.high
+    local function whole(n) return type(n) == 'number' and n == math.floor(n) and n > -math.huge and n < math.huge end
+    if not whole(low) or not whole(high) then return false, 'low and high must be whole numbers' end
+    if low < RANGE_MIN or high > RANGE_MAX then return false, string.format('the range must lie within %d-%d', RANGE_MIN, RANGE_MAX) end
+    if low > high then return false, 'low is above high' end
+    return true
+end
+
+-- "1-25" -> 1, 25 (the label the checkbox uses); nil and a reason for anything else, including a pair outside 1-70.
+local function parseTierRange(label)
+    if type(label) ~= 'string' then return nil, 'the tier label is not text' end
+    local a, b = label:match('^(%d+)%-(%d+)$')
+    if not a then return nil, string.format('"%s" is not two whole numbers joined by "-"', label) end
+    local range = { low = tonumber(a), high = tonumber(b) }
+    local ok, why = validateRange(range)
+    if not ok then return nil, why end
+    return range.low, range.high
+end
+
+-- The Lvl cell text (raw, as read) against a validated range: 'in', 'outside' or 'unreadable', plus the reason. Only whole numbers are
+-- levels (surrounding whitespace is ignored); anything else, or no value, is unreadable. Zero and negatives are outside every range.
+local function classifyLevel(levelText, low, high)
+    if levelText == nil then return 'unreadable', 'level unreadable (no value)' end
+    local trimmed = tostring(levelText):match('^%s*(.-)%s*$')
+    if trimmed:match('^%-?%d+$') then
+        local n = tonumber(trimmed)
+        if n >= low and n <= high then return 'in', '' end
+        return 'outside', string.format('outside the selected level range %d-%d (Lvl %s)', low, high, trimmed)
+    end
+    return 'unreadable', string.format('level unreadable ("%s")', trimmed)
+end
+
 local function buildSpellList(rows)
     local entries, byName = {}, {}
     local unreadable, duplicates, nonScroll = 0, {}, 0
@@ -1335,7 +1373,7 @@ local function finalScan(entries, byName)
         logObs('final scan skipped: the visible row count is unreadable.')
         return
     end
-    local newScrolls, lingering, other = {}, {}, {}
+    local newScrolls, lingering, other, outOfRange = {}, {}, {}, 0
     for r = 1, n do
         local name = listCell(r, LIST_COL.NAME)
         if name and isScrollName(name) then
@@ -1344,13 +1382,15 @@ local function finalScan(entries, byName)
                 newScrolls[#newScrolls + 1] = name
             elseif e.outcome == OUTCOME.SCRIBED then
                 lingering[#lingering + 1] = name
+            elseif e.rangeSkip then
+                outOfRange = outOfRange + 1
             else
                 other[#other + 1] = string.format('%s (%s)', name, tostring(e.outcome))
             end
         end
     end
-    logLine(string.format('Final scan (log only, bought nothing): %d rows read. New scrolls not on the built list: %d%s. Rows still listed for bought-and-scribed entries (expected for about 10 s after a scribe): %d. Rows still listed for other outcomes: %d%s.',
-        n, #newScrolls, #newScrolls > 0 and (' [' .. table.concat(newScrolls, '; ') .. ']') or '', #lingering, #other,
+    logLine(string.format('Final scan (log only, bought nothing): %d rows read. New scrolls not on the built list: %d%s. Rows still listed for bought-and-scribed entries (expected for about 10 s after a scribe): %d. Rows still listed for entries skipped as outside the level range: %d. Rows still listed for other outcomes: %d%s.',
+        n, #newScrolls, #newScrolls > 0 and (' [' .. table.concat(newScrolls, '; ') .. ']') or '', #lingering, outOfRange, #other,
         #other > 0 and (' [' .. table.concat(other, '; ') .. ']') or ''), #newScrolls > 0 and COLOR_WARN or COLOR_INFO)
 end
 
@@ -1697,7 +1737,7 @@ local function processEntry(entry)
     return 'stop'
 end
 
-local function runSpellSpree()
+local function runSpellSpree(range)
     S.state = STATE.RUNNING
     -- NOT resetting bought/skipped/spentCopper here -- they accumulate across the whole shopping spree (all
     -- vendors); they are reset once at the start of runShoppingSpree.
@@ -1707,6 +1747,27 @@ local function runSpellSpree()
     S.consecutiveNoMoneyMovement = 0
     -- Also per vendor: a quote from another vendor's identically named item must not misinform a decision.
     priceQuotes = {}
+    -- D-025 D: the visit's level range is a required argument, checked before anything is read or bought. A PoK visit passes
+    -- { low, high, label }; the Bazaar passes { unrestricted = true }. Nothing else buys: a caller that forgets the range fails closed.
+    local unrestricted = type(range) == 'table' and range.unrestricted == true
+    if not unrestricted then
+        local refusal
+        if range == nil then
+            refusal = 'No level range'
+            logLine('No level range was given for this visit -- buying nothing.', COLOR_ERR)
+        else
+            local ok, why = validateRange(range)
+            if not ok then
+                refusal = 'Invalid level range'
+                logLine(string.format('Invalid level range for this visit (%s) -- buying nothing.', tostring(why)), COLOR_ERR)
+            end
+        end
+        if refusal then
+            S.state = STATE.STOPPED
+            S.lastStopReason = refusal
+            return
+        end
+    end
     -- NOT resetting S.openedBags: a bag's open/closed state in the game does not reset between vendors, and
     -- the click that opens it TOGGLES it.
     logLine('Starting up...', COLOR_GOLD)
@@ -1777,50 +1838,74 @@ local function runSpellSpree()
         if #chunk > 0 then logObs('built list: ' .. table.concat(chunk, ' | ')) end
     end
 
+    -- D-025 C, E: one pass before any purchase. An entry whose level is outside the visit's range, or unreadable, is recorded as
+    -- deliberately skipped now, so it is never selected or clicked and an early stop cannot relabel it. Range skips are ledger
+    -- outcomes only (S.skipped and S.skippedNames are not touched).
+    if unrestricted then
+        logLine('[list] No level range for this visit (Bazaar): every scroll the vendor sells is eligible.', COLOR_GOLD)
+    else
+        local inCount, outCount, unreadableCount = 0, 0, 0
+        for _, e in ipairs(entries) do
+            local verdict, reason = classifyLevel(e.levelText, range.low, range.high)
+            if verdict == 'in' then
+                inCount = inCount + 1
+            else
+                if verdict == 'outside' then outCount = outCount + 1; e.rangeSkip = true else unreadableCount = unreadableCount + 1 end
+                setOutcome(e, OUTCOME.SKIPPED, reason)
+            end
+        end
+        logLine(string.format('[list] Level range %d-%d (ticked tier %s): %d in range, %d outside, %d unreadable.',
+            range.low, range.high, tostring(range.label or (range.low .. '-' .. range.high)), inCount, outCount, unreadableCount), COLOR_GOLD)
+    end
+
     local function finish()
         logLedger(entries)
         finalScan(entries, byName)
     end
 
     for i, entry in ipairs(entries) do
-        -- Explicit and frequent: the outer main loop's doevents only runs once before this function.
-        mq.doevents()
+        if entry.outcome then
+            -- already classified (D-025 C): no select, no click, no pause
+        else
+            -- Explicit and frequent: the outer main loop's doevents only runs once before this function.
+            mq.doevents()
 
-        if S.stopRequested then
-            logLine('Stopped by user.', COLOR_WARN)
-            S.state = STATE.STOPPED
-            S.lastStopReason = 'Stopped by user'
-            markRemainingNotAttempted(entries, i, S.lastStopReason)
-            finish()
-            return
-        end
-        if not merchantOpen() then
-            logLine('Merchant window closed unexpectedly -- stopping.', COLOR_ERR)
-            S.state = STATE.STOPPED
-            S.lastStopReason = 'Merchant closed'
-            markRemainingNotAttempted(entries, i, S.lastStopReason)
-            finish()
-            return
-        end
-        do
-            local stray = cursorItemName()
-            if stray then
-                logLine(string.format('Something ended up on your cursor ("%s") -- that means an action didn\'t complete cleanly. Stopping before anything gets lost or misplaced.', stray), COLOR_ERR)
+            if S.stopRequested then
+                logLine('Stopped by user.', COLOR_WARN)
                 S.state = STATE.STOPPED
-                S.lastStopReason = string.format('Unexpected item on cursor: "%s"', stray)
+                S.lastStopReason = 'Stopped by user'
                 markRemainingNotAttempted(entries, i, S.lastStopReason)
                 finish()
                 return
             end
-        end
+            if not merchantOpen() then
+                logLine('Merchant window closed unexpectedly -- stopping.', COLOR_ERR)
+                S.state = STATE.STOPPED
+                S.lastStopReason = 'Merchant closed'
+                markRemainingNotAttempted(entries, i, S.lastStopReason)
+                finish()
+                return
+            end
+            do
+                local stray = cursorItemName()
+                if stray then
+                    logLine(string.format('Something ended up on your cursor ("%s") -- that means an action didn\'t complete cleanly. Stopping before anything gets lost or misplaced.', stray), COLOR_ERR)
+                    S.state = STATE.STOPPED
+                    S.lastStopReason = string.format('Unexpected item on cursor: "%s"', stray)
+                    markRemainingNotAttempted(entries, i, S.lastStopReason)
+                    finish()
+                    return
+                end
+            end
 
-        local result = processEntry(entry)
-        if result == 'stop' then
-            markRemainingNotAttempted(entries, i + 1, S.lastStopReason)
-            finish()
-            return
+            local result = processEntry(entry)
+            if result == 'stop' then
+                markRemainingNotAttempted(entries, i + 1, S.lastStopReason)
+                finish()
+                return
+            end
+            mq.delay(100)
         end
-        mq.delay(100)
     end
 
     if #entries == 0 then
@@ -1855,7 +1940,7 @@ local function findNpcSpawn(npcName)
     return spawn
 end
 
-local function runNavAndShop(npcName)
+local function runNavAndShop(npcName, range)
     S.state = STATE.RUNNING
     S.lastStopReason = nil
     logLine(string.format('Nav & Shop: looking for "%s"...', npcName), COLOR_GOLD)
@@ -1961,7 +2046,7 @@ local function runNavAndShop(npcName)
 
     logLine('Merchant window open -- starting the buy run.', COLOR_GOOD)
     local countersBefore = runCounters()
-    runSpellSpree()
+    runSpellSpree(range)
     logRunOutcome('Nav & Shop "' .. npcName .. '"', countersBefore)
 
     -- Always close, no matter how the buy run ended -- this is meant to be a
@@ -1985,8 +2070,14 @@ local function collectSelectedVendors()
                 -- OLD (kept, D-021 B'): local npcName = VENDOR_DATA[className] and VENDOR_DATA[className][tier]
                 local vendorTier = TIER_VENDOR[tier]
                 local npcName = vendorTier and VENDOR_DATA[className] and VENDOR_DATA[className][vendorTier]
-                if npcName then
-                    table.insert(list, { class = className, tier = tier, vendorTier = vendorTier, name = npcName })
+                -- D-025 A': the ticked tier's label is the level range of the visit; a label that is not a valid range refuses the visit
+                local low, high = parseTierRange(tier)
+                if not low then
+                    logLine(string.format('Invalid level range for %s %s: %s -- skipping that visit (nothing will be bought).',
+                        className, tier, tostring(high)), COLOR_ERR)
+                elseif npcName then
+                    table.insert(list, { class = className, tier = tier, vendorTier = vendorTier, name = npcName,
+                        range = { low = low, high = high, label = tier } })
                 else
                     logLine(string.format('No vendor is configured for %s %s (vendor tier %s) -- skipping that visit.',
                         className, tier, tostring(vendorTier)), COLOR_WARN)
@@ -2046,7 +2137,7 @@ local function runShoppingSpree()
         -- D': say where the visit goes when it differs from the ticked tier (logged before any purchase)
         local via = (entry.vendorTier ~= entry.tier) and string.format(', using the %s vendor', entry.vendorTier) or ''
         logLine(string.format('--- Vendor %d/%d: %s (%s %s%s) ---', i, #list, entry.name, entry.class, entry.tier, via), COLOR_GOLD)
-        runNavAndShop(entry.name)
+        runNavAndShop(entry.name, entry.range)
 
         if S.stopRequested then
             logLine('Stopped by user.', COLOR_WARN)
@@ -2098,7 +2189,7 @@ local function runBazaarShop()
     logLine('Bazaar: working the merchant window you have open.', COLOR_GOLD)
 
     local countersBefore = runCounters()
-    runSpellSpree()
+    runSpellSpree({ unrestricted = true })
     logRunOutcome('Bazaar', countersBefore)
     printSpreeSummary()
 end
@@ -2404,6 +2495,7 @@ if type(rawget(_G, 'SPELLSPREE_UNIT')) == 'table' then
     unit.formatCoin, unit.formatCoinPPOnly, unit.isScrollName = formatCoin, formatCoinPPOnly, isScrollName
     unit.setOutcome, unit.markRemainingNotAttempted, unit.logLedger = setOutcome, markRemainingNotAttempted, logLedger
     unit.OUTCOME, unit.S, unit.LOG = OUTCOME, S, LOG
+    unit.parseTierRange, unit.validateRange, unit.classifyLevel = parseTierRange, validateRange, classifyLevel
     return
 end
 
