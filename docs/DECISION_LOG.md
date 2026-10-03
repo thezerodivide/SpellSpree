@@ -2129,3 +2129,12 @@ case, a missing-mapping case and the source check; the "would re-buy" claim is r
 Step 2 does not enforce the selected range). The AI's own inaccuracy ("would re-buy") is acknowledged here.
 
 **Status:** awaiting ChatGPT's review of Revision 2, then the developer's per-item approval. Nothing is built.
+
+### D-015 addendum (2026-10-03): ChatGPT gives no recommendations when it needs context
+
+Appended; earlier text is unchanged. **Developer, 2026-10-03:** the developer corrected ChatGPT so that it does not give
+recommendations when it needs more context or has questions; its output in that case is informational for the AI.
+Effect on the loop: a ChatGPT message that asks for confirmation or context is read as questions to answer (with sourced
+facts, quoting the developer's recorded words and dates), not as verdicts to weigh. When ChatGPT does give verdicts they
+are treated as considered positions under R25 (agree or disagree with reasons). The review of D-021 Revision 1 was such a
+mixed message: it asked for confirmations and also gave verdicts; the AI answered both in Revision 2.

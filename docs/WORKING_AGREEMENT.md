@@ -48,6 +48,8 @@ These add to the Development Protocol for this project only.
   a proposal, the AI evaluates each recommendation on its merits and agrees or disagrees, with
   reasons the developer can take back to that agent. It does not accept a change because it was
   recommended. Rounds repeat until all parties agree; each round is recorded in the decision log.
+  If ChatGPT needs context or has questions it gives no verdicts (developer, D-015 addendum); the AI answers
+  its questions with sourced facts first.
 - **P-7. Handoff labels (developer, 2026-10-03; D-016).** Every message between Claude and GPT starts
   with `HANDOFF: Step <n> / Decision <n> / Revision <n> / From <Claude|GPT> / <date>`, plus
   `Answering: <label of the message answered>` on every revision after the first. Messages are archived
