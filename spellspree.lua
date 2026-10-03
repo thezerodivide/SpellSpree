@@ -92,19 +92,38 @@ local CLASS_ORDER = {
     'Shaman', 'Druid', 'Magician', 'Ranger', 'Paladin', 'Beastlord',
 }
 
+-- The 61-70 vendor names below are COMMENTED OUT, not deleted (decision log D-021 B', D-020 addendum 2): no spells
+-- are sold there now (its list is empty with the usable-only box on), and the level 61-65 spells are on the 1-25
+-- vendor, so a ticked 61-70 is routed to the 1-25 vendor by TIER_VENDOR below. If the server ever changes where those
+-- spells are, restore them (see the note on TIER_VENDOR).
 local VENDOR_DATA = {
-    Cleric        = { ['1-25'] = 'Vicar Ceraen',        ['26-50'] = 'Vicar Thiran',         ['51-60'] = 'Vicar Delin',        ['61-70'] = 'Vicar Diarin' },
-    Bard          = { ['1-25'] = 'Minstrel Eoweril',    ['26-50'] = 'Minstrel Joet',         ['51-60'] = 'Minstrel Gwiar',     ['61-70'] = 'Minstrel Silnon' },
-    Enchanter     = { ['1-25'] = 'Illusionist Jerup',   ['26-50'] = 'Illusionist Sevat',     ['51-60'] = 'Illusionist Lobaen', ['61-70'] = 'Illusionist Acored' },
-    Wizard        = { ['1-25'] = 'Channeler Olaemos',   ['26-50'] = 'Channeler Lariland',    ['51-60'] = 'Channeler Cerakoth', ['61-70'] = 'Channeler Alyrianne' },
-    Shadowknight  = { ['1-25'] = 'Reaver Nydlil',       ['26-50'] = 'Reaver Uledrith',       ['51-60'] = 'Reaver Thirlan',     ['61-70'] = 'Reaver Muron' },
-    Necromancer   = { ['1-25'] = 'Heretic Drahur',      ['26-50'] = 'Heretic Elirev',        ['51-60'] = 'Heretic Edalith',    ['61-70'] = 'Heretic Ceikon' },
-    Shaman        = { ['1-25'] = 'Mystic Abomin',       ['26-50'] = 'Mystic Goharkor',       ['51-60'] = 'Mystic Ryrin',       ['61-70'] = 'Mystic Pikor' },
-    Druid         = { ['1-25'] = 'Wanderer Astobin',    ['26-50'] = 'Wanderer Qenda',        ['51-60'] = 'Wanderer Frardok',   ['61-70'] = 'Wanderer Kedrisan' },
-    Magician      = { ['1-25'] = 'Elementalist Somat',  ['26-50'] = 'Elementalist Kaeob',    ['51-60'] = 'Elementalist Padan', ['61-70'] = 'Elementalist Siewth' },
-    Ranger        = { ['1-25'] = 'Pathfinder Viliken',  ['26-50'] = 'Pathfinder Vaered',     ['51-60'] = 'Pathfinder Thoajin', ['61-70'] = 'Pathfinder Naend' },
-    Paladin       = { ['1-25'] = 'Cavalier Waut',       ['26-50'] = 'Cavalier Aodus',        ['51-60'] = 'Cavalier Preradus',  ['61-70'] = 'Cavalier Cerakor' },
-    Beastlord     = { ['1-25'] = 'Primalist Saosith',   ['26-50'] = 'Primalist Worenon',     ['51-60'] = 'Primalist Nydalith', ['61-70'] = 'Primalist Loerith' },
+    Cleric        = { ['1-25'] = 'Vicar Ceraen',        ['26-50'] = 'Vicar Thiran',         ['51-60'] = 'Vicar Delin', --[[ ['61-70'] = 'Vicar Diarin' ]] },
+    Bard          = { ['1-25'] = 'Minstrel Eoweril',    ['26-50'] = 'Minstrel Joet',         ['51-60'] = 'Minstrel Gwiar', --[[ ['61-70'] = 'Minstrel Silnon' ]] },
+    Enchanter     = { ['1-25'] = 'Illusionist Jerup',   ['26-50'] = 'Illusionist Sevat',     ['51-60'] = 'Illusionist Lobaen', --[[ ['61-70'] = 'Illusionist Acored' ]] },
+    Wizard        = { ['1-25'] = 'Channeler Olaemos',   ['26-50'] = 'Channeler Lariland',    ['51-60'] = 'Channeler Cerakoth', --[[ ['61-70'] = 'Channeler Alyrianne' ]] },
+    Shadowknight  = { ['1-25'] = 'Reaver Nydlil',       ['26-50'] = 'Reaver Uledrith',       ['51-60'] = 'Reaver Thirlan', --[[ ['61-70'] = 'Reaver Muron' ]] },
+    Necromancer   = { ['1-25'] = 'Heretic Drahur',      ['26-50'] = 'Heretic Elirev',        ['51-60'] = 'Heretic Edalith', --[[ ['61-70'] = 'Heretic Ceikon' ]] },
+    Shaman        = { ['1-25'] = 'Mystic Abomin',       ['26-50'] = 'Mystic Goharkor',       ['51-60'] = 'Mystic Ryrin', --[[ ['61-70'] = 'Mystic Pikor' ]] },
+    Druid         = { ['1-25'] = 'Wanderer Astobin',    ['26-50'] = 'Wanderer Qenda',        ['51-60'] = 'Wanderer Frardok', --[[ ['61-70'] = 'Wanderer Kedrisan' ]] },
+    Magician      = { ['1-25'] = 'Elementalist Somat',  ['26-50'] = 'Elementalist Kaeob',    ['51-60'] = 'Elementalist Padan', --[[ ['61-70'] = 'Elementalist Siewth' ]] },
+    Ranger        = { ['1-25'] = 'Pathfinder Viliken',  ['26-50'] = 'Pathfinder Vaered',     ['51-60'] = 'Pathfinder Thoajin', --[[ ['61-70'] = 'Pathfinder Naend' ]] },
+    Paladin       = { ['1-25'] = 'Cavalier Waut',       ['26-50'] = 'Cavalier Aodus',        ['51-60'] = 'Cavalier Preradus', --[[ ['61-70'] = 'Cavalier Cerakor' ]] },
+    Beastlord     = { ['1-25'] = 'Primalist Saosith',   ['26-50'] = 'Primalist Worenon',     ['51-60'] = 'Primalist Nydalith', --[[ ['61-70'] = 'Primalist Loerith' ]] },
+}
+
+-- Which vendor tier each ticked tier is bought from (decision log D-021 A', D-022). A ticked 61-70 uses the 1-25 vendor.
+-- Each ticked tier is its own visit (D-020 R34): ticking 1-25 and 61-70 visits the 1-25 vendor twice, once per range.
+--
+-- TO RESTORE THE OLD 61-70 VENDORS (if the server moves the spells): in THIS table delete the active
+--   ['61-70'] = '1-25'
+-- line and un-comment the old one beside it, and in VENDOR_DATA remove the --[[ ]] markers around each ['61-70'] name.
+-- Exactly ONE ['61-70'] entry may be active here: in a Lua table constructor a repeated key silently keeps the last one.
+local TIER_VENDOR = {
+    ['1-25']  = '1-25',
+    ['26-50'] = '26-50',
+    ['51-60'] = '51-60',
+    ['61-70'] = '1-25',
+    --[[ OLD, kept for restoring: ['61-70'] = '61-70', ]]
 }
 
 -- ============================================================================
@@ -1963,9 +1982,14 @@ local function collectSelectedVendors()
     for _, className in ipairs(CLASS_ORDER) do
         for _, tier in ipairs(TIERS) do
             if S.selected[className][tier] then
-                local npcName = VENDOR_DATA[className] and VENDOR_DATA[className][tier]
+                -- OLD (kept, D-021 B'): local npcName = VENDOR_DATA[className] and VENDOR_DATA[className][tier]
+                local vendorTier = TIER_VENDOR[tier]
+                local npcName = vendorTier and VENDOR_DATA[className] and VENDOR_DATA[className][vendorTier]
                 if npcName then
-                    table.insert(list, { class = className, tier = tier, name = npcName })
+                    table.insert(list, { class = className, tier = tier, vendorTier = vendorTier, name = npcName })
+                else
+                    logLine(string.format('No vendor is configured for %s %s (vendor tier %s) -- skipping that visit.',
+                        className, tier, tostring(vendorTier)), COLOR_WARN)
                 end
             end
         end
@@ -2019,7 +2043,9 @@ local function runShoppingSpree()
             return
         end
 
-        logLine(string.format('--- Vendor %d/%d: %s (%s %s) ---', i, #list, entry.name, entry.class, entry.tier), COLOR_GOLD)
+        -- D': say where the visit goes when it differs from the ticked tier (logged before any purchase)
+        local via = (entry.vendorTier ~= entry.tier) and string.format(', using the %s vendor', entry.vendorTier) or ''
+        logLine(string.format('--- Vendor %d/%d: %s (%s %s%s) ---', i, #list, entry.name, entry.class, entry.tier, via), COLOR_GOLD)
         runNavAndShop(entry.name)
 
         if S.stopRequested then
