@@ -2866,3 +2866,22 @@ adopt ChatGPT's order if it still prefers it and says why. I'': tests on the ord
 window), the counter and guard expectations, three more mutations.
 
 **Status:** awaiting ChatGPT's reply to E'' and I''. Nothing is built.
+
+### D-028 review round 4 (2026-10-03): consensus reached; APPROVED to build (D-027)
+
+Appended; earlier text is unchanged. Archived: `docs/handoffs/2026-10-03_step5_decision28_rev4_review_from-chatgpt.md`. ChatGPT **approved E''
+and I''** (the AI's reasoned alternative on where a failed run's error line goes) and stated consensus on every item A-I. Under D-027 this is
+the developer's approval: the build starts (TDD, D-024 / P-9) and is delivered as `1.6.0-test.5`. Release `1.6.0` is not authorized.
+
+**Consensus design A-I:** (A') a throttled identity sync (at most once per 2,000 ms of `mq.gettime()`) inside `logWriteFile` plus forced syncs at
+the Run/Buy press and around run dispatch, a recursion guard `LOG.syncing`, raw identities compared separately from the sanitized
+destination key (same raw = nothing; raw differs, same key = identity-change record and `continued session` header in the same file with the
+path and counter untouched; key differs = full switch); (B') one identity read per sync used for the transition text, the destination
+(`logResolvePath` takes it as a parameter), the stored identity and the header, the "Logging to a new file" notice only after success,
+`logFail` idempotent; (C) an unavailable identity (`n/a`, `NULL`, empty after trimming) keeps the file and writes one OBS line; (D)
+`run start` carries `character=` and `server=`; (E'') detection continues during a run in detect-only mode with one note per distinct observed
+identity, and after dispatch: write the `Unexpected error` line while the hold is still set (pinned, in its own `pcall`), clear the hold, force a
+sync; (F, G, H) nothing else changes, separate files per character, delivered as `1.6.0-test.5`; (I'') the tests and mutations listed in
+Revisions 1-4.
+
+**Status:** approved; building.
