@@ -23,6 +23,7 @@ Entries that supersede a specification item. Read this first.
 | D-006 | 2026-10-03 | Test-build numbering agreed; unique filenames no longer required | confirmed; version-to-commit tie open |
 | D-007 | 2026-10-03 | Commit and tag every handed-over build | confirmed |
 | D-008 | 2026-10-03 | Docs are always committed and pushed, without asking | confirmed |
+| D-009 | 2026-10-03 | Fix: `Run outcome` shows per-vendor and spree totals | in progress |
 
 ---
 
@@ -713,3 +714,60 @@ None.
 ### Dependencies and shared seams
 
 - Shares the push step with D-007 (tagged builds are pushed at handoff).
+
+---
+
+## D-009 — Fix: `Run outcome` shows per-vendor and spree totals
+
+**Date:** 2026-10-03 · **Status:** in progress · **Supersedes:** nothing; corrects
+D-004's `logRunOutcome` (ledger Open item 12).
+
+### Story
+
+In the first live log, vendor 2 (Vicar Thiran) bought nothing before the developer
+stopped the run, yet its outcome line read
+`Run outcome (Nav & Shop "Vicar Thiran"): state=Stopped, ..., bought=70, skipped=0,
+spent=756pp 3sp 3cp.` Those figures are vendor 1's. `S.bought`, `S.skipped` and
+`S.spentCopper` accumulate across the whole shopping spree by design (they are reset
+once at the start of a spree, not per vendor), and `logRunOutcome` printed them
+unlabeled, so the line reads as if it were that vendor's result. A reader of the log
+could misattribute purchases to the wrong vendor. The AI's pre-handoff log review of
+`v1.6.0-test.1` missed it because the simulation ran one vendor only.
+
+### Requirement
+
+- R18. Fix the logging. *(Developer, 2026-10-03: "Obviously we should fix the
+  logging.")* The outcome line must not let a reader misattribute totals (D-004
+  R10: log the final outcome so it can be read without watching the run).
+
+### Design choices
+
+- The outcome line states this vendor's result and the spree total separately, each
+  labelled. *(The developer did not specify wording; this is the AI's choice under
+  R18 and is an implementation detail of the log line, not behavior.)*
+
+### Implementation choices
+
+- `This vendor:` = counters now minus a snapshot taken immediately before that
+  vendor's run; `Spree total so far:` = the accumulated counters, as before.
+- Both callers (`runNavAndShop`, `runBazaarShop`) take the snapshot. In the Bazaar the
+  counters are reset first, so both figures are equal there.
+- The simulation mock gains a two-vendor Plane of Knowledge scenario so the case that
+  slipped through (a second vendor in one spree) is exercised.
+- Version `1.6.0-test.2` (R14: each handoff raises the pre-release number).
+
+### Open
+
+- None for this change. Items 11 (partial count after reopen) and 13 (log volume vs
+  rotation) are separate and untouched.
+
+### Not yet verified
+
+- Anything live. Simulation only until the developer runs it.
+
+### Dependencies and shared seams
+
+- Same line and same two call sites as D-004's `logRunOutcome`. Test T4 asserts the
+  Bazaar outcome line; its expected text changes with the line's format (an
+  implementation detail), its requirement (outcome logged with the right purchase
+  count) does not.
