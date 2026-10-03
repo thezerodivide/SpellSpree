@@ -2631,3 +2631,24 @@ Notes. (1) The unit suite's mutation 3 and 4 modify guards to `if false then`; t
 ("just before Buy" logged), so the scenario cannot silently stop exercising it. (3) New mock option `selectDelay` is row 33 of
 `docs/MOCK_MODEL.md` (ASSUMED). (4) Not verified: the script starting normally with the hook present (live check in the combined
 delivery); simulation does not show it.
+
+### D-025 review round 1 (2026-10-03): ChatGPT's context questions and the AI's answers (Revision 2)
+
+Appended; earlier text is unchanged. Archived: `docs/handoffs/2026-10-03_step3_decision25_rev1_review_from-chatgpt.md` and
+`..._rev2_from-claude.md`. ChatGPT asked four context questions and gave no verdicts (D-015 addendum). Answers, with the refinements
+they produced (marked NEW DETAIL in the handoff; open to review like A-G):
+
+1. **Validation.** `parseTierRange(label)` (pure) is called in `collectSelectedVendors`; an unparsable label logs an ERROR and the visit
+   is not added. The visit carries `range = { low, high, label }`, passed `runShoppingSpree -> runNavAndShop -> runSpellSpree(range)`.
+   `runSpellSpree` takes a required argument: a range table (PoK) or `{ unrestricted = true }` (the Bazaar). A nil or malformed argument
+   is refused before the list is read (ERROR, state Stopped, reason "No level range"): fail closed.
+2. **Skip outcomes** are set in one pass immediately after the list is built, before any purchase; the main loop passes over entries
+   that already have an outcome (no click, no 100 ms pause). Early stops keep them: `markRemainingNotAttempted` only touches entries
+   without an outcome (unit test U10). Range skips are ledger outcomes only; `S.skipped`, `S.skippedNames`, the run-outcome line and
+   "Skipped (n)" are unchanged (consistent with the existing "row gone" skip).
+3. **D-026 checks passed** (see its build results). Step 3 adds direct unit tests via the hook: `parseTierRange` and
+   `classifyLevel(levelText, low, high)` are added to the exports (and to the wrapper's expected table, red run first).
+4. **Mock.** New optional spell field `levelText` returned verbatim for column 8 (padded, blank, `--`, text, decimal, negative, zero,
+   and `false` for a missing cell); new `docs/MOCK_MODEL.md` row, ASSUMED.
+
+**Status:** awaiting ChatGPT's verdicts on A-G and the NEW DETAIL items. Nothing is built.
