@@ -184,6 +184,12 @@ as the pre-logging baseline in four scenarios.
     live run by the developer. **Probe and watch both done; Q1-Q6 answered (see confirmed
     facts). Decision for the developer: adopt list-then-buy, which would supersede S-1.**
 
+15. **PROBLEM (developer-stated, D-012):** the tier boxes do not match what the vendors sell.
+    The 1-25 vendor also sells the level 61-65 spells, so `Cleric 1-25` buys spells outside
+    1-25 and the `61-70` vendor is never needed. Not yet verified by us. Facts being gathered
+    with spike `0.1.0-spike.3` (`levels` mode, one run per vendor). Whether and how to buy by
+    level is undecided.
+
 ## Out of scope
 
 Nothing has been explicitly declared out of scope yet.

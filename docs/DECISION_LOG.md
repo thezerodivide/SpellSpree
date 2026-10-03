@@ -26,6 +26,7 @@ Entries that supersede a specification item. Read this first.
 | D-009 | 2026-10-03 | Fix: `Run outcome` shows per-vendor and spree totals | implemented in `1.6.0-test.2`; simulation-tested, not live |
 | D-010 | 2026-10-03 | Proposal: build the vendor's spell list at open, then buy from it (spikes) | proposal; requirement S-1 unchanged until spike evidence is reviewed |
 | D-011 | 2026-10-03 | Operator cues in test runs must not be buried | confirmed |
+| D-012 | 2026-10-03 | Problem: spell vendors do not match the level tiers the script offers | problem recorded; facts being gathered |
 
 ---
 
@@ -1094,3 +1095,70 @@ Appended; earlier text is unchanged.
 - **Design relevance (observation, not decision):** reading the price from the list when it is
   built would give every item's cost before anything is selected, without waiting for the
   vendor's price tell.
+
+---
+
+## D-012 — Problem: spell vendors do not match the level tiers the script offers
+
+**Date:** 2026-10-03 · **Status:** problem recorded (developer-stated); facts being gathered ·
+**Supersedes:** nothing. Concerns spec inherited items I-1 (class/tier selection) and the
+`TIERS` / `VENDOR_DATA` tables in `spellspree.lua`.
+
+### Story
+
+The script offers four level tiers per class (`1-25`, `26-50`, `51-60`, `61-70`) and maps each
+tier to one vendor per class (`VENDOR_DATA`). The developer's account (not verified by the AI):
+- The `26-50` and `51-60` vendors hold only spells of those levels.
+- The level **61-65** spells are held by the **1-25** vendor.
+- So the `61-70` vendor is never needed as the script works today, and selecting `Cleric 1-25`
+  buys that vendor's spells outside 1-25 as well (the level 61-65 ones).
+
+Consistent with the live log, but not proof: at Vicar Ceraen (Cleric 1-25) the script bought
+70 spells including several priced around 200pp (for example `Armor of the Zealot` 210pp,
+`Hand of Virtue` 206pp, `Mark of the Righteous` 208pp), far above the 1-25 spells beside them.
+The AI cannot say what level those are; it has no level data for them.
+
+The developer asked whether the vendor list returns a level column because the answer decides
+whether the script can buy by level. Known so far: the list has an eighth column that is very
+likely the required level (35 and 40 on spells at the 26-50 vendor, `--` on a gem), unconfirmed
+(ledger confirmed-live section, D-010 addendum 5).
+
+### Requirement
+
+- None agreed yet. **Developer's stated problem:** a tier selection should not buy spells
+  outside the chosen level range. *(Observation and complaint, 2026-10-03; the AI is treating it
+  as a problem to solve and has not designed or decided anything. What the correct ranges and
+  vendor-to-level mapping should be is not stated.)*
+
+### Design choices
+
+None.
+
+### Implementation choices
+
+- Facts first, by a read-only spike: spike `0.1.0-spike.3` gains a `levels` mode that, at an open
+  vendor, reads column 8 for every scroll and prints one chat line of counts per band plus a full
+  per-spell list to the log. Run at each of a class's four vendors it answers the open questions
+  below and tests whether column 8 is the level (a 26-50 vendor should show only 26-50 values;
+  the 1-25 vendor should show 1-25 plus 61-65 if the developer's account is right).
+- The same build fixes the chat spam of probe and watch modes (D-011, P-5): chat gets only the
+  start, the cue and the end; everything else goes to the log file.
+
+### Open
+
+1. Is column 8 the required level? (The developer can also read the window's header.)
+2. Which levels does each vendor hold, per class (the developer says 1-25 holds 61-65; what holds
+   66-70, if anything)?
+3. What should "select Cleric 1-25" mean once levels are known: buy only spells whose level is
+   within 1-25 from the 1-25 vendor, and use another selection to get 61-65 from that same vendor?
+   Should the tier boxes and `VENDOR_DATA` change? Not decided; developer's call.
+4. Do other classes' vendors follow the same pattern as Cleric's?
+
+### Not yet verified
+
+- Everything above except that the list returns an eighth column.
+
+### Dependencies and shared seams
+
+- Shares the vendor list read and the per-item data with D-010 (list-then-buy): a list built at
+  open would carry each row's level, so level filtering fits there. Not a requirement of D-010.
