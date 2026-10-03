@@ -28,6 +28,9 @@ end
 --         misselect = { name=, times= } (a click on that row selects a different row that many times);
 --         driftOnce = { name=, afterMs= } (the selection moves away from that item shortly after it is made);
 --         stopAtMs (the Stop button is pressed once at that simulated time).
+--       Step 2 (vendor routing, D-022): classes = {'CLR','WIZ'} (what the Inventory window reports, so the class
+--         boxes for those classes are drawn); openTrees = { Cleric = true } (that class's tier boxes are drawn);
+--         ticks = { '##class_Cleric', '61-70##Cleric' } (checkbox labels ticked once each, as a click would).
 --       manualBuy = { name=, buyAtMs=, scribeAtMs=, removeAtMs= } (the developer buys and
 --       scribes one spell by hand while the spike watches; the row leaves the list late),
 --       vendors = { [npcName] = { spells=, nonSpells= } } (Plane of Knowledge
@@ -332,7 +335,12 @@ function M.new(opts)
             })
         end
         if name == 'InventoryWindow' then
-            return node(true, { Open = function() return true end, Child = function() return node(nil) end })
+            return node(true, { Open = function() return true end, Child = function(cn)
+                if cn == 'IW_ClassAbbr' and opts.classes then
+                    return node(true, { Text = function() return table.concat(opts.classes, '\n') end })
+                end
+                return node(nil)
+            end })
         end
         return node(true, { Open = function() return false end, Child = function() return node(nil) end })
     end
@@ -445,9 +453,16 @@ function M.new(opts)
             sim.classChecked = true
             return true, true
         end
+        sim.ticked = sim.ticked or {}
+        for _, lb in ipairs(opts.ticks or {}) do
+            if label == lb and not sim.ticked[lb] then
+                sim.ticked[lb] = true
+                return true, true
+            end
+        end
         return v, false
     end
-    function ImGui.TreeNode() return false end
+    function ImGui.TreeNode(label) return (opts.openTrees and opts.openTrees[label]) == true end
     function ImGui.IsWindowHovered() return false end
     function ImGui.GetWindowPos() return 0, 0 end
     function ImGui.GetWindowSize() return 600, 780 end

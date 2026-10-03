@@ -138,19 +138,22 @@ local TESTS = {
           return true
       end },
 
-    { id = 'T11', src = 'D-009 R18 and ledger Open item 12: in the live log vendor 2 (bought nothing) reported the totals of vendor 1; expected counts are the per-vendor purchase record kept by the mock',
+    { id = 'T11', src = 'D-009 R18 and ledger Open item 12 (in the live log vendor 2, which bought nothing, reported the totals of vendor 1), with D-022 / D-020 R34 (vendor 1 is visited twice in a four-tier spree); expected counts are the per-vendor purchase record kept by the mock',
       fn = function(c)
           local r = c.spree
           local v1 = #(r.sim.purchasesByVendor['Vicar Ceraen'] or {})
           local v2 = #(r.sim.purchasesByVendor['Vicar Thiran'] or {})
           if v1 ~= 3 or v2 ~= 0 then return false, string.format('scenario sanity: mock bought %d at vendor 1 and %d at vendor 2 (expected 3 and 0)', v1, v2) end
+          -- D-022 / D-020 R34: a four-tier Cleric spree visits Vicar Ceraen twice (1-25, then 61-70 via the 1-25 vendor);
+          -- Vicar Delin is absent from this zone. The second visit finds nothing left and must report 0, not the total.
           local o1 = grep(r.lines, 'Run outcome (Nav & Shop "Vicar Ceraen")')
           local o2 = grep(r.lines, 'Run outcome (Nav & Shop "Vicar Thiran")')
-          if #o1 ~= 1 or #o2 ~= 1 then return false, string.format('expected one outcome line per vendor, got %d and %d', #o1, #o2) end
+          if #o1 ~= 2 or #o2 ~= 1 then return false, string.format('expected two outcome lines for vendor 1 (two visits) and one for vendor 2, got %d and %d', #o1, #o2) end
           for _, w in ipairs({ 'This vendor: bought=3,', 'Spree total so far: bought=3,' }) do
-              if not o1[1]:find(w, 1, true) then return false, 'vendor 1 line lacks "' .. w .. '": ' .. o1[1] end
+              if not o1[1]:find(w, 1, true) then return false, 'first vendor-1 visit lacks "' .. w .. '": ' .. o1[1] end
           end
           for _, w in ipairs({ 'This vendor: bought=0,', 'Spree total so far: bought=3,' }) do
+              if not o1[2]:find(w, 1, true) then return false, 'second vendor-1 visit lacks "' .. w .. '": ' .. o1[2] end
               if not o2[1]:find(w, 1, true) then return false, 'vendor 2 line lacks "' .. w .. '": ' .. o2[1] end
           end
           return true
