@@ -1075,3 +1075,22 @@ an on-screen window) is an implementation choice for each run.
 
 - Applies with P-1 (log review before handoff): a handoff review must also check that any
   operator cue is visible, not just that the log is complete.
+
+### D-010 addendum 5 (2026-10-03): the developer's answers; the list's columns
+
+Appended; earlier text is unchanged.
+
+- **Developer, 2026-10-03:** nothing else was noted using or buying from the vendor during the
+  watch run (the cause of the unbought spells leaving the list stays unknown). **The developer
+  wants the list-then-buy mechanism** (build the vendor's spell list when the vendor opens,
+  buy each item from that list, no repeat passes). This is the proposal in D-010 becoming a
+  wanted direction; it is **not yet an agreed requirement**: the AI will write the design for
+  the developer to approve first, and S-1 stays in force until a decision entry supersedes it.
+- **Developer question: does the vendor list return the level column?** From the probe and
+  watch logs: the list has eight columns; column 8 shows ` 35` and ` 40` on spells at a 26-50
+  vendor and `--` on a gem, which fits a required-level column, but that is an inference from
+  five rows and is not confirmed. Columns 4-7 are confirmed to be the price in
+  platinum, gold, silver and copper. Details are in the ledger's confirmed-live section.
+- **Design relevance (observation, not decision):** reading the price from the list when it is
+  built would give every item's cost before anything is selected, without waiting for the
+  vendor's price tell.

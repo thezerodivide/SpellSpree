@@ -90,6 +90,7 @@ as the pre-logging baseline in four scenarios.
 - `List('=name,2')` finds the exact row; without `=` it matches substrings. A missing name returns nothing.
 - `Merchant.SelectItem('=name')` works from Lua with no trailing call, selects immediately, and prompts one price tell like `listselect`.
 - Vicar Thiran's list is not alphabetical.
+- **The vendor list has eight columns** (`List('row,col')`): 1 icon (empty), 2 item name, 3 apparently stock (`--` on spells, `1` on a Blue Diamond), 4-7 **price as platinum, gold, silver, copper** (confirmed: Blue Diamond reads `393 / 7 / 4 / 9` and the vendor's price tell for it was `393pp 7gp 4sp 9cp`), 8 **probably the required level** (` 35` and ` 40` on spells at a 26-50 vendor, `--` on a gem), **not confirmed**. Only five rows' columns have been seen; MacroQuest's window TLO has no member for column header text, so the headers cannot be read by script. The level guess can be checked by the developer reading the window's column header, or by a sweep of column 8 against known spell levels.
 
 *Confirmed from the vendor spike watch run (`0.1.0-spike.2`, Vicar Thiran, `Spell: Resist Cold` bought and scribed by hand, 2026-10-03; log in `docs/evidence/2026-10-03_Benedict_spike-0.1.0-spike.2_watch_ResistCold.log`; details in D-010 addendum 4):*
 
