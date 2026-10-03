@@ -2610,3 +2610,24 @@ Open items resolved by the developer in the same message:
 - **L19** (commit `a850999`): kept, "if only for historical purposes".
 - **Delayed-selection test** (D-024 Open): approved. Test-only change plus one new mock option (`selectDelayMs`), with a new row in
   `docs/MOCK_MODEL.md` classified ASSUMED (no live observation of a late `Merchant.SelectedItem`).
+
+### D-026 build results (2026-10-03)
+
+Built test-first; each red run is saved in `docs/evidence/`. Commits: `spellspree.lua` hook + `test/unit.lua` + `test/test_units.lua`
+(`2026-10-03_d026_red_run.txt`: all 16 unit tests failed with the hook absent; the strict stub caught the script running past the
+hook point, `unexpected use of mq.imgui`); harness grace + `S6`/`S9` (`..._d026_e_red_run.txt`: `S6` failed by reaching the 400,000-delay
+guard, 10 s); delayed selection `L20`-`L22` (`..._delayed_selection_red_run.txt`: `L21` and `L22` failed while the mock could not delay a
+selection; `L20` passed trivially).
+
+Results after the hook and harness changes: `test_units.lua` 16/16 and 7/7 mutation checks (6 script mutations plus the wrapper mutation)
+each caught by exactly the predicted tests; `test_step2.lua` 9/9, 5 mutations and 2 harness mutations as predicted (mutation 1 also fails
+`S9`, predicted before the run for the same reason as `S6`); `test_listthenbuy.lua` 22/22 and 10/10 mutations (mutation 2, the pre-Buy
+check, is caught by `L8` and `L22`; mutation 4, one attempt, by `L6, L7, L8, L21, L22`, predicted before the run); `test_logging.lua`
+unchanged and passing; `eligibility_check.lua` against the previous commit: same set of spells in every scenario; `smoke.lua` runs.
+**Source-difference check:** `git diff spellspree.lua` is 12 added lines, 0 removed: the hook block and its comment.
+
+Notes. (1) The unit suite's mutation 3 and 4 modify guards to `if false then`; the expected failing tests were written before the run.
+(2) `L22`'s delay (1300 ms) was chosen so a late landing falls inside the pre-Buy check window; `L22` itself asserts the check fired
+("just before Buy" logged), so the scenario cannot silently stop exercising it. (3) New mock option `selectDelay` is row 33 of
+`docs/MOCK_MODEL.md` (ASSUMED). (4) Not verified: the script starting normally with the hook present (live check in the combined
+delivery); simulation does not show it.

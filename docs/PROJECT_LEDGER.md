@@ -12,7 +12,7 @@ Current: `1.6.0-test.3`: **Step 1, list-then-buy (D-017)** on top of the file lo
 - State: **`1.6.0-test.3`** is the current code (tag `v1.6.0-test.3`): Step 1 list-then-buy, accepted as a step, live-run clean (137 spells, one pass per vendor). The premature `v1.6.0` tag was deleted and `VERSION` restored (D-018 addendum 2).
 - **1.6.0 = Steps 1-3 (D-020):** Step 2 = every 61-70 selection uses the 1-25 vendor, with the old 61-70 code **commented out, not deleted**; Step 3 = purchases bounded by the selected level range; each selected range is its own visit (all four ticked: vendor 1, 2, 3, then 1 again). Not built.
 - **Step 2 approved (D-022), BUILT and simulation-tested (not handed over)** (not yet handed over; it is live-tested together with Step 3 as `1.6.0-test.4`). Older: write the Step 2 and Step 3 designs, run them through the ChatGPT loop (D-015), get the developer's approval, then build one at a time. Next test build: `1.6.0-test.4`.
-- **Testing infrastructure first (developer decision):** D-026 proposes a test hook for directly testable units (not yet reviewed or approved). Measured: the suites are fast; the Step 2 suite's 36 s is one scenario that never ends cleanly (D-024 addendum).
+- **Testing infrastructure (D-026) BUILT and approved, not handed over:** the unit-test hook, the `withUnit` wrapper, `test/test_units.lua` (16 tests, 7 mutation checks), the faster harness exit (Step 2 suite 10 s to 0.4 s), the delayed-selection tests L20-L22. `VERSION` is unchanged (`1.6.0-test.3`); it ships in `1.6.0-test.4` with Steps 2 and 3. Live check still owed: the script starts normally with the hook present.
 - **TDD adopted from Step 3 (D-024, P-9)** with ChatGPT's guardrails; `docs/MOCK_MODEL.md` classifies the mock's behaviors. Next: the Step 3 design, then tests first.
 - Bazaar is its own later pass (D-020 addendum 2), not part of 1.6.0.
 - Open, developer's call: item 13 (log volume vs rotation; K approved leaving it).
@@ -227,8 +227,9 @@ as the pre-logging baseline in four scenarios.
 From the repo root, with LuaJIT:
 
 ```
-luajit test/test_listthenbuy.lua                      # 19 tests + 10 mutation checks (Step 1, D-017)
-luajit test/test_step2.lua                            # 8 tests + 5 mutation checks (Step 2, D-022)
+luajit test/test_listthenbuy.lua                      # 22 tests + 10 mutation checks (Step 1, D-017; L20-L22 delayed selection)
+luajit test/test_step2.lua                            # 9 tests + 5 mutation checks + 2 harness mutations (Step 2, D-022; S6/S9 D-026)
+luajit test/test_units.lua                            # 16 unit tests + 7 mutation checks (D-026)
 luajit test/test_listthenbuy.lua baseline             # the same tests without the mutations; leaves the real build's logs in %TEMP%\spellspree_sim\listthenbuy
 luajit test/test_logging.lua                          # 11 tests + 9 mutation checks (logging, D-004 / D-009)
 luajit test/eligibility_check.lua <previous build .lua> spellspree.lua   # same set of spells bought as a previous build
