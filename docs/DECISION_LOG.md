@@ -3014,7 +3014,7 @@ learning a tome or right-clicking one already known.
 
 ### D-030 addendum 2 (2026-10-03): results of the `names` and `dump` spikes (Kylaeris, `0.1.0-spike.2`)
 
-Evidence: `docs/evidence/2026-10-03_Kylaeris_tome-spike.2_names_and_dump_BeorobinAmondson.log` (a Monk's character; `dump` at Beorobin Amondson). Live observations:
+Evidence: `docs/evidence/2026-10-03_Kylaeris_tome-spike.2_names_dump_and_watch_Bellow.log` (a Monk's character; `dump` at Beorobin Amondson; the same file also holds the `watch` of the next addendum). Live observations:
 
 1. **Vendor names.** The build's exact lookup (`npc "=<name>"`) found 9 of the 10 vendors, with `CleanName` equal to the listed name. **Zhao's real name is
    ``Zhao V`karin`` with a backtick (byte 0x60)**, not an apostrophe or a typographic quote; the apostrophe form is not found. (`Name` is `Zhao_V`karin000`-style,
@@ -3033,3 +3033,17 @@ Evidence: `docs/evidence/2026-10-03_Kylaeris_tome-spike.2_names_and_dump_Beorobi
 The developer asked whether a second character is needed to test learning again. The AI's reading: no. (a) the already-known case needs only a second copy of a
 tome the character already knows (Tome of Bellow can be bought again), and that is the decision-relevant observation; (b) a new-learn observation can use
 `Tome of Phantom Shadow` (not known by Kylaeris, 40 platinum) if wanted; the developer's confirmation that learning consumes the tome already stands.
+
+### D-030 addendum 3 (2026-10-03): the `watch` of an already-known tome (Kylaeris, Tome of Bellow)
+
+Evidence: the same log file (lines 135-142). Live observations: (1) Buying a second **Tome of Bellow** works for a discipline the character already knows (money fell by
+65,715 cp = 65pp 7gp 1sp 5cp; one copy in the bags). (2) Right-clicking it produced the chat line **"You already know this discipline."** (logged twice, because two of the
+spike's chat patterns matched the same line). (3) At that moment the log shows **`cursor=Tome of Bellow`**, and the copy count stayed at 1: the tome was **not consumed**. The log
+cannot say whether the right-click put the tome on the cursor or the developer picked it up; no later state change was recorded until the watch ended. (4) **A spike defect:**
+the watch's "discipline reads as known" used `.Name()` of the by-name lookup, which is nil even for known disciplines (the dump showed the value, the slot number, is what carries
+it), so the watch printed `known=false` for Bellow although the dump lists Bellow as known; the known-discipline count stayed 39. The dump's by-name reading is the correct one.
+
+**Consequences for the design (the AI's reading, to be reviewed):** a known tome that slips past the known check is not consumed, so "the bag slot emptied" correctly reports
+"not learned", and the chat line "You already know this discipline." is an explicit, detectable reason; whether such a tome ends up on the cursor (which the build treats as a
+reason to stop) must be established first. **Not observed:** a new-tome learn (chat text and discipline state), and the two Berserker vendors' inventories (no `dump` at
+Kurlond Axebringer or Gaddi Buruca is in the log).
