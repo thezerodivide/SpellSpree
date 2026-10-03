@@ -35,7 +35,7 @@ Entries that supersede a specification item. Read this first.
 | D-018 | 2026-10-03 | Step 1 accepted (as a step); the 1.6.0 release was premature and is being withdrawn | acceptance stands; release withdrawn and cleaned up, see addenda |
 | D-019 | 2026-10-03 | Step 2 direction changed: the four tier boxes stay; the logic underneath changes | direction recorded; design under discussion; nothing built |
 | D-020 | 2026-10-03 | Release 1.6.0 scope: Steps 1-3; each selected range is its own visit | requirement recorded; Steps 2 and 3 not built |
-| D-021 | 2026-10-03 | Step 2 design proposal: every 61-70 selection uses the 1-25 vendor | proposed; ChatGPT review and developer approval pending |
+| D-021 | 2026-10-03 | Step 2 design proposal: every 61-70 selection uses the 1-25 vendor | consensus with ChatGPT reached; awaiting the developer's approval |
 
 ---
 
@@ -2138,3 +2138,29 @@ Effect on the loop: a ChatGPT message that asks for confirmation or context is r
 facts, quoting the developer's recorded words and dates), not as verdicts to weigh. When ChatGPT does give verdicts they
 are treated as considered positions under R25 (agree or disagree with reasons). The review of D-021 Revision 1 was such a
 mixed message: it asked for confirmations and also gave verdicts; the AI answered both in Revision 2.
+
+### D-021 review round 2 (2026-10-03): consensus on Step 2 between the AI and ChatGPT
+
+Appended; earlier text is unchanged. ChatGPT's review of Revision 2 is archived in
+`docs/handoffs/2026-10-03_step2_decision21_rev2_review_from-chatgpt.md`: **it approved A', B', C, D', E and F'** and states
+every Step 2 item is agreed from its review; final authorization stays with the developer; Druid routing is "accepted by
+your decision" and is not tested evidence.
+
+**Consensus (AI and ChatGPT), awaiting the developer's approval item by item:**
+- **A'** A `TIER_VENDOR` mapping (`1-25`->`1-25`, `26-50`->`26-50`, `51-60`->`51-60`, `61-70`->`1-25`); the vendor lookup goes
+  through it; a tier or class with no mapping or vendor name logs a WARN naming the class and tier and skips that visit.
+- **B'** The old 61-70 code is commented out in place, not deleted: inline `--[[ ]]` around the `['61-70']` names in
+  `VENDOR_DATA`; the old lookup line and the old `['61-70']='61-70'` mapping entry kept as comments; a restoration note that
+  says to delete the active `['61-70']='1-25'` entry and un-comment the old one so exactly one `['61-70']` entry is active;
+  `'61-70'` stays in `TIERS` (UI unchanged).
+- **C** One visit per ticked tier, not merged; class then tier order; all four ticked = vendor 1, 2, 3, 1.
+- **D'** The visit label reads `(Cleric 61-70, using the 1-25 vendor)`, logged before any purchase.
+- **E** Nothing else changes in Step 2.
+- **F' (tests)** Simulation tests: all four ticked; only 61-70; 1-25 plus 61-70; a Cleric plus Wizard class-routing case; a
+  missing-mapping case; the source check (12 old names present inside comment markers, exactly one active `['61-70']`
+  entry); mutation checks. Limitation stated accurately: Step 2 does not enforce the selected level range.
+- **F' (delivery)** Step 2 is committed and simulation-tested, and is live-tested together with Step 3 as `1.6.0-test.4`,
+  not alone. **This is the AI's recommendation; ChatGPT agrees there is no demonstrated need to test Step 2 alone. The
+  developer has not yet decided it.**
+
+Nothing is a requirement until the developer approves it. On approval a new entry records it, then Step 2 is built.
