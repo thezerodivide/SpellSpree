@@ -1421,3 +1421,73 @@ None beyond R25.
 ### Dependencies and shared seams
 
 - First applied to D-014 (items A, B, C, D, F, G, H) and D-013 (items I, J), plus K.
+
+### D-014 review round 1 (2026-10-03): the reviewing agent's recommendations and the AI's positions (D-015)
+
+Appended; earlier text is unchanged. The reviewing agent's output was pasted by the developer.
+Nothing here is approved by the developer yet; items marked "agreed" are agreed between the AI
+and the reviewing agent only.
+
+| Item | Reviewer | AI position | Status |
+|---|---|---|---|
+| A | Request changes | **Agree** (with one correction to the reviewer's premise, below) | revised as A' |
+| B | Request changes | **Agree**, and state values | revised as B' |
+| C | Approve | Agree | agreed (AI + reviewer) |
+| D | Approve | Agree | agreed (AI + reviewer) |
+| E | (approved by developer) | - | **approved by developer** |
+| F | Request changes | **Agree**; plus one hazard the reviewer did not mention (stale rows) | revised as F' |
+| G | Approve | Agree | agreed (AI + reviewer) |
+| H | Request changes | **Agree**, with one clarification | revised as H' |
+| I | Approve | Agree | agreed (AI + reviewer) |
+| J | Request changes | **Partly disagree**: evidence is needed, but not as a condition of D-014 | reframed as J' |
+| K | Approve | Agree (my claim that logging will shrink is an estimate, not measured) | agreed (AI + reviewer) |
+
+**Two errors in the AI's own earlier message, corrected here:**
+1. The proposal said a spell missing from the built list is one "the design logs (see F)". F
+   cannot do that for a spell absent from both the initial read and the final read. Withdrawn.
+2. The proposal said that if a class differs from the Cleric pattern it "would buy the wrong
+   spells". Under R21 (buy only spells whose Lvl is in the selected range) that is false: a wrong
+   vendor mapping gives **fewer** spells, not wrong ones. Corrected in J'.
+
+**A' (revised).** Source: the visible usable list only (`MerchantWnd` -> `ItemList`), read after the
+existing check that the usable-only box is on. Never `Merchant.Item(n)`: the probe showed it is the
+unfiltered stock (182 entries vs 168 visible, different order). Keep the existing `Spell:` / `Song:`
+name rule. Duplicates: a name is a key; if it appears twice, keep the first, log the others (the
+probes found none). Price, quantity and Lvl are read and logged; an unreadable cell is recorded as
+unknown and gates nothing in this change (affordability stays as today: price-tell quote plus money
+check). *Correction to the reviewer's premise:* the baseline's "price reads 0" refers to the
+`Item.Price()` TLO; the list's price cells are a different source and matched the vendor's tell
+(Blue Diamond `393/7/4/9` = `393pp 7gp 4sp 9cp`). The request still stands and is adopted.
+
+**B' (revised).** Poll the visible row count every 250 ms. The list is settled when the count is at
+least 1 and unchanged for **8 consecutive polls (2 s)**; maximum wait **15 s**. If not settled by
+then: skip that vendor and log the counts seen and why. The AI states that a stable count is a
+**heuristic**, not proof the list is complete. Evidence for the starting values: after a reopen the
+count read 13 and the full list (104) was there within 1.63 s (live log, pass 2); the first open of a
+run read the full count at once. The log does not show when in that 1.63 s the count changed, so a
+1.5 s window could have been fooled; 2 s is a deliberately larger starting value. **All values are
+untuned (Protocol section 15)**; every poll's count is logged so the first live runs can tune them.
+
+**F' (revised).** At the end, read the visible list once. Classify every scroll still listed:
+(1) bought and scribed this visit: expected, because its row can linger about **10 s** after the
+scribe (observed 10.3 s) and must not be reported as a problem; (2) bought but not scribed
+(stacked); (3) attempted and failed (not paid, selection never matched, and so on); (4) deliberately
+skipped (row vanished, unaffordable, later: outside the range); (5) in none of those and not on the
+built list: **new** since the build. Log the counts and the names for 2-5. It never buys. It cannot
+see a spell absent from both reads.
+
+**H' (revised).** Retry limit **3 selection attempts** (untuned). Verify that
+`Merchant.SelectedItem.Name` equals the exact expected name **immediately before the Buy click**,
+i.e. after the price-tell wait, the money checks and the bag handling (several hundred ms to over a
+second in the current flow), not at selection time. On a mismatch redo the exact-name lookup and
+click (counting toward the 3). **Never retry the Buy click itself** (a click may have succeeded
+unseen; the existing paid check decides). After 3 failed verifications skip the item and log why.
+*Clarification to the reviewer:* it is the selection that is retried, never the purchase.
+
+**J' (reframed).** Agreed that the vendor table gives destinations, not coverage, and that evidence
+is needed for the 61-65-from-the-1-25-vendor mapping per class. **Disagreed that it blocks D-014**:
+D-014 changes the mechanism and buys exactly what is bought today; the mapping matters only for the
+later level-range change (D-013). In that change R21 makes a wrong mapping fail safe (fewer spells,
+never wrong ones). Evidence to gather: the developer names which classes the 14 characters covered;
+and the level-range build logs each vendor's level counts on first visit, so the first live run per
+class is itself the evidence.
