@@ -51,7 +51,8 @@ local SCENARIOS = {
         clickPrefix = 'Run Shopping Spree',
         vendors = {
             ['Vicar Ceraen'] = { nonSpells = { 'Pickled Cat Food' },
-                spells = { { name = 'Alpha', price = 100 }, { name = 'Beta', price = 200 }, { name = 'Gamma', price = 300 } } },
+                -- levels added for D-025 (Step 3): the spells are bought at the 1-25 visit, so they carry levels in 1-25; before Step 3 they had none
+                spells = { { name = 'Alpha', price = 100, level = 5 }, { name = 'Beta', price = 200, level = 15 }, { name = 'Gamma', price = 300, level = 25 } } },
             ['Vicar Thiran'] = { nonSpells = { 'Pickled Cat Food' } },
         } } end,
     relative = function(dir) return {

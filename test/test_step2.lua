@@ -138,9 +138,11 @@ local TESTS = {
           if not same(got, want) then return false, 'visited ' .. show(got) .. ', expected ' .. show(want) end
           local outcomes = grep(c.all4.lines, 'Run outcome (Nav & Shop "Vicar Ceraen")')
           if #outcomes ~= 2 then return false, 'expected two separate visits (two outcome lines) to Vicar Ceraen, saw ' .. #outcomes end
-          if not outcomes[1]:find('This vendor: bought=2,', 1, true) then return false, 'first visit should have bought 2: ' .. outcomes[1] end
-          if not outcomes[2]:find('This vendor: bought=0,', 1, true) or not outcomes[2]:find('state=Done', 1, true) then
-              return false, 'the second visit should end Done having bought 0: ' .. outcomes[2]
+          -- D-025 (Step 3) changed these two expectations on purpose: each visit now buys only its own level range, so the 1-25 visit buys
+          -- Calm (level 10) and the later 61-70 visit buys Mark of the Righteous (level 63); before Step 3 the first visit bought both and the second none.
+          if not outcomes[1]:find('This vendor: bought=1,', 1, true) then return false, 'first visit should have bought 1 (Calm, level 10): ' .. outcomes[1] end
+          if not outcomes[2]:find('This vendor: bought=1,', 1, true) or not outcomes[2]:find('state=Done', 1, true) then
+              return false, 'the second visit should end Done having bought 1 (Mark of the Righteous, level 63): ' .. outcomes[2]
           end
           return true
       end },
@@ -251,7 +253,9 @@ local MUTATIONS = {
     -- S6 also fails here, legitimately: it simulates a missing mapping by deleting the active 61-70 mapping line, which this
     -- mutation has already changed (my first prediction missed that dependency). S9 uses the same technique, so it fails here too
     -- (predicted before the run, D-026).
-    { name = 'a ticked 61-70 goes back to the 61-70 vendor', fails = { 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S9' },
+    -- S8 also fails since Step 3 (D-025): the 61-70 visit now goes to the empty old vendor and the 1-25 visit no longer buys the level-63
+    -- spell, so Mark of the Righteous is never bought; before Step 3 the 1-25 visit bought it and masked this mutation. Found by the run after Step 3.
+    { name = 'a ticked 61-70 goes back to the 61-70 vendor', fails = { 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9' },
       from = "    ['61-70'] = '1-25',\n", to = "    ['61-70'] = '61-70',\n" },
     { name = 'the visit label no longer says which vendor is used', fails = { 'S5' },
       from = "string.format(', using the %s vendor', entry.vendorTier)", to = "''" },
