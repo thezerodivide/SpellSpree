@@ -44,6 +44,9 @@ These add to the Development Protocol for this project only.
   the developer to act or wait, the cue is unmissable and the chat window is not spammed:
   chat gets only the cue and a final "done"; everything else goes to the log file. The P-1
   handoff review checks this too.
+- **P-8. A question is not permission to change anything (developer, 2026-10-03; D-023).** If the developer asks a question, the
+  AI answers it. If it thinks a change is warranted it proposes the change and waits; it does not edit code, tests or other
+  repository content (docs that record the question and answer are covered by P-4).
 - **P-6. Second-agent review loop (developer, 2026-10-03; D-015).** When another agent reviews
   a proposal, the AI evaluates each recommendation on its merits and agrees or disagrees, with
   reasons the developer can take back to that agent. It does not accept a change because it was

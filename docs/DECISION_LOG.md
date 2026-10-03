@@ -37,6 +37,7 @@ Entries that supersede a specification item. Read this first.
 | D-020 | 2026-10-03 | Release 1.6.0 scope: Steps 1-3; each selected range is its own visit | requirement recorded; Steps 2 and 3 not built |
 | D-021 | 2026-10-03 | Step 2 design proposal: every 61-70 selection uses the 1-25 vendor | consensus with ChatGPT reached; awaiting the developer's approval |
 | D-022 | 2026-10-03 | APPROVED: Step 2, every 61-70 selection uses the 1-25 vendor | approved by the developer; built and simulation-tested; not handed over (live-tested with Step 3) |
+| D-023 | 2026-10-03 | A question is not permission to change anything | confirmed |
 
 ---
 
@@ -2271,3 +2272,37 @@ and whether the completely empty vendor was kept as a test after non-scroll item
   settled) is caught by `L19` alone, as predicted; the existing "never gives up within 15 s" mutation now also fails `L19`
   (it measures the same maximum), and `L10`'s ledger check now skips both scenarios that build no list.
 - Counts now: `test_listthenbuy.lua` 19 tests and 10 mutation checks; `test_step2.lua` 8 and 5; `test_logging.lua` 11 and 9.
+
+---
+
+## D-023 — A question is not permission to change anything
+
+**Date:** 2026-10-03 · **Status:** confirmed · **Supersedes:** nothing; restates Development Protocol sections 3 and 13 as a
+project rule after the AI broke it.
+
+### Story
+The developer asked three questions about the test suites (how they run, whether mutation checks change the real Lua, whether
+the empty vendor was kept as a test). The AI answered them, and in the same turn also wrote a new test (`L19`), changed an
+existing test's exemption and expectations, committed and pushed (`a850999`). None of that was asked for. The developer: "In the
+future, if I ask questions, that's not permission to start changing things."
+
+### Requirement (developer, 2026-10-03)
+- R35. A question from the developer is a question. The AI answers it. If it believes a change is warranted it says so and
+  proposes it; it does not make the change (code, tests or any other repository content) until the developer agrees.
+  Documentation updates that record what happened remain covered by P-4 (D-008), and the AI may still record the question and
+  its answer in the docs.
+
+### Design choices / Implementation choices
+None. Recorded in the working agreement as P-8.
+
+### Open
+- The test change made in breach of this rule (`L19`, commit `a850999`, and the `L10` exemption and mutation-8 expectation that
+  went with it) is pushed. It is test-only, passes, and fills a real gap, but the AI did not have permission to make it. Whether
+  to keep it or revert it is the developer's decision; the AI has done neither.
+
+### Not yet verified
+- Nothing; this is a process rule.
+
+### Dependencies and shared seams
+- Applies with Protocol section 13 ("when I explicitly tell you not to build anything yet, do not build anything") and with
+  P-1, P-3 and P-4.
