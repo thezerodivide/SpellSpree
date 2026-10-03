@@ -3047,3 +3047,11 @@ it), so the watch printed `known=false` for Bellow although the dump lists Bello
 "not learned", and the chat line "You already know this discipline." is an explicit, detectable reason; whether such a tome ends up on the cursor (which the build treats as a
 reason to stop) must be established first. **Not observed:** a new-tome learn (chat text and discipline state), and the two Berserker vendors' inventories (no `dump` at
 Kurlond Axebringer or Gaddi Buruca is in the log).
+
+### D-030 addendum 4 (2026-10-03): the developer's confirmation about the cursor
+
+The developer confirmed that **the game put the unconsumed Tome of Bellow on the cursor** when it was right-clicked ("The game put it there. I didn't put it back because I wanted
+you to see exactly what it does."). So right-clicking a tome for an already-known discipline gives the chat line "You already know this discipline." and leaves the tome on the
+cursor. Consequence: the build's existing rule (an item on the cursor means an action did not complete cleanly, so it stops the run) would fire on such a tome. The design for
+tomes must therefore either keep known tomes from being right-clicked (the known check) or recognise this exact outcome and clear the cursor safely; which one, and how the
+cursor is cleared, are design decisions not yet made.
