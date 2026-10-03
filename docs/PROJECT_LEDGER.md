@@ -164,7 +164,7 @@ as the pre-logging baseline in four scenarios.
 14. **PROPOSAL under investigation (D-010):** build the vendor's spell list when it opens
     and buy from that list, instead of line-by-line multiple passes. Not an agreed
     requirement; S-1 stands. Blocked on spike results. Spike built: `spikes/spellspree_spike.lua`
-    `0.1.0-spike.1` (tag `spike/vendor-0.1.0-spike.1`), simulation-checked only; awaiting a
+    `0.1.0-spike.2` (tag `spike/vendor-0.1.0-spike.2`), simulation-checked only; awaiting a
     live run by the developer (probe, then `watch` with one hand-bought spell). Questions
     are D-010 Open 1-6.
 

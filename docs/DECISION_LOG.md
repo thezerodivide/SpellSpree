@@ -924,3 +924,23 @@ paths log why: no merchant open; no readable name column (the cell dump shows wh
 column holds); `Merchant.SelectItem` needing a trailing call (both forms tried and logged).
 
 **Not verified:** everything about the live client.
+
+### D-010 addendum 2 (2026-10-03): spike 0.1.0-spike.2, name check in watch mode
+
+Appended; earlier text is unchanged.
+
+The developer pointed out that `Spell: Calm`, the example name in the run instructions,
+was already scribed and so no longer on the vendor's list, and chose `Resist Cold`
+instead. The AI had written the instructions as "any unscribed spell" but used a name
+that was already scribed on this character, and the spike did not check that the name
+exists, so a wrong name would have burned a full 90 s watch on nothing.
+
+**Change (spike only, version `0.1.0-spike.2`, tag `spike/vendor-0.1.0-spike.2`):** in
+watch mode the spike first looks the name up by exact match; if it is not on the list it
+logs `NOT WATCHING`, lists the rows that contain the name as a fragment, and stops without
+doing anything. Checked in simulation: a deliberately wrong name stops at once and lists
+`Spell: Alpha` as the near match; the normal watch is unchanged.
+
+**Name to use:** `Spell: Resist Cold` is the likely exact string, from the vendor's `Spell:`
+naming convention seen in the live log. **Not verified**; if it differs, the spike will say
+what the list holds.
