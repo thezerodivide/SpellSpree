@@ -36,6 +36,7 @@ Entries that supersede a specification item. Read this first.
 | D-019 | 2026-10-03 | Step 2 direction changed: the four tier boxes stay; the logic underneath changes | direction recorded; design under discussion; nothing built |
 | D-020 | 2026-10-03 | Release 1.6.0 scope: Steps 1-3; each selected range is its own visit | requirement recorded; Steps 2 and 3 not built |
 | D-021 | 2026-10-03 | Step 2 design proposal: every 61-70 selection uses the 1-25 vendor | consensus with ChatGPT reached; awaiting the developer's approval |
+| D-022 | 2026-10-03 | APPROVED: Step 2, every 61-70 selection uses the 1-25 vendor | approved by the developer; supersedes D-021's pending status; building |
 
 ---
 
@@ -2164,3 +2165,45 @@ your decision" and is not tested evidence.
   developer has not yet decided it.**
 
 Nothing is a requirement until the developer approves it. On approval a new entry records it, then Step 2 is built.
+
+---
+
+## D-022 — APPROVED: Step 2, every 61-70 selection uses the 1-25 vendor
+
+**Date:** 2026-10-03 · **Status:** approved by the developer; build in progress · **Supersedes:** the `61-70` tier -> `61-70`
+vendor routing in `collectSelectedVendors` (the old code is kept as comments, not deleted); D-021's "proposed" status.
+
+### Story
+D-013 to D-021: the 61-70 vendor lists nothing usable and the level 61-65 spells are on the 1-25 vendor, so every 61-70
+selection must use the 1-25 vendor, as its own visit, with the old 61-70 code kept in case the server changes. The design
+was reviewed by ChatGPT over two revisions (archived in `docs/handoffs/`) and agreed.
+
+### Requirement (developer, 2026-10-03: "I approve the decisions as reached by consensus.")
+All of D-021 review round 2's items, as written there:
+- **A'** `TIER_VENDOR` mapping (`61-70` -> `1-25`; the others map to themselves); the lookup goes through it; a missing
+  mapping or vendor name logs a WARN naming the class and tier and skips that visit.
+- **B'** The old 61-70 code commented out in place, not deleted (inline `--[[ ]]` on the `VENDOR_DATA` names; the old
+  lookup line and old mapping entry kept as comments; a restoration note saying to delete the active `['61-70']='1-25'`
+  entry and un-comment the old one so exactly one `['61-70']` entry is active); `'61-70'` stays in `TIERS`; UI unchanged.
+- **C** One visit per ticked tier, not merged; class then tier; all four ticked = vendor 1, 2, 3, 1.
+- **D'** The visit label reads `(Cleric 61-70, using the 1-25 vendor)`, logged before any purchase.
+- **E** Nothing else changes in Step 2.
+- **F' (tests)** Simulation tests (all four ticked; only 61-70; 1-25 plus 61-70; Cleric plus Wizard routing; missing
+  mapping; source check) with mutation checks.
+- **F' (delivery)** Step 2 is committed and simulation-tested, and is **live-tested together with Step 3 as `1.6.0-test.4`,
+  not alone.** The developer approved this delivery.
+
+### Design choices / Implementation choices
+As above. The version stays `1.6.0-test.3` until a build is handed over; Step 2 alone is not tagged (it is not handed over).
+Existing tests that assumed one visit per vendor in a four-tier spree change with the approved behavior (R34): a Cleric spree
+now visits `Vicar Ceraen` twice, so `T11` in `test/test_logging.lua` expects two outcome lines for it; recorded in the
+build's addendum.
+
+### Open
+- Step 3 (the level bound) is next: its own design, ChatGPT review, developer approval.
+
+### Not yet verified
+- Everything live. Step 2's second visit to a vendor relies on a second run over the same vendors having worked live.
+
+### Dependencies and shared seams
+- Step 3 builds on the second visit this step creates.
