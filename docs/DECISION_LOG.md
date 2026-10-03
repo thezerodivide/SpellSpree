@@ -2885,3 +2885,51 @@ sync; (F, G, H) nothing else changes, separate files per character, delivered as
 Revisions 1-4.
 
 **Status:** approved; building.
+
+## D-028 — APPROVED (by consensus, D-027) and BUILT: the log file follows the character that is playing (Step 5)
+
+Date: 2026-10-03. Design as in the round 4 entry above; delivered as `1.6.0-test.5`. Built test-first (D-024 / P-9).
+
+**Red runs (docs/evidence, each read against the per-stage table kept in the test files, `st[n]`):** stage 0 (`..._step5_stage0.txt`, the script as it was
+before the change: U24-U34 fail on the missing exports; W1, W3-W6, W8-W10 fail on the missing behavior; W2 and W7 pass); stage 1
+(`..._stage1.txt`, the new functions exposed as wrong stubs: every U24-U34 test fails on a wrong result or a missing effect); stage 2
+(`..._stage2.txt`, the sync and its helpers correct but called from nowhere: U24-U32 and U34 pass; U33, the test that `logWriteFile` runs the sync,
+and every scenario test except W2 and W7 still fail); stage 3 (`..._stage3.txt`, full build: 0 mismatches). All four matched the tables written
+beforehand after two errors of mine in the build (below).
+
+**Results:** `test_units.lua` 35 tests, 26 script mutations and the wrapper mutation; `test_logswitch.lua` 14 scenario tests and 17 mutations; the
+Step 1, 2, 3 and logging suites unchanged and passing; `eligibility_check.lua` against the script before Step 5: same spells (and in range);
+`smoke.lua` runs. All mutation predictions were written before the run; those that were wrong are listed below.
+
+**Errors found while building, each fixed and recorded:**
+1. `logSessionHeader` first sat above `zoneShort` and `merchantOpen`, which it calls (they are later `local function`s, so it saw nil globals).
+   The stage-2 run showed it (the regression tests W2 and W7 failed); both functions now come after those two.
+2. U26/U28 counted "the header names the new character" with a substring that also matched the path-resolution line; they now look at the
+   header's environment line.
+3. W4 looked for run-start lines with a substring that also matched "first free slot at run start"; fixed.
+4. Four gaps the mutation runs showed in the plan as written, each closed with a test added after the build (flagged `post`; its stage-0 result
+   is the script before Step 5, saved in `..._step5_postbuild_red.txt`, and it passes at stage 3): **W11** (a change within 2,000 ms of the last
+   sync, then a Run press: the forced sync at the press is the only thing that puts the press line in the new file; removing it survived
+   every earlier test); **W12** (an unreadable name, "NULL": the file is kept; removing the check survived the scenarios); **W13** (two raw
+   names sanitizing to one file: removing the comparison survived the scenarios); **W14** (a failure inside the error write: the script survives
+   and the hold is released; removing the `pcall` survived); and **U35** (the recursion guard, tested with the throttle at 0 on a copy of the
+   script, because the throttle alone hid the guard in U26-U33). U35 itself first passed against every mutant because it read the real script
+   instead of the script under test; fixed.
+5. Mutation predictions that were wrong: removing the sync from `logWriteFile` also fails W5 (the in-run note is written by that sync).
+
+**Implementation notes (what the code does; none changes the agreed design except where marked):** `logUnavailable`, `logIdentityKeyFor`,
+`logSessionHeader` (the load-time startup lines are now this one function, text unchanged), `logSyncIdentity`, `LOG_SYNC_EVERY_MS = 2000`,
+`dispatchRun` in the main loop (sync, hold, run, error line while held, release, forced sync). `logFail` is idempotent. `logResolvePath` uses a
+snapshot when a sync gives one. **Marked difference from Revision 1's wording:** the transition line in the old file says
+`continuing in a new file for <server>_<character>` (the path is not known until the first write to the new file resolves it; the full path is in
+the new file's `log file:` line and in the notice). **Pre-handoff log review (P-1):** read the logs of the real build for the switch between
+runs, mid-run, the error ordering and the destination failure: the old file ends with the transition line; the new file starts with the
+continued-session header, resolution, file, environment and limits lines and the notice; the mid-run note names both identities; the error
+line precedes the transition record. One thing a reviewer might want and the design did not include: the new file's header does not name the
+file it continued from (the old file's last line names the new key); easy to add if the developer wants it.
+
+**Not verified (simulation does not show it):** what the live client returns for the server and character after a switch (the new name has
+never been read in a log), that a switch in one client leaves the script running with the new name, the cost of the two TLO reads per two
+seconds. **Live check for the developer:** run as one character, switch characters in the same client without restarting the script, press Run
+Shopping Spree (or anything that logs), and confirm that the old file ends with an `identity changed` line, a new file named for the second
+character exists and starts with a `continued session` header, and the second character's run is in the new file. `1.6.0` is not created.

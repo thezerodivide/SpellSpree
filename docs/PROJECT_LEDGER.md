@@ -5,7 +5,7 @@ Current state only (Development Protocol §11). History and rationale are in
 
 Last reviewed end to end: 2026-10-03 (§18).
 Baseline: commit `f6c29f4`, referred to as **v1.5.0** (that commit's file still says `1.5-reorder-passes`).
-Current: `1.6.0-test.4`: **Steps 1-3** (list-then-buy D-017; every 61-70 selection uses the 1-25 vendor D-022; purchases bounded by the selected level range D-025) plus the test infrastructure (D-026). Tagged `v1.6.0-test.4` and pushed. Simulation-tested; awaiting the developer's live run.
+Current: `1.6.0-test.5`: **Steps 1-3 and Step 5 (the log follows the character, D-028)** (list-then-buy D-017; every 61-70 selection uses the 1-25 vendor D-022; purchases bounded by the selected level range D-025) plus the test infrastructure (D-026). Tagged `v1.6.0-test.5` and pushed. Simulation-tested; Steps 2 and 3 live-tested in `1.6.0-test.4` (Shaman and Enchanter full runs); the character switch awaits a live check.
 
 ## Where we left off (2026-10-03)
 
@@ -15,7 +15,8 @@ Current: `1.6.0-test.4`: **Steps 1-3** (list-then-buy D-017; every 61-70 selecti
 - **Step 3 (D-025) approved by consensus (D-027) and BUILT; handed over in `1.6.0-test.4`** with Step 2 and the infrastructure. Live check owed (list in D-025's build entry). `1.6.0` is not created: only the developer's explicit instruction creates it.
 - **Testing infrastructure (D-026) BUILT and approved, handed over in `1.6.0-test.4`:** the unit-test hook, the `withUnit` wrapper, `test/test_units.lua` (16 tests, 7 mutation checks), the faster harness exit (Step 2 suite 10 s to 0.4 s), the delayed-selection tests L20-L22. It ships in `1.6.0-test.4` with Steps 2 and 3. Live check still owed: the script starts normally with the hook present.
 - **TDD adopted from Step 3 (D-024, P-9)** with ChatGPT's guardrails; `docs/MOCK_MODEL.md` classifies the mock's behaviors. Next: the Step 3 design, then tests first.
-- **Live test of `1.6.0-test.4` (2026-10-03):** Shaman 1-25, then a four-tier Shaman run, then a four-tier Enchanter run, all within the ranges (details in D-025's follow-up and the chat). **Gap found:** the log file name is fixed at script start, so a run after a character switch is written under the first character's name (the Enchanter run of 14:57-15:26 is in the Benedict log but belongs to Ididnotbuffher). Fix proposed as D-028 (Step 5), under review.
+- **Step 5 (D-028) approved by consensus (D-027), BUILT and handed over as `1.6.0-test.5`:** the log file follows the character. Live check owed (switch characters in one client, confirm two files). `1.6.0` is not created.
+- **Live test of `1.6.0-test.4` (2026-10-03):** Shaman 1-25, then a four-tier Shaman run, then a four-tier Enchanter run, all within the ranges (details in D-025's follow-up and the chat). **Gap found:** the log file name is fixed at script start, so a run after a character switch is written under the first character's name (the Enchanter run of 14:57-15:26 is in the Benedict log but belongs to Ididnotbuffher). Fixed by D-028 (Step 5), delivered in `1.6.0-test.5`.
 - Bazaar is its own later pass (D-020 addendum 2), not part of 1.6.0.
 - Open, developer's call: item 13 (log volume vs rotation; K approved leaving it).
 
@@ -231,7 +232,8 @@ From the repo root, with LuaJIT:
 ```
 luajit test/test_listthenbuy.lua                      # 22 tests + 10 mutation checks (Step 1, D-017; L20-L22 delayed selection)
 luajit test/test_step2.lua                            # 9 tests + 5 mutation checks + 2 harness mutations (Step 2, D-022; S6/S9 D-026)
-luajit test/test_units.lua                            # 23 unit tests + 13 mutation checks + the wrapper mutation (D-026, D-025)
+luajit test/test_units.lua                            # 35 unit tests + 26 mutation checks + the wrapper mutation (D-026, D-025, D-028)
+luajit test/test_logswitch.lua                        # 14 tests + 17 mutation checks (Step 5, D-028); `stage N` compares with the expected red-run table; SPELLSPREE_SCRIPT=<file> tests another build
 luajit test/test_step3.lua                            # 21 tests + 14 mutation checks (Step 3, D-025); `stage N` compares with the expected red-run table
 luajit test/test_listthenbuy.lua baseline             # the same tests without the mutations; leaves the real build's logs in %TEMP%\spellspree_sim\listthenbuy
 luajit test/test_logging.lua                          # 11 tests + 9 mutation checks (logging, D-004 / D-009)
