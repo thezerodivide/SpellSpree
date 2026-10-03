@@ -7,10 +7,12 @@ Last reviewed end to end: 2026-10-03 (§18).
 Baseline: commit `f6c29f4`, referred to as **v1.5.0** (that commit's file still says `1.5-reorder-passes`).
 Current: `1.6.0-test.3`: **Step 1, list-then-buy (D-017)** on top of the file logging (D-004) and the outcome-line fix (D-009). Tagged `v1.6.0-test.3` and pushed. Simulation-tested and run live once (clean).
 
-## Where we left off (Step 1 accepted, 2026-10-03)
+## Where we left off (2026-10-03)
 
-- State: Step 1 (list-then-buy) is accepted as a step (D-018). Live: 137 spells, one pass per vendor. **The `v1.6.0` tag and `VERSION = '1.6.0'` were created prematurely** and await the developer's go-ahead to be withdrawn (delete the tag; set `VERSION` back to `1.6.0-test.3`, identical code). The release is reserved for after Step 2.
-- Steps 2 and 3 are being **discussed, nothing built** (D-020). Direction (D-019): the four tier boxes stay as they are; underneath, a box buys only spells whose Lvl is in its range, and 61-70 is bought from the 1-25 vendor. The design then goes through the ChatGPT review loop (D-015) and your approval before any build.
+- State: **`1.6.0-test.3`** is the current code (tag `v1.6.0-test.3`): Step 1 list-then-buy, accepted as a step, live-run clean (137 spells, one pass per vendor). The premature `v1.6.0` tag was deleted and `VERSION` restored (D-018 addendum 2).
+- **1.6.0 = Steps 1-3 (D-020):** Step 2 = every 61-70 selection uses the 1-25 vendor, with the old 61-70 code **commented out, not deleted**; Step 3 = purchases bounded by the selected level range; each selected range is its own visit (all four ticked: vendor 1, 2, 3, then 1 again). Not built.
+- Next: write the Step 2 and Step 3 designs, run them through the ChatGPT loop (D-015), get the developer's approval, then build one at a time. Next test build: `1.6.0-test.4`.
+- Bazaar is its own later pass (D-020 addendum 2), not part of 1.6.0.
 - Open, developer's call: item 13 (log volume vs rotation; K approved leaving it).
 
 ## Resolved behavior
@@ -24,7 +26,7 @@ Only behavior the developer has explicitly agreed.
 - Test builds raise the pre-release number each handoff; the file stays `spellspree.lua`, no unique filename per build. *(D-006 R14, R15)*
 - Every handed-over build is committed and tagged `v<VERSION>` first. *(D-007 R16)*
 - ~~Repeat passes with close and reopen (D-001 R1)~~ **superseded by list-then-buy (D-017, approved):** build the list once, buy each name at most once by exact-name lookup, verified selection before Buy, ledger of outcomes, log-only final scan. *(In progress.)*
-- **1.6.0 contains Steps 1-3 (D-020 R31):** Step 1 list-then-buy (done); Step 2 every 61-70 selection uses the 1-25 vendor; Step 3 purchases bounded by the selected level range; each selected range is its own visit, so all four ticked = vendor 1, 2, 3, then vendor 1 again (R34). Steps 2 and 3 not built.
+- **1.6.0 contains Steps 1-3 (D-020 R31; Bazaar excluded, its own later pass):** Step 1 list-then-buy (done); Step 2 every 61-70 selection uses the 1-25 vendor; Step 3 purchases bounded by the selected level range; each selected range is its own visit, so all four ticked = vendor 1, 2, 3, then vendor 1 again (R34). Steps 2 and 3 not built.
 - ~~**Level-range tier boxes (not built):** 1-25, 26-50, 51-60, 61-65 ... the 61-70 box is not offered ...~~ **Revised (D-019):** the four tier boxes stay (1-25, 26-50, 51-60, 61-70; no UI change); a box buys only spells whose Lvl is in its range; 61-70 is bought from the 1-25 vendor (~~one visit if 1-25 is also ticked~~ each selected range is its own visit; D-020 R34). Not built; design under discussion. *(D-013 R21, R24; D-019 R29, R30)*
 - **Step 1 accepted as a step (D-018).** ~~Released as 1.6.0~~: the **1.6.0 release was premature and is being withdrawn** (the developer: Step 2, level-bounded purchases, is still to be built; D-018 addendum).
 

@@ -32,7 +32,7 @@ Entries that supersede a specification item. Read this first.
 | D-015 | 2026-10-03 | Second-agent review loop: evaluate each recommendation, agree or disagree with reasons | confirmed |
 | D-016 | 2026-10-03 | Handoff labels for messages between Claude and GPT | confirmed, including numbering and revision rule |
 | D-017 | 2026-10-03 | APPROVED: Step 1, list-then-buy replaces repeat passes | approved by the developer; supersedes spec S-1 / D-001 R1; built as 1.6.0-test.3; first live run succeeded (137 spells, one pass per vendor) |
-| D-018 | 2026-10-03 | Step 1 accepted (as a step); the 1.6.0 release was premature and is being withdrawn | acceptance stands; release withdrawn, see addendum |
+| D-018 | 2026-10-03 | Step 1 accepted (as a step); the 1.6.0 release was premature and is being withdrawn | acceptance stands; release withdrawn and cleaned up, see addenda |
 | D-019 | 2026-10-03 | Step 2 direction changed: the four tier boxes stay; the logic underneath changes | direction recorded; design under discussion; nothing built |
 | D-020 | 2026-10-03 | Release 1.6.0 scope: Steps 1-3; each selected range is its own visit | requirement recorded; Steps 2 and 3 not built |
 
@@ -2028,3 +2028,28 @@ spells in a spellbook. We want to let the user determine which spells are purcha
   baseline) buys every scroll the open vendor sells and ignores the boxes. With the same spellbook limit that can fill
   the book, so the "user decides" principle does not currently reach it. Whether that should change is the developer's
   call; the AI has proposed no change.
+
+### D-018 addendum 2 (2026-10-03): the premature release was withdrawn
+
+Appended; earlier text is unchanged. **Developer, 2026-10-03: "Yes, you may."** Done: the tag `v1.6.0` was deleted locally
+and on GitHub, and `VERSION` was set back to `'1.6.0-test.3'` in a new commit (`5348aea`). A diff of `spellspree.lua`
+against the tested tag `v1.6.0-test.3` is empty, so the code is the one that ran live. The next handed-over build, which
+will contain Step 2, is `1.6.0-test.4` with its own tag (D-006, D-007). The release `1.6.0` is created only when Steps
+1-3 are complete and the developer says so (D-020 R31).
+
+### D-020 addendum 2 (2026-10-03): the developer's answers to the three open questions
+
+Appended; earlier text is unchanged.
+
+1. **Step 2, the 61-70 code (replaces the AI's proposal to leave the names untouched).** **Developer: "Keep all the old
+   61-70 code, just comment it out in case the server changes where the spells are located."** So Step 2 **comments out the
+   old 61-70 code and does not delete it**: the `'61-70'` vendor names in `VENDOR_DATA` and the old lookup
+   (`VENDOR_DATA[class][tier]` for the 61-70 tier) stay in the source as commented-out lines with a note on why and how to
+   restore them, and the new logic sends every 61-70 selection to the 1-25 vendor. This is the literal form of D-013 R23a.
+2. **Bazaar.** **Developer: "Bazaar is its own separate pass. We're focusing on PoK for now."** The Bazaar path is
+   unchanged and out of scope for this release; any bounding there is a later, separate piece of work. (This also answers
+   the observation about the spellbook limit: it is acknowledged and deferred.)
+3. **The premature tag.** Withdrawn, see D-018 addendum 2.
+
+**Status:** the Step 2 and Step 3 designs can now be written. Each still needs the ChatGPT review loop (D-015) and the
+developer's approval before it is built.
