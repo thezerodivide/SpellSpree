@@ -53,7 +53,7 @@
 local mq    = require('mq')
 local ImGui = require('ImGui')
 
-local VERSION = '1.6.0-test.2'
+local VERSION = '1.6.0-test.3'
 local open    = true
 
 -- ============================================================================
