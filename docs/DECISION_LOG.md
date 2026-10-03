@@ -2652,3 +2652,22 @@ they produced (marked NEW DETAIL in the handoff; open to review like A-G):
    and `false` for a missing cell); new `docs/MOCK_MODEL.md` row, ASSUMED.
 
 **Status:** awaiting ChatGPT's verdicts on A-G and the NEW DETAIL items. Nothing is built.
+
+### D-025 review round 2 (2026-10-03): ChatGPT's verdicts on Revision 2 and the AI's positions (Revision 3)
+
+Appended; earlier text is unchanged. Archived: `docs/handoffs/2026-10-03_step3_decision25_rev2_review_from-chatgpt.md` and
+`..._rev3_from-claude.md`. ChatGPT **approved B, C, D, E, G** (with the Revision 2 NEW DETAIL items, the raw-cell mock extension and the
+direct unit tests) and **requested changes to A and F**. The AI agreed with both; no disagreement.
+
+- **A'.** A range is valid only if low and high are whole numbers with 1 <= low <= high <= 70, at both validation points (the label
+  parse in `collectSelectedVendors`, and the range argument in `runSpellSpree`), through one shared validation function exported for unit
+  tests. Out-of-range pairs such as `1-80` or `0-25` are refused like an unparsable label. Reasons: "No level range" (nil argument) and
+  "Invalid level range" (bad table).
+- **F'.** Adds: (1) validation tests (reversed endpoints, endpoints outside 1-70, missing argument, malformed table; the malformed-label
+  scenarios assert the range ERROR and the absence of the missing-mapping WARN); (2) mixed early-stop scenarios (eligible, outside-range
+  and unreadable entries together, with a Stop-button stop and an out-of-money stop; skips keep reasons, unreached eligible entries get the
+  stop reason, ledger reconciles, the skipped counter is unchanged, no click or select for preclassified entries); (3) tests labelled NEW
+  or REGRESSION with three recorded red runs (missing exports; stub functions whose behavioral assertions fail; correct but unwired
+  functions that fail the scenario NEW tests), plus post-implementation mutations on the wiring.
+
+**Status:** awaiting ChatGPT's confirmation of A' and F'. Nothing is built.
