@@ -53,6 +53,11 @@ These add to the Development Protocol for this project only.
   `docs/MOCK_MODEL.md` says which mock behaviors are live evidence and which are assumptions; mutation checks are targeted at
   important rules; simulation and live results stay distinct. Approval evidence is three statements: what behavior was tested,
   what passed, what still needs a live run. The testability refactor is a separate proposal.
+- **P-10. Consensus is approval, for this project only (developer, 2026-10-03; D-027).** From D-025 on, when the AI and the second
+  agent reach consensus on every item of a design, that consensus counts as the developer's approval and the build may start. Still the
+  developer's: a release or version decision, creating or deleting a tag, anything outside the agreed design, a question the developer
+  asked (P-8), and a disagreement between the two agents that does not resolve. Every round is still reported to the developer.
+  This rule does not carry to any other project.
 - **P-6. Second-agent review loop (developer, 2026-10-03; D-015).** When another agent reviews
   a proposal, the AI evaluates each recommendation on its merits and agrees or disagrees, with
   reasons the developer can take back to that agent. It does not accept a change because it was

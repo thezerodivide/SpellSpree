@@ -2718,3 +2718,19 @@ F''** and stated that **every Step 3 item A-G is agreed from its review**. Final
   instruction after the live run.
 
 **Status:** presented to the developer for approval; nothing is built until the developer authorizes.
+
+## D-027 — Consensus between the AI and the second agent counts as the developer's approval (this project only)
+
+Date: 2026-10-03. Source: the developer, in chat: "for the rest of THIS PROJECT ONLY, we're going to treat you and GPT reaching a consensus
+as me approving the decisions. I want to see how you two work together without my intervention."
+
+**Decision.** From now on, once the AI and ChatGPT agree on every item of a design (the D-015 loop completed), the design is approved and
+the AI proceeds to the TDD build (D-024, P-9). Recorded as P-10 in `docs/WORKING_AGREEMENT.md`.
+
+**Boundaries (the AI's reading; the developer can correct them).** The rule covers design decisions only. It does not cover: a release,
+a version change or a tag (D-018, P-3: the handed-over build is tagged as before; `1.6.0` still needs the developer's explicit
+instruction); anything outside what the two agents agreed; a question the developer asks (P-8); an unresolved disagreement between the
+agents (the AI reports it to the developer). The developer still receives every round's report and every build's results.
+
+**Applied to:** D-025 (Step 3). Its consensus (ChatGPT's review of Revision 4, items A'-G agreed) is therefore treated as approved at
+the moment of this message, and the Step 3 build starts.
