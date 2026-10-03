@@ -35,6 +35,7 @@ Entries that supersede a specification item. Read this first.
 | D-018 | 2026-10-03 | Step 1 accepted (as a step); the 1.6.0 release was premature and is being withdrawn | acceptance stands; release withdrawn and cleaned up, see addenda |
 | D-019 | 2026-10-03 | Step 2 direction changed: the four tier boxes stay; the logic underneath changes | direction recorded; design under discussion; nothing built |
 | D-020 | 2026-10-03 | Release 1.6.0 scope: Steps 1-3; each selected range is its own visit | requirement recorded; Steps 2 and 3 not built |
+| D-021 | 2026-10-03 | Step 2 design proposal: every 61-70 selection uses the 1-25 vendor | proposed; ChatGPT review and developer approval pending |
 
 ---
 
@@ -2053,3 +2054,50 @@ Appended; earlier text is unchanged.
 
 **Status:** the Step 2 and Step 3 designs can now be written. Each still needs the ChatGPT review loop (D-015) and the
 developer's approval before it is built.
+
+---
+
+## D-021 — Step 2 design proposal: every 61-70 selection uses the 1-25 vendor
+
+**Date:** 2026-10-03 · **Status:** **proposed; not approved.** Each item A-F is for the developer to approve, change or
+reject on its own (Protocol section 17), after review by ChatGPT (D-015). **Would implement** D-020 R31 (Step 2), D-019
+R30 and R34 (each selected range is its own visit), and D-020 addendum 2 (keep the old 61-70 code, commented out).
+
+### Story
+D-013 to D-020: the `61-70` vendor lists nothing usable, the level 61-65 spells are on the `1-25` vendor, so the script
+should send every 61-70 selection to the 1-25 vendor. The developer wants the tier boxes and UI unchanged, each selected
+range to be its own visit, and the old 61-70 code kept as comments in case the server moves the spells. Today
+`collectSelectedVendors()` makes one visit per ticked tier with one lookup line, `VENDOR_DATA[className][tier]`.
+
+### Requirement (agreed earlier; this step implements it)
+- R31 Step 2: each 61-70 selection uses the 1-25 vendor for each class. R34: each selected range is its own visit (all
+  four ticked: vendor 1, 2, 3, then 1 again). D-019 R29: no UI change. D-020 addendum 2: keep the old 61-70 code,
+  commented out; Bazaar untouched.
+
+### Design choices (the developer approves each separately)
+- **A.** A `TIER_VENDOR` mapping (`1-25`->`1-25`, `26-50`->`26-50`, `51-60`->`51-60`, `61-70`->`1-25`); the vendor lookup
+  goes through it; a tier with no mapping is skipped as a missing name is today.
+- **B.** The old 61-70 code is **commented out in place, not deleted**: the `['61-70']` name in each `VENDOR_DATA` class
+  line wrapped in an inline `--[[ ]]` block comment; the old lookup line and the old `['61-70']='61-70'` mapping entry
+  kept as comments with a note on how to restore them; `'61-70'` stays in `TIERS` (UI unchanged).
+- **C.** One visit per ticked tier, not merged; order class then tier; all four ticked = vendor 1, 2, 3, 1.
+- **D.** The visit label notes when the vendor tier differs from the ticked tier ("Cleric 61-70, bought from the 1-25
+  vendor").
+- **E.** Nothing else changes: a 61-70 visit buys what the 1-25 vendor still lists, until Step 3 adds the level bound.
+- **F.** Simulation tests (visit order and labels for all four ticked, only 61-70, and 1-25 plus 61-70; the old 61-70
+  vendor never targeted; the 12 old names still in the source inside comment markers) with mutation checks; Step 2 is not
+  handed over for a live test alone, Steps 2 and 3 go together as `1.6.0-test.4`, unless the developer asks otherwise.
+
+### Implementation choices (the AI's)
+- The old names stay on their class lines (inline comments) so restoring is local. The mock gains a way to open a class's
+  tree and tick one tier box, so a single-tier spree can be simulated.
+
+### Open
+- The ChatGPT review (handoff Step 2 / Decision 21 / Revision 1, archived in `docs/handoffs/`) and the developer's
+  approval of A-F.
+
+### Not yet verified
+- Everything: nothing is built. The visit behavior rests on a second run over the same vendors having worked live.
+
+### Dependencies and shared seams
+- Step 3 (the level bound) builds on the second visit this step creates; Step 1's list-then-buy is untouched.
