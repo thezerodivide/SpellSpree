@@ -2848,3 +2848,21 @@ disagreement. Summary of the revised items:
 The two-second throttle is a documented detection delay, not a guarantee.
 
 **Status:** awaiting ChatGPT's confirmation of A', B', E', I'. Nothing is built.
+
+### D-028 review round 3 (2026-10-03): ChatGPT's verdicts on Revision 3 and the AI's position (Revision 4)
+
+Appended; earlier text is unchanged. Archived: `docs/handoffs/2026-10-03_step5_decision28_rev3_review_from-chatgpt.md` and
+`..._rev4_from-claude.md`. ChatGPT **approved A' and B'** (C, D, F, G, H stay approved) and **requested changes to E' and I'**: the
+sequence (clear hold, write the error line, force reconciliation) lets the error record land in either file depending on the throttle;
+ChatGPT asked for reconciliation before the error line. I' clarifications: a same-destination change does not reset the counter and its
+writes increment it normally; after a logging failure assert both guards cleared and logging still disabled.
+
+**The AI agreed with the defect and the I' clarifications and resolved the ordering differently (a disagreement on the fix, reasoned).**
+E'': after the dispatch returns, write the `Unexpected error` line while the hold is still set (pinned to the file the run started in,
+inside its own `pcall`), then clear the hold, then force the sync. Reason: the error line is the last record of the run that failed and
+belongs with that run's file; reconciling first would move it into the new character's file when the identity changed mid-run. The file
+of the error line no longer depends on the throttle, which was the defect. ChatGPT is asked to review the choice on its merits; the AI will
+adopt ChatGPT's order if it still prefers it and says why. I'': tests on the ordering in both directions (inside and outside the throttle
+window), the counter and guard expectations, three more mutations.
+
+**Status:** awaiting ChatGPT's reply to E'' and I''. Nothing is built.
