@@ -47,6 +47,12 @@ These add to the Development Protocol for this project only.
 - **P-8. A question is not permission to change anything (developer, 2026-10-03; D-023).** If the developer asks a question, the
   AI answers it. If it thinks a change is warranted it proposes the change and waits; it does not edit code, tests or other
   repository content (docs that record the question and answer are covered by P-4).
+- **P-9. TDD with guardrails, from Step 3 (developer, 2026-10-03; D-024).** Behavior changes: approve the behavior, write a failing
+  test first (record the red run and confirm it fails for the right reason), implement, clean up. Tests come from agreed
+  requirements; they exercise the real Lua; changed expectations are explained; adverse scenarios are kept when mocks improve;
+  `docs/MOCK_MODEL.md` says which mock behaviors are live evidence and which are assumptions; mutation checks are targeted at
+  important rules; simulation and live results stay distinct. Approval evidence is three statements: what behavior was tested,
+  what passed, what still needs a live run. The testability refactor is a separate proposal.
 - **P-6. Second-agent review loop (developer, 2026-10-03; D-015).** When another agent reviews
   a proposal, the AI evaluates each recommendation on its merits and agrees or disagrees, with
   reasons the developer can take back to that agent. It does not accept a change because it was

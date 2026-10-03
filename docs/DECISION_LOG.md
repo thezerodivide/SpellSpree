@@ -38,6 +38,7 @@ Entries that supersede a specification item. Read this first.
 | D-021 | 2026-10-03 | Step 2 design proposal: every 61-70 selection uses the 1-25 vendor | consensus with ChatGPT reached; awaiting the developer's approval |
 | D-022 | 2026-10-03 | APPROVED: Step 2, every 61-70 selection uses the 1-25 vendor | approved by the developer; built and simulation-tested; not handed over (live-tested with Step 3) |
 | D-023 | 2026-10-03 | A question is not permission to change anything | confirmed |
+| D-024 | 2026-10-03 | Adopt TDD with ChatGPT's guardrails, beginning with Step 3 | adopted by the developer |
 
 ---
 
@@ -2306,3 +2307,60 @@ None. Recorded in the working agreement as P-8.
 ### Dependencies and shared seams
 - Applies with Protocol section 13 ("when I explicitly tell you not to build anything yet, do not build anything") and with
   P-1, P-3 and P-4.
+
+---
+
+## D-024 — Adopt TDD with ChatGPT's guardrails, beginning with Step 3
+
+**Date:** 2026-10-03 · **Status:** adopted by the developer · **Supersedes:** the order "implement, then write tests" used for
+Steps 1 and 2; keeps Development Protocol section 7 (tests trace to requirements; mutation proof for consequential logic).
+
+### Story
+The developer asked how the suites run, whether mutation checks change the real Lua, and whether the empty vendor stayed a test
+(D-022 addendum 2), then said the project would benefit from test-driven development. The AI described what it would mean here
+(tests first from approved requirements, a red run against the unchanged script, then code), where it helps (new pure rules such
+as the Step 3 level check) and where it does not (live client behavior; slow scenario suites). ChatGPT gave informational
+guardrails. The developer: "I want to adopt ChatGPTs guardrails, and move to TDD beginning with step 3."
+
+### Requirement (developer, 2026-10-03)
+- R36. From Step 3 on, behavior changes follow TDD: approve the behavior; write a test that fails because the behavior is missing;
+  implement it; clean up while the tests stay green.
+- R37. The guardrails (ChatGPT's wording, condensed):
+  1. **Approved requirements determine expected results.** Each test is tied to an agreed requirement; tests cannot silently
+     introduce new purchasing rules.
+  2. **Confirm the initial failure has the right cause.** A broken mock or a loading error is not evidence that the test detects
+     the missing feature. The red run's output is recorded.
+  3. **Keep testing the actual Lua.** Simulate MacroQuest's responses; never recreate purchasing logic in the tests.
+  4. **Explain changes to existing expectations.** A test is changed only for an approved behavior change or evidence that the test
+     was wrong; making a failing test pass is not a justification.
+  5. **Preserve adverse scenarios when improving mocks.** Realistic stock added to a mock must not remove the separate tests for
+     empty lists, missing rows, delayed selections and failed transactions.
+  6. **Separate observed game behavior from assumptions.** Document which mock behaviors came from live evidence
+     (`docs/MOCK_MODEL.md`); ask about unknown behavior before relying on it to justify approval.
+  7. **Targeted mutation checks.** Deliberately break the important rules (a level boundary, a purchase limit) and confirm the
+     behavior tests catch them; not required for every minor edit.
+  8. **Keep simulation and live results distinct.** Simulation supports the script's logic; only a live run shows whether its
+     interaction with MacroQuest works.
+- R38. **Approval evidence is three plain statements** (not test counts): what approved behavior was tested; what passed; what still
+  needs live verification.
+- R39. The faster-testing refactor (a test hook and extracting the ledger and other logic into directly testable units) is **not**
+  part of Step 3. It needs its own proposal, review and approval. *(Developer, 2026-10-03: it "would expand Step 3's scope".)*
+
+### Design choices
+None beyond R36-R39.
+
+### Implementation choices (the AI's)
+- `docs/MOCK_MODEL.md` was created in this commit, classifying each simulated behavior as LIVE, SOURCE, ASSUMED or DIFFERS, with the
+  evidence; rows are added in the same commit as any mock change.
+- The red run's output goes into the Step's decision-log addendum.
+
+### Open
+- **Delayed selection** is named in guardrail 5, but the mock selects at once and no existing test makes `Merchant.SelectedItem`
+  read the new row late. A test for it does not exist; adding one is a test-only change that needs the developer's go-ahead (D-023).
+- The status of `L19` (D-023 Open): kept or reverted, still the developer's decision.
+
+### Not yet verified
+- Nothing; this is a process rule. Step 3 is the first use.
+
+### Dependencies and shared seams
+- Applies with P-1 (log review), P-3 (tag every handed-over build), P-6 (review loop) and P-8 (questions are not permission).
