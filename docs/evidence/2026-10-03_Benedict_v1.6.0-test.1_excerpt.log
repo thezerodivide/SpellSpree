@@ -1,0 +1,181 @@
+# EXCERPT of a live log, not the full file.
+# Source: C:\Users\Public\MacroQuest\Logs\spellspree\spellspree_multiclass_Benedict.log (3,239 lines, 486,814 bytes, 2026-10-03 11:20:43-11:25:33)
+# Build: v1.6.0-test.1 (tag v1.6.0-test.1). Character Benedict, server multiclass. Vendor 1: Vicar Ceraen (Cleric 1-25); run stopped by the developer during vendor 2.
+# Section markers below start with '#=='; every other line is copied verbatim, in order, from the original (original line numbers in the marker).
+#== lines 1-34: startup, nav, merchant open, run start (original lines 1-34)
+2026-10-03 11:20:43 | +5355ms | v1.6.0-test.1 | INFO  | SpellSpree v1.6.0-test.1 loaded. Check some vendors below and hit Run Shopping Spree.
+2026-10-03 11:20:43 | +5355ms | v1.6.0-test.1 | OBS   | session start: build=v1.6.0-test.1 source=@C:\Users\Public\MacroQuest\lua\spellspree.lua
+2026-10-03 11:20:43 | +5355ms | v1.6.0-test.1 | OBS   | log path resolution: MacroQuest.Path('logs')=C:\Users\Public\MacroQuest\Logs, MacroQuest.Path('root')=C:\Users\Public\MacroQuest, server=multiclass, character=Benedict
+2026-10-03 11:20:43 | +5356ms | v1.6.0-test.1 | OBS   | log file: C:\Users\Public\MacroQuest\Logs/spellspree/spellspree_multiclass_Benedict.log
+2026-10-03 11:20:43 | +5356ms | v1.6.0-test.1 | OBS   | environment at load: zone=poknowledge character=Benedict server=multiclass class=BRD merchantOpen=false
+2026-10-03 11:20:43 | +5356ms | v1.6.0-test.1 | OBS   | known limits: MacroQuest returns nothing from /notify, /itemnotify, /target, /click or /nav. Each CMD line records what was sent and why; whether it worked is only inferred from the OBS lines that read game state afterward. A CMD followed by unchanged state means no effect was observed, not that the command was proven ignored.
+2026-10-03 11:20:43 | +5378ms | v1.6.0-test.1 | CMD   | /windowstate InventoryWindow open   [reason: open the Inventory window so its class display can be read for class detection (it was not open)]
+2026-10-03 11:20:44 | +5625ms | v1.6.0-test.1 | CMD   | /windowstate InventoryWindow close   [reason: close the Inventory window again; it was not open before class detection]
+2026-10-03 11:20:44 | +5625ms | v1.6.0-test.1 | INFO  | Detected class(es): Cleric, Shaman, Enchanter
+2026-10-03 11:20:52 | +13712ms | v1.6.0-test.1 | INFO  | User pressed Run Shopping Spree.
+2026-10-03 11:20:52 | +13723ms | v1.6.0-test.1 | INFO  | Shopping spree: 4 vendor(s) selected.
+2026-10-03 11:20:52 | +13723ms | v1.6.0-test.1 | INFO  | --- Vendor 1/4: Vicar Ceraen (Cleric 1-25) ---
+2026-10-03 11:20:52 | +13724ms | v1.6.0-test.1 | INFO  | Nav & Shop: looking for "Vicar Ceraen"...
+2026-10-03 11:20:52 | +13724ms | v1.6.0-test.1 | WARN  | Mouse is over the SpellSpree window -- move it into the game world so the click actually registers.
+2026-10-03 11:20:52 | +13953ms | v1.6.0-test.1 | OBS   | mouse left the SpellSpree window after 0.2s of waiting.
+2026-10-03 11:20:52 | +13953ms | v1.6.0-test.1 | INFO  | Found "Vicar Ceraen" (#176) -- navigating...
+2026-10-03 11:20:52 | +13953ms | v1.6.0-test.1 | CMD   | /nav id 176   [reason: navigate to "Vicar Ceraen" (#176)]
+2026-10-03 11:20:52 | +14302ms | v1.6.0-test.1 | INFO  | Still navigating to "Vicar Ceraen"...
+2026-10-03 11:20:57 | +19395ms | v1.6.0-test.1 | INFO  | Still navigating to "Vicar Ceraen"...
+2026-10-03 11:21:03 | +24508ms | v1.6.0-test.1 | INFO  | Still navigating to "Vicar Ceraen"...
+2026-10-03 11:21:08 | +29594ms | v1.6.0-test.1 | INFO  | Still navigating to "Vicar Ceraen"...
+2026-10-03 11:21:13 | +34718ms | v1.6.0-test.1 | INFO  | Still navigating to "Vicar Ceraen"...
+2026-10-03 11:21:18 | +39809ms | v1.6.0-test.1 | INFO  | Still navigating to "Vicar Ceraen"...
+2026-10-03 11:21:22 | +43495ms | v1.6.0-test.1 | INFO  | Arrived near "Vicar Ceraen".
+2026-10-03 11:21:22 | +43495ms | v1.6.0-test.1 | CMD   | /target npc "=Vicar Ceraen"   [reason: target "Vicar Ceraen" after arriving (attempt 1/10)]
+2026-10-03 11:21:22 | +43807ms | v1.6.0-test.1 | OBS   | target check: Target.ID=176 expected=176 ok=true
+2026-10-03 11:21:22 | +43808ms | v1.6.0-test.1 | CMD   | /click right target   [reason: open the merchant window of "Vicar Ceraen" by right-clicking the target]
+2026-10-03 11:21:22 | +44222ms | v1.6.0-test.1 | INFO  | Merchant window open -- starting the buy run.
+2026-10-03 11:21:22 | +44223ms | v1.6.0-test.1 | INFO  | Starting up...
+2026-10-03 11:21:22 | +44223ms | v1.6.0-test.1 | OBS   | run start: zone=poknowledge target=Vicar Ceraen merchantOpen=true stopOnOutOfMoney=true money=81,555pp 5gp 7sp 9cp bought/skipped so far=0/0
+2026-10-03 11:21:22 | +44223ms | v1.6.0-test.1 | WARN  | This will open bags as needed to buy and scribe into -- please leave them open once they pop up (closing one mid-run can briefly misread a purchase as failed).
+2026-10-03 11:21:22 | +44223ms | v1.6.0-test.1 | INFO  | "Usable items only" filter is on.
+2026-10-03 11:21:22 | +44224ms | v1.6.0-test.1 | OBS   | first free slot at run start: main inventory slot 7.
+2026-10-03 11:21:22 | +44224ms | v1.6.0-test.1 | INFO  | [merchant scan] Visible row count at start: 153.
+#== lines 363-440: first purchases and the first batch row removal (rows 66-70, 153 -> 150)
+2026-10-03 11:21:33 | +54711ms | v1.6.0-test.1 | OBS   | row #66/153 select result: name=Skull Marked Shield (Enchanted) itemID=1008149 polls=1 advanced=true previousName=Skull Marked Shield
+2026-10-03 11:21:33 | +54711ms | v1.6.0-test.1 | INFO  | [merchant scan] Pass 1 row #66/153 selected: "Skull Marked Shield (Enchanted)" [item 1008149] -> NEW THIS PASS.
+2026-10-03 11:21:33 | +54840ms | v1.6.0-test.1 | DEBUG | [price quote] "the Skull Marked Shield (Enchanted)" = 209pp 9gp 9sp 9cp
+2026-10-03 11:21:33 | +54841ms | v1.6.0-test.1 | INFO  | [merchant scan] Requesting visible UI row #67 of 153.
+2026-10-03 11:21:33 | +54841ms | v1.6.0-test.1 | CMD   | /notify MerchantWnd ItemList listselect 67   [reason: select visible row #67 of 153 to read what item it holds (pass 1)]
+2026-10-03 11:21:33 | +54873ms | v1.6.0-test.1 | OBS   | row #67/153 select result: name=Smashed War Grubs itemID=15971 polls=1 advanced=true previousName=Skull Marked Shield (Enchanted)
+2026-10-03 11:21:33 | +54873ms | v1.6.0-test.1 | INFO  | [merchant scan] Pass 1 row #67/153 selected: "Smashed War Grubs" [item 15971] -> NEW THIS PASS.
+2026-10-03 11:21:33 | +54987ms | v1.6.0-test.1 | DEBUG | [price quote] "Smashed War Grubs" = 6pp 2gp 9sp 9cp
+2026-10-03 11:21:33 | +54987ms | v1.6.0-test.1 | INFO  | [merchant scan] Requesting visible UI row #68 of 153.
+2026-10-03 11:21:33 | +54987ms | v1.6.0-test.1 | CMD   | /notify MerchantWnd ItemList listselect 68   [reason: select visible row #68 of 153 to read what item it holds (pass 1)]
+2026-10-03 11:21:33 | +55020ms | v1.6.0-test.1 | OBS   | row #68/153 select result: name=Spell: Armor of the Zealot itemID=28565 polls=1 advanced=true previousName=Smashed War Grubs
+2026-10-03 11:21:33 | +55020ms | v1.6.0-test.1 | INFO  | [merchant scan] Pass 1 row #68/153 selected: "Spell: Armor of the Zealot" [item 28565] -> NEW THIS PASS.
+2026-10-03 11:21:33 | +55284ms | v1.6.0-test.1 | DEBUG | [price quote] "Spell: Armor of the Zealot" = 210pp 9gp 6sp 1cp
+2026-10-03 11:21:33 | +55284ms | v1.6.0-test.1 | OBS   | price quote for "Spell: Armor of the Zealot": 210pp 9gp 6sp 1cp; money on hand 81,555pp 5gp 7sp 9cp
+2026-10-03 11:21:33 | +55284ms | v1.6.0-test.1 | OBS   | expected landing slot for "Spell: Armor of the Zealot": main inventory slot 7
+2026-10-03 11:21:33 | +55284ms | v1.6.0-test.1 | OBS   | pre-buy existing copy of "Spell: Armor of the Zealot": none found
+2026-10-03 11:21:33 | +55285ms | v1.6.0-test.1 | INFO  | Buying "Spell: Armor of the Zealot"...
+2026-10-03 11:21:33 | +55285ms | v1.6.0-test.1 | CMD   | /notify MerchantWnd MW_Buy_Button leftmouseup   [reason: buy the selected item "Spell: Armor of the Zealot" (selection was read back as this item; money before 81,555pp 5gp 7sp 9cp)]
+2026-10-03 11:21:33 | +55308ms | v1.6.0-test.1 | OBS   | QuantityWnd open at poll 1/5 -- accepting it.
+2026-10-03 11:21:33 | +55309ms | v1.6.0-test.1 | CMD   | /notify QuantityWnd QTYW_Accept_Button leftmouseup   [reason: accept the quantity window that opened after Buy]
+2026-10-03 11:21:34 | +55677ms | v1.6.0-test.1 | OBS   | money check after buying "Spell: Armor of the Zealot": before=81,555pp 5gp 7sp 9cp now=81,344pp 6gp 1sp 8cp paid=true (polls=2/15)
+2026-10-03 11:21:34 | +55677ms | v1.6.0-test.1 | OBS   | landing read of main inventory slot 7 for "Spell: Armor of the Zealot": found "Spell: Armor of the Zealot" (polls=1/15)
+2026-10-03 11:21:34 | +55678ms | v1.6.0-test.1 | INFO  | Scribing "Spell: Armor of the Zealot"...
+2026-10-03 11:21:34 | +55843ms | v1.6.0-test.1 | CMD   | /itemnotify pack7 rightmouseup   [reason: scribe "Spell: Armor of the Zealot": right-click the scroll at main inventory slot 7 (attempt 1/20)]
+2026-10-03 11:21:35 | +56632ms | v1.6.0-test.1 | OBS   | No scribe-confirmation window (ConfirmationDialogBox/ScribeConfirmWnd) seen within 5 polls (~750ms). Not necessarily a problem: whether this client shows one is not established.
+2026-10-03 11:21:35 | +56632ms | v1.6.0-test.1 | OBS   | scribe attempt 1/20 for "Spell: Armor of the Zealot": scroll no longer reads in the slot (scribe inferred; MQ gives no direct confirmation)
+2026-10-03 11:21:35 | +56632ms | v1.6.0-test.1 | OBS   | cursor after scribing "Spell: Armor of the Zealot": empty
+2026-10-03 11:21:35 | +56632ms | v1.6.0-test.1 | INFO  | Confirmed scribed: "Spell: Armor of the Zealot" (cost 210pp 9gp 6sp 1cp, scroll left main inventory slot 7).
+2026-10-03 11:21:35 | +57277ms | v1.6.0-test.1 | OBS   | row count after scribing row #68: unchanged at 153 after the ~500ms wait; advancing to the next row.
+2026-10-03 11:21:35 | +57392ms | v1.6.0-test.1 | INFO  | [merchant scan] Requesting visible UI row #69 of 153.
+2026-10-03 11:21:35 | +57392ms | v1.6.0-test.1 | CMD   | /notify MerchantWnd ItemList listselect 69   [reason: select visible row #69 of 153 to read what item it holds (pass 1)]
+2026-10-03 11:21:35 | +57425ms | v1.6.0-test.1 | OBS   | row #69/153 select result: name=Spell: Bind Affinity itemID=15035 polls=1 advanced=true previousName=Spell: Armor of the Zealot
+2026-10-03 11:21:35 | +57425ms | v1.6.0-test.1 | INFO  | [merchant scan] Pass 1 row #69/153 selected: "Spell: Bind Affinity" [item 15035] -> NEW THIS PASS.
+2026-10-03 11:21:36 | +57703ms | v1.6.0-test.1 | DEBUG | [price quote] "Spell: Bind Affinity" = 1gp 9sp 5cp
+2026-10-03 11:21:36 | +57703ms | v1.6.0-test.1 | OBS   | price quote for "Spell: Bind Affinity": 1gp 9sp 5cp; money on hand 81,344pp 6gp 1sp 8cp
+2026-10-03 11:21:36 | +57704ms | v1.6.0-test.1 | OBS   | expected landing slot for "Spell: Bind Affinity": main inventory slot 7
+2026-10-03 11:21:36 | +57704ms | v1.6.0-test.1 | OBS   | pre-buy existing copy of "Spell: Bind Affinity": none found
+2026-10-03 11:21:36 | +57705ms | v1.6.0-test.1 | INFO  | Buying "Spell: Bind Affinity"...
+2026-10-03 11:21:36 | +57716ms | v1.6.0-test.1 | CMD   | /notify MerchantWnd MW_Buy_Button leftmouseup   [reason: buy the selected item "Spell: Bind Affinity" (selection was read back as this item; money before 81,344pp 6gp 1sp 8cp)]
+2026-10-03 11:21:36 | +57717ms | v1.6.0-test.1 | OBS   | QuantityWnd open at poll 1/5 -- accepting it.
+2026-10-03 11:21:36 | +57717ms | v1.6.0-test.1 | CMD   | /notify QuantityWnd QTYW_Accept_Button leftmouseup   [reason: accept the quantity window that opened after Buy]
+2026-10-03 11:21:36 | +58107ms | v1.6.0-test.1 | OBS   | money check after buying "Spell: Bind Affinity": before=81,344pp 6gp 1sp 8cp now=81,344pp 4gp 2sp 3cp paid=true (polls=2/15)
+2026-10-03 11:21:36 | +58107ms | v1.6.0-test.1 | OBS   | landing read of main inventory slot 7 for "Spell: Bind Affinity": found "Spell: Bind Affinity" (polls=1/15)
+2026-10-03 11:21:36 | +58107ms | v1.6.0-test.1 | INFO  | Scribing "Spell: Bind Affinity"...
+2026-10-03 11:21:36 | +58255ms | v1.6.0-test.1 | CMD   | /itemnotify pack7 rightmouseup   [reason: scribe "Spell: Bind Affinity": right-click the scroll at main inventory slot 7 (attempt 1/20)]
+2026-10-03 11:21:37 | +59040ms | v1.6.0-test.1 | OBS   | No scribe-confirmation window (ConfirmationDialogBox/ScribeConfirmWnd) seen within 5 polls (~750ms). Not necessarily a problem: whether this client shows one is not established.
+2026-10-03 11:21:37 | +59041ms | v1.6.0-test.1 | OBS   | scribe attempt 1/20 for "Spell: Bind Affinity": scroll no longer reads in the slot (scribe inferred; MQ gives no direct confirmation)
+2026-10-03 11:21:37 | +59041ms | v1.6.0-test.1 | OBS   | cursor after scribing "Spell: Bind Affinity": empty
+2026-10-03 11:21:37 | +59041ms | v1.6.0-test.1 | INFO  | Confirmed scribed: "Spell: Bind Affinity" (cost 1gp 9sp 5cp, scroll left main inventory slot 7).
+2026-10-03 11:21:38 | +59666ms | v1.6.0-test.1 | OBS   | row count after scribing row #69: unchanged at 153 after the ~500ms wait; advancing to the next row.
+2026-10-03 11:21:38 | +59783ms | v1.6.0-test.1 | INFO  | [merchant scan] Requesting visible UI row #70 of 153.
+2026-10-03 11:21:38 | +59784ms | v1.6.0-test.1 | CMD   | /notify MerchantWnd ItemList listselect 70   [reason: select visible row #70 of 153 to read what item it holds (pass 1)]
+2026-10-03 11:21:38 | +59816ms | v1.6.0-test.1 | OBS   | row #70/153 select result: name=Spell: Blessing of Piety itemID=26962 polls=1 advanced=true previousName=Spell: Bind Affinity
+2026-10-03 11:21:38 | +59816ms | v1.6.0-test.1 | INFO  | [merchant scan] Pass 1 row #70/153 selected: "Spell: Blessing of Piety" [item 26962] -> NEW THIS PASS.
+2026-10-03 11:21:38 | +60080ms | v1.6.0-test.1 | DEBUG | [price quote] "Spell: Blessing of Piety" = 1pp 3gp 7sp 1cp
+2026-10-03 11:21:38 | +60080ms | v1.6.0-test.1 | OBS   | price quote for "Spell: Blessing of Piety": 1pp 3gp 7sp 1cp; money on hand 81,344pp 4gp 2sp 3cp
+2026-10-03 11:21:38 | +60080ms | v1.6.0-test.1 | OBS   | expected landing slot for "Spell: Blessing of Piety": main inventory slot 7
+2026-10-03 11:21:38 | +60081ms | v1.6.0-test.1 | OBS   | pre-buy existing copy of "Spell: Blessing of Piety": none found
+2026-10-03 11:21:38 | +60081ms | v1.6.0-test.1 | INFO  | Buying "Spell: Blessing of Piety"...
+2026-10-03 11:21:38 | +60081ms | v1.6.0-test.1 | CMD   | /notify MerchantWnd MW_Buy_Button leftmouseup   [reason: buy the selected item "Spell: Blessing of Piety" (selection was read back as this item; money before 81,344pp 4gp 2sp 3cp)]
+2026-10-03 11:21:38 | +60081ms | v1.6.0-test.1 | OBS   | QuantityWnd open at poll 1/5 -- accepting it.
+2026-10-03 11:21:38 | +60082ms | v1.6.0-test.1 | CMD   | /notify QuantityWnd QTYW_Accept_Button leftmouseup   [reason: accept the quantity window that opened after Buy]
+2026-10-03 11:21:39 | +60455ms | v1.6.0-test.1 | OBS   | money check after buying "Spell: Blessing of Piety": before=81,344pp 4gp 2sp 3cp now=81,343pp 5sp 2cp paid=true (polls=2/15)
+2026-10-03 11:21:39 | +60455ms | v1.6.0-test.1 | OBS   | landing read of main inventory slot 7 for "Spell: Blessing of Piety": found "Spell: Blessing of Piety" (polls=1/15)
+2026-10-03 11:21:39 | +60455ms | v1.6.0-test.1 | INFO  | Scribing "Spell: Blessing of Piety"...
+2026-10-03 11:21:39 | +60621ms | v1.6.0-test.1 | CMD   | /itemnotify pack7 rightmouseup   [reason: scribe "Spell: Blessing of Piety": right-click the scroll at main inventory slot 7 (attempt 1/20)]
+2026-10-03 11:21:39 | +61415ms | v1.6.0-test.1 | OBS   | No scribe-confirmation window (ConfirmationDialogBox/ScribeConfirmWnd) seen within 5 polls (~750ms). Not necessarily a problem: whether this client shows one is not established.
+2026-10-03 11:21:39 | +61416ms | v1.6.0-test.1 | OBS   | scribe attempt 1/20 for "Spell: Blessing of Piety": scroll no longer reads in the slot (scribe inferred; MQ gives no direct confirmation)
+2026-10-03 11:21:39 | +61416ms | v1.6.0-test.1 | OBS   | cursor after scribing "Spell: Blessing of Piety": empty
+2026-10-03 11:21:39 | +61416ms | v1.6.0-test.1 | INFO  | Confirmed scribed: "Spell: Blessing of Piety" (cost 1pp 3gp 7sp 1cp, scroll left main inventory slot 7).
+2026-10-03 11:21:39 | +61416ms | v1.6.0-test.1 | WARN  | [merchant scan] Visible row count changed after row #70: 153 -> 150.
+2026-10-03 11:21:39 | +61416ms | v1.6.0-test.1 | WARN  | [merchant scan] Keeping next scan at row #70 because the filtered list shrank; the next unvisited item may have shifted into this row.
+2026-10-03 11:21:40 | +61544ms | v1.6.0-test.1 | INFO  | [merchant scan] Requesting visible UI row #70 of 150.
+2026-10-03 11:21:40 | +61545ms | v1.6.0-test.1 | CMD   | /notify MerchantWnd ItemList listselect 70   [reason: select visible row #70 of 150 to read what item it holds (pass 1)]
+2026-10-03 11:21:40 | +61664ms | v1.6.0-test.1 | OBS   | row #70/150 select result: name=Spell: Calm itemID=15047 polls=1 advanced=true previousName=Spell: Blessing of Piety
+2026-10-03 11:21:40 | +61664ms | v1.6.0-test.1 | INFO  | [merchant scan] Pass 1 row #70/150 selected: "Spell: Calm" [item 15047] -> NEW THIS PASS.
+2026-10-03 11:21:40 | +61927ms | v1.6.0-test.1 | DEBUG | [price quote] "Spell: Calm" = 6gp 2sp 3cp
+2026-10-03 11:21:40 | +61927ms | v1.6.0-test.1 | OBS   | price quote for "Spell: Calm": 6gp 2sp 3cp; money on hand 81,343pp 5sp 2cp
+#== lines 1484-1500: end of pass 1 and reopen for pass 2 (13 visible rows read right after reopen)
+2026-10-03 11:23:59 | +200867ms | v1.6.0-test.1 | INFO  | [merchant scan] Pass 1 row #127/127 selected: "Wretched Pauldrons" [item 8139] -> NEW THIS PASS.
+2026-10-03 11:23:59 | +200998ms | v1.6.0-test.1 | DEBUG | [price quote] "the Wretched Pauldrons" = 209pp 9gp 9sp 9cp
+2026-10-03 11:23:59 | +200998ms | v1.6.0-test.1 | WARN  | [merchant scan] Pass 1 reached the current end (127 row(s)) after buying 49 spell(s). A mid-pass reorder may have moved unvisited spells behind the cursor.
+2026-10-03 11:23:59 | +200999ms | v1.6.0-test.1 | WARN  | [merchant scan] Pass 1 bought at least one spell; closing merchant to force a fresh filtered list before the next pass. Preserved merchant target: Vicar Ceraen (#176).
+2026-10-03 11:23:59 | +200999ms | v1.6.0-test.1 | CMD   | /notify MerchantWnd MW_Done_Button leftmouseup   [reason: close the merchant to force a fresh usable-only list before pass 2]
+2026-10-03 11:23:59 | +201004ms | v1.6.0-test.1 | OBS   | merchantOpen after the Done click: closed=true
+2026-10-03 11:23:59 | +201004ms | v1.6.0-test.1 | CMD   | /target id 176   [reason: re-acquire merchant Vicar Ceraen after closing its window (attempt 1/10)]
+2026-10-03 11:23:59 | +201327ms | v1.6.0-test.1 | OBS   | target check after /target id: Target.ID=176 expected=176
+2026-10-03 11:23:59 | +201327ms | v1.6.0-test.1 | INFO  | [merchant scan] Re-targeted Vicar Ceraen (#176); right-clicking to reopen merchant.
+2026-10-03 11:23:59 | +201327ms | v1.6.0-test.1 | CMD   | /click right target   [reason: reopen the merchant by right-clicking the re-acquired target]
+2026-10-03 11:24:00 | +201743ms | v1.6.0-test.1 | OBS   | merchantOpen after /click right target: reopened=true
+2026-10-03 11:24:00 | +201743ms | v1.6.0-test.1 | INFO  | "Usable items only" filter is on.
+2026-10-03 11:24:00 | +201744ms | v1.6.0-test.1 | INFO  | [merchant scan] Merchant reopened for pass 2 with 13 visible row(s).
+2026-10-03 11:24:00 | +201744ms | v1.6.0-test.1 | INFO  | [merchant scan] Starting pass 2 at visible row #1 on the freshly reopened merchant.
+2026-10-03 11:24:00 | +201744ms | v1.6.0-test.1 | INFO  | [merchant scan] Requesting visible UI row #1 of 13.
+2026-10-03 11:24:00 | +201744ms | v1.6.0-test.1 | CMD   | /notify MerchantWnd ItemList listselect 1   [reason: select visible row #1 of 13 to read what item it holds (pass 2)]
+2026-10-03 11:24:00 | +201776ms | v1.6.0-test.1 | OBS   | row #1/13 select result: name=Spell: Bravery itemID=15244 polls=1 advanced=true previousName=nil
+#== lines 1516-1520: pass 2 row count 13 -> 104 after the first purchase
+2026-10-03 11:24:01 | +203375ms | v1.6.0-test.1 | OBS   | cursor after scribing "Spell: Bravery": empty
+2026-10-03 11:24:01 | +203375ms | v1.6.0-test.1 | INFO  | Confirmed scribed: "Spell: Bravery" (cost 2pp 2gp 7sp 6cp, scroll left main inventory slot 7).
+2026-10-03 11:24:01 | +203375ms | v1.6.0-test.1 | WARN  | [merchant scan] Visible row count changed after row #1: 13 -> 104.
+2026-10-03 11:24:02 | +203507ms | v1.6.0-test.1 | INFO  | [merchant scan] Requesting visible UI row #2 of 104.
+2026-10-03 11:24:02 | +203507ms | v1.6.0-test.1 | CMD   | /notify MerchantWnd ItemList listselect 2   [reason: select visible row #2 of 104 to read what item it holds (pass 2)]
+#== pass boundaries, outcome, and vendor change (grep of the whole file)
+12:2026-10-03 11:20:52 | +13723ms | v1.6.0-test.1 | INFO  | --- Vendor 1/4: Vicar Ceraen (Cleric 1-25) ---
+34:2026-10-03 11:21:22 | +44224ms | v1.6.0-test.1 | INFO  | [merchant scan] Visible row count at start: 153.
+35:2026-10-03 11:21:22 | +44224ms | v1.6.0-test.1 | INFO  | [merchant scan] Starting pass 1 at visible row #1.
+433:2026-10-03 11:21:39 | +61416ms | v1.6.0-test.1 | WARN  | [merchant scan] Visible row count changed after row #70: 153 -> 150.
+643:2026-10-03 11:22:03 | +84876ms | v1.6.0-test.1 | WARN  | [merchant scan] Visible row count changed after row #79: 150 -> 139.
+707:2026-10-03 11:22:10 | +91595ms | v1.6.0-test.1 | WARN  | [merchant scan] Visible row count changed after row #81: 139 -> 136.
+773:2026-10-03 11:22:17 | +99270ms | v1.6.0-test.1 | WARN  | [merchant scan] Visible row count changed after row #83: 136 -> 134.
+921:2026-10-03 11:22:39 | +121120ms | v1.6.0-test.1 | WARN  | [merchant scan] Visible row count changed after row #89: 134 -> 127.
+1486:2026-10-03 11:23:59 | +200998ms | v1.6.0-test.1 | WARN  | [merchant scan] Pass 1 reached the current end (127 row(s)) after buying 49 spell(s). A mid-pass reorder may have moved unvisited spells behind the cursor.
+1496:2026-10-03 11:24:00 | +201744ms | v1.6.0-test.1 | INFO  | [merchant scan] Merchant reopened for pass 2 with 13 visible row(s).
+1497:2026-10-03 11:24:00 | +201744ms | v1.6.0-test.1 | INFO  | [merchant scan] Starting pass 2 at visible row #1 on the freshly reopened merchant.
+1518:2026-10-03 11:24:01 | +203375ms | v1.6.0-test.1 | WARN  | [merchant scan] Visible row count changed after row #1: 13 -> 104.
+1669:2026-10-03 11:24:06 | +208267ms | v1.6.0-test.1 | WARN  | [merchant scan] Visible row count changed: 104 -> 103 before row #32.
+2195:2026-10-03 11:24:51 | +252803ms | v1.6.0-test.1 | WARN  | [merchant scan] Visible row count changed after row #83: 103 -> 86.
+2217:2026-10-03 11:24:52 | +253563ms | v1.6.0-test.1 | WARN  | [merchant scan] Pass 2 reached the current end (86 row(s)) after buying 17 spell(s). A mid-pass reorder may have moved unvisited spells behind the cursor.
+2227:2026-10-03 11:24:52 | +254286ms | v1.6.0-test.1 | INFO  | [merchant scan] Merchant reopened for pass 3 with 87 visible row(s).
+2228:2026-10-03 11:24:52 | +254286ms | v1.6.0-test.1 | INFO  | [merchant scan] Starting pass 3 at visible row #1 on the freshly reopened merchant.
+2728:2026-10-03 11:25:15 | +277125ms | v1.6.0-test.1 | WARN  | [merchant scan] Pass 3 reached the current end (87 row(s)) after buying 4 spell(s). A mid-pass reorder may have moved unvisited spells behind the cursor.
+2738:2026-10-03 11:25:16 | +277856ms | v1.6.0-test.1 | INFO  | [merchant scan] Merchant reopened for pass 4 with 83 visible row(s).
+2739:2026-10-03 11:25:16 | +277856ms | v1.6.0-test.1 | INFO  | [merchant scan] Starting pass 4 at visible row #1 on the freshly reopened merchant.
+3155:2026-10-03 11:25:29 | +291103ms | v1.6.0-test.1 | INFO  | [merchant scan] Scan complete: pass 4 reached the end of 83 visible row(s) and bought zero spells. No purchase-triggered reorder remains to reconcile. Inspected 389 item encounter(s) total; skipped 319 non-spell item(s).
+3157:2026-10-03 11:25:29 | +291104ms | v1.6.0-test.1 | INFO  | Run outcome (Nav & Shop "Vicar Ceraen"): state=Done, reason="Full refreshed merchant pass bought zero spells", bought=70, skipped=0, spent=756pp 3sp 3cp.
+3160:2026-10-03 11:25:29 | +291104ms | v1.6.0-test.1 | INFO  | --- Vendor 2/4: Vicar Thiran (Cleric 26-50) ---
+3175:2026-10-03 11:25:31 | +292745ms | v1.6.0-test.1 | INFO  | [merchant scan] Visible row count at start: 173.
+3176:2026-10-03 11:25:31 | +292745ms | v1.6.0-test.1 | INFO  | [merchant scan] Starting pass 1 at visible row #1.
+3231:2026-10-03 11:25:33 | +294462ms | v1.6.0-test.1 | WARN  | User pressed Stop.
+3233:2026-10-03 11:25:33 | +294557ms | v1.6.0-test.1 | WARN  | Stopped by user.
+3234:2026-10-03 11:25:33 | +294558ms | v1.6.0-test.1 | INFO  | Run outcome (Nav & Shop "Vicar Thiran"): state=Stopped, reason="Stopped by user", bought=70, skipped=0, spent=756pp 3sp 3cp.
+3237:2026-10-03 11:25:33 | +294558ms | v1.6.0-test.1 | WARN  | Stopped by user.
+#== last 8 lines
+2026-10-03 11:25:33 | +294557ms | v1.6.0-test.1 | DEBUG | [price quote] "the Cracked Blue Jewel of Nimbleness (Enchanted)" = 2pp 1gp
+2026-10-03 11:25:33 | +294557ms | v1.6.0-test.1 | WARN  | Stopped by user.
+2026-10-03 11:25:33 | +294558ms | v1.6.0-test.1 | INFO  | Run outcome (Nav & Shop "Vicar Thiran"): state=Stopped, reason="Stopped by user", bought=70, skipped=0, spent=756pp 3sp 3cp.
+2026-10-03 11:25:33 | +294558ms | v1.6.0-test.1 | CMD   | /notify MerchantWnd MW_Done_Button leftmouseup   [reason: Nav & Shop finished; always close the merchant however the buy run ended]
+2026-10-03 11:25:33 | +294558ms | v1.6.0-test.1 | INFO  | Nav & Shop: done, merchant closed.
+2026-10-03 11:25:33 | +294558ms | v1.6.0-test.1 | WARN  | Stopped by user.
+2026-10-03 11:25:33 | +294559ms | v1.6.0-test.1 | INFO  | Purchased (70): Spell: Armor of the Zealot, Spell: Bind Affinity, Spell: Blessing of Piety, Spell: Calm, Spell: Cancel Magic, Spell: Celestial Remedy, Spell: Center, Spell: Counteract Poison, Spell: Cure Blindness, Spell: Cure Disease, Spell: Cure Poison, Spell: Daring, Spell: Disinfecting Aura, Spell: Furor, Spell: Gate, Spell: Greater Healing, Spell: Hammer of Striking, Spell: Hammer of Wrath, Spell: Hand of Virtue, Spell: Holy Armor, Spell: Holy Might, Spell: Inspire Fear, Spell: Invisibility vs Undead, Spell: Light Healing, Spell: Lull, Spell: Mark of the Righteous, Spell: Root, Spell: Sanctuary, Spell: Sense Summoned, Spell: Sense the Dead, Spell: Sermon of the Righteous, Spell: Smite, Spell: Soothe, Spell: Spirit Armor, Spell: Spook the Dead, Spell: Strike, Spell: Summon Drink, Spell: Summon Food, Spell: Symbol of Ryltan, Spell: Symbol of Transal, Spell: True North, Spell: Ward Summoned, Spell: Ward Undead, Spell: Ward of Vie, Spell: Wave of Fear, Spell: Word of Pain, Spell: Word of Shadow, Spell: Yaulp, Spell: Yaulp II, Spell: Bravery, Spell: Dismiss Undead, Spell: Divine Aura, Spell: Endure Cold, Spell: Endure Disease, Spell: Endure Fire, Spell: Endure Magic, Spell: Endure Poison, Spell: Expulse Undead, Spell: Fear, Spell: Flash of Light, Spell: Guard, Spell: Halo of Light, Spell: Healing, Spell: Reanimation, Spell: Reckless Strength, Spell: Reconstitute, Spell: Remove Lesser Curse, Spell: Remove Minor Curse, Spell: Reparation, Spell: Stun
+2026-10-03 11:25:33 | +294559ms | v1.6.0-test.1 | INFO  | Skipped (0): none

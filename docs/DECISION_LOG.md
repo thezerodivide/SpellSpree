@@ -576,3 +576,70 @@ build or vendor it was observed on, so it is a developer-stated fact, not
 something a SpellSpree log has shown. Ledger Open item 1 updated accordingly.
 The other D-001 Open items (`ItemList.Items()` reliability, Bazaar reopen,
 stacked-purchase re-buy) remain open.
+
+### D-004 addendum 2 (2026-10-03): first live run of v1.6.0-test.1
+
+Appended; earlier text is unchanged. Evidence: the developer's live log
+(`spellspree_multiclass_Benedict.log`, 3,239 lines, 11:20:43-11:25:33), excerpt in
+`docs/evidence/2026-10-03_Benedict_v1.6.0-test.1_excerpt.log`. The developer
+stopped the run during vendor 2 on purpose (a multi-vendor PoK run is not needed
+for this test).
+
+**D-004 Open questions, now answered by the live log:**
+- `MacroQuest.Path('logs')` returned an absolute path
+  (`C:\Users\Public\MacroQuest\Logs`); the relative-path branch was not needed.
+- `os.execute` mkdir created `Logs/spellspree/`; no failure. (Whether it flashed a
+  console window is not in the log; none was reported.)
+- Server and character names were readable at load (`multiclass`, `Benedict`).
+
+**Did the log meet the D-003 standard?** Largely yes. It answered the three open
+logging questions, the pass structure, each purchase's price/money/landing/scribe,
+the batch row removals, the partial row count after reopen, and why the run ended.
+It exposed one defect in my logging (ledger Open item 12): `Run outcome` prints
+spree-cumulative totals, so vendor 2's line reads `bought=70` although it bought
+nothing. That is a gap in the D-003 review I gave at handoff: I read the happy path
+and failure paths of a single-vendor simulation and did not examine a second
+vendor's outcome line. Recorded as a lesson for the next review: check every line
+that restates a counter across vendor boundaries.
+
+**New facts** are in the ledger's confirmed-live section; the two scan problems are
+Open items 10 and 11.
+
+### D-001 addendum 2 (2026-10-03): live evidence conflicts with an implementation choice (surfaced, not resolved)
+
+Appended; the entry above is unchanged. Per Development Protocol section 2 this
+states the existing decision, the new evidence, and a proposed direction; nothing
+is changed until the developer decides.
+
+1. **Existing decision (D-001 Implementation choices, inherited from the
+   developer's edited copy):** "Row-removal compensation: if the visible row count
+   shrinks, step the index back by the number removed so shifted rows are not
+   skipped." As built, after a scribe the code keeps the same index if the count
+   fell, i.e. it assumes exactly one row (the scribed one) was removed.
+2. **New evidence (live log, Cleric 1-25, vendor 1):** scribed rows are removed from
+   the list lazily and in batches. In pass 1 the count fell 153 -> 150 -> 139 ->
+   136 -> 134 -> 127 in steps of 3, 11, 3, 2, 7. After `Blessing of Piety` (row 70)
+   the count fell by 3, the scan stayed on row 70 and read `Calm`; `Bravery`
+   (sorts between them) was never selected in pass 1 and was bought first in pass 2.
+   Of the spells bought in passes 2 and 3 (17 and 4), none had been selected in the
+   preceding pass. Vendor 1 needed four passes; all 70 spells were bought and
+   scribed; the final pass bought zero.
+3. **What is and is not harmed:** requirement R1 (repeat passes until a pass buys
+   nothing) is **met** and its stop condition is sound (a zero-buy pass scribes
+   nothing, so it cannot skip rows). What is violated is efficiency: a clean pass
+   was expected to need roughly two passes, not four. No spell was lost.
+4. **Proposed direction (not agreed, for the developer to accept, change or
+   reject):** treat the index after a scribe by the number of rows actually removed,
+   not "keep the index" on any shrink; this is a scan-loop change, one change at a
+   time, with the live log lines above as the source of the test's expected values
+   (they are in the evidence excerpt). The AI has not designed the exact rule, and
+   how the list is actually refreshed (why removal is lazy and batched) is **not**
+   established; that is an open question the fix depends on.
+5. **Also surfaced (Open item 11):** the row count read right after a reopen was
+   partial (13 vs 104) in pass 2. Not a conflict with a decision, but a hazard for
+   the "zero-buy pass means done" rule if a pass ever started on a transient 0.
+
+Not verified: the exact cause of the lazy, batched removal; whether the pattern is
+the same on other vendors and spell counts; the arithmetic coincidence that the
+pass-1 shrinks (3, 11, 3, 2, 7) skip (k-1) rows each = 21 equals the 21 spells
+bought in passes 2 and 3 is a consistency check, not a proof.

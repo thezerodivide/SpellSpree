@@ -7,11 +7,12 @@ Last reviewed end to end: 2026-10-03 (§18).
 Baseline: commit `f6c29f4`, referred to as **v1.5.0** (that commit's file still says `1.5-reorder-passes`).
 Current: `1.6.0-test.1` (D-004 file logging, D-005 version), pushed to GitHub and tagged `v1.6.0-test.1` (on `b8a6d53`; docs-only commits follow it, `spellspree.lua` is identical). Simulation-tested only; not yet live-tested.
 
-## Where we left off (end of session 1, 2026-10-03)
+## Where we left off (updated after the first live log, 2026-10-03)
 
-- State: `v1.6.0-test.1` (file logging) is committed, tagged and pushed. Simulation-tested only; **no live test yet**. The D-003 log review for it was given in the handoff message; the live-test questions it expects are the Open items 1-4 and 6 below.
-- Next, developer's choice: (a) live-test `v1.6.0-test.1` and read the log (start with its `log path resolution:` line), or (b) design the repeat-purchase guard (Open item 4) as its own change. Scope of (b) is not agreed beyond the stacked-scroll case.
-- Reminder for any future build handed over: P-1 log review, P-3 commit + tag, one change per build.
+- State: `v1.6.0-test.1` (file logging) is committed, tagged and pushed. It **has now been run live once** (vendor 1, Cleric 1-25, Benedict; log excerpt in `docs/evidence/`). Logging worked as designed.
+- The live log answered: where the log goes, that mkdir/names work, that price-quote events fire, that the usable-only filter drops scribed spells (also developer-confirmed), that Stop works, and showed the scan **skips spells in pass 1** (item 10) so vendor 1 needed 4 passes. All 70 spells were still bought and scribed.
+- Open decisions for the developer: which of items 10-13 to take on and in what order (each its own change, one at a time, P-1 log review and P-3 tag before any handoff); item 10 is the one with real cost (extra passes), item 12 is a small fix to my own logging.
+- Not yet exercised live: stacked-scroll re-buy (item 4), the Bazaar (item 3), long sprees (item 13).
 
 ## Resolved behavior
 
@@ -69,6 +70,21 @@ build):*
 sends identical commands, buys identical items and takes identical simulated time
 as the pre-logging baseline in four scenarios.
 
+*Confirmed from the first live log (`v1.6.0-test.1`, character Benedict, 2026-10-03; excerpt in `docs/evidence/2026-10-03_Benedict_v1.6.0-test.1_excerpt.log`, full file on the developer's machine):*
+
+- `MacroQuest.Path('logs')` returns an **absolute** path (`C:\Users\Public\MacroQuest\Logs`); `os.execute` mkdir worked; server (`multiclass`) and character names were readable at load. The log file was created as designed.
+- `mq.event` price-quote events **do fire**: 402 `[price quote]` lines; all 70 spell purchases had a quote on file before buying. (The original author's comment that events never fired is not true for this one.) Quotes for non-spell items arrive keyed `the <name>`, which does not match the selected name; irrelevant for spells (keyed `Spell: <name>`).
+- A merchant with the usable-only filter on lists many non-spell items: 153 rows for Vicar Ceraen (Cleric 1-25), 319 of 389 row encounters were non-spells.
+- The scribe-confirmation window never appeared (70 of 70 purchases). The quantity window appeared on 69 of 70 purchases; the run handled both cases.
+- All 70 purchases: money dropped on the first poll and the scroll read in the expected slot on the first poll. No skips, no failures.
+- **Scribed rows are removed from the list lazily and in batches, not one per scribe.** Pass 1 of vendor 1: row count 153 held through three scribes, then dropped 153 -> 150 -> 139 -> 136 -> 134 -> 127 in steps of 3, 11, 3, 2, 7 while 49 spells were bought. At the end of pass 1 the list still showed 127 rows, though a fresh list had 104.
+- **A single pass misses spells.** Vendor 1 took four passes: pass 1 bought 49, pass 2 bought 17, pass 3 bought 4, pass 4 bought 0 (done). 70 purchased, 0 skipped, 756pp 3sp 3cp, about 4 minutes. None of the 17 spells bought in pass 2, nor the 4 bought in pass 3, had been selected at all in pass 1.
+- **The row count read immediately after a reopen can be partial.** Pass 2 reopened with 13 visible rows; after its first purchase the count read 104. Passes 3 and 4 reopened with 87 and 83 rows.
+- The Stop button works mid-vendor: `User pressed Stop` -> `Stopped by user` -> outcome line -> merchant closed.
+- Logging volume: about 1.7 KB per second of run (3,239 lines / 487 KB in 4m50s).
+
+*Not exercised in that run:* a purchase that stacks onto an existing copy (Open item 4), the Bazaar (Open item 3), a long multi-vendor spree, a failed scribe.
+
 *Claimed by the original author in code comments, not verified by us:*
 
 - `Merchant.Item(N)` indexing can diverge from the visible list when the
@@ -85,11 +101,17 @@ as the pre-logging baseline in four scenarios.
 1. ~~Does the usable-only filter drop already-scribed spells on reopen?~~
    **Resolved, 2026-10-03 (developer, from direct in-game observation):** yes. This is
    the reason for making multiple passes on one vendor. See the confirmed facts.
-2. **Is `ItemList.Items()` reliable?** The build hard-stops if it reads nil.
-3. **Does `/click right target` reopen the merchant in the Bazaar?**
+2. **Is `ItemList.Items()` reliable?** The build hard-stops if it reads nil. First
+   live log: it never read nil, and its counts were consistent with what the scan
+   then selected (pass 4 read all 83 rows with no unreadable selection). Two
+   caveats: it can be **partial right after a reopen** (13 then 104; see item 11),
+   and the log cannot show whether it under-reports against the vendor's true row
+   count. Not fully settled.
+3. **Does `/click right target` reopen the merchant in the Bazaar?** It reopened the merchant three times in PoK (live log, vendor 1). Bazaar not yet tried.
 4. **Stacked-purchase re-buy.** Hypothesis from code reading: a purchase that
    stacks onto an unscribed copy keeps its row, counts as bought, forces another
-   pass, and is bought again until `MAX_SCAN_PASSES`. Not observed. Scope of any
+   pass, and is bought again until `MAX_SCAN_PASSES`. Not observed (no stacked
+   purchase occurred in the first live run). Scope of any
    fix is undecided. The developer has described only the stacked case; whether
    skipped-for-money or failed purchases should be handled is **not** agreed.
 5. ~~**Build identity.**~~ **Resolved (D-005, D-006).** Baseline = 1.5.0; the
@@ -97,18 +119,46 @@ as the pre-logging baseline in four scenarios.
    handoff; no unique filename needed (supersedes Protocol §9 filename clause for
    this project). The build-to-commit tie is resolved by D-007: each handed-over
    build is committed and tagged `v<VERSION>`.
-6. ~~File logging to `macroquest\logs\spellspree\` (§8) is absent.~~ **Built,
-   awaiting live confirmation (D-004).** Remaining live questions: what
-   `MacroQuest.Path('logs')` returns in the client (relative `"Logs"` vs
-   absolute); whether `os.execute` mkdir works without a console flash in this
-   MQ Lua environment; whether character/server names are readable at load.
-   The first live log answers all three (`log path resolution:` line).
+6. ~~File logging to `macroquest\logs\spellspree\` (§8) is absent.~~ **Built and
+   live-confirmed (D-004, first live log 2026-10-03):** `Path('logs')` is absolute,
+   mkdir worked, names readable. Still unknown: whether `os.execute` mkdir flashes
+   a console window (the developer has not reported one).
 7. **Testability split (§20)** of the pass/dedupe logic from the MQ binding is
    not yet designed.
 8. **Plane of Knowledge path not simulated.** `runNavAndShop`'s `/nav`, `/target
    npc`, `/click` conversions to `sendCmd` are verified by static reading only.
 9. **Repo housekeeping:** README, licence, `.gitignore`, `.gitattributes` not
    decided.
+10. **DEFECT (D-001 implementation): the scan skips spells when scribed rows vanish
+    in batches.** After a scribe, if the visible row count has dropped, the code keeps
+    the same row index, which is right only if exactly one row (the one just
+    scribed) was removed. The live log shows batches of 3, 11, 3, 2 and 7 rows
+    removed at once. Concrete case: after `Blessing of Piety` (row 70) the count
+    went 153 -> 150, the scan kept row 70 and read `Calm`; `Bravery`, which sorts
+    between them, was never selected in pass 1 and was bought first thing in pass 2.
+    Consistency check: the shrinks in pass 1 (3, 11, 3, 2, 7) skip (k-1) rows each =
+    21, and 21 spells were bought in passes 2 and 3 that pass 1 never selected.
+    Consequence in the run seen: **no spell was permanently missed** (a pass that
+    buys nothing has no scribes, hence no skips, so termination on a zero-buy pass is
+    sound) but vendor 1 needed four passes instead of two. Not a hypothesis about
+    cause alone: the mechanism is read from the log; the exact arithmetic is a
+    consistency check, not proof. **No fix designed or agreed.** Conflicts with the
+    D-001 implementation choice "row-removal compensation" (see D-001 addendum 2).
+11. **HAZARD (D-001 implementation): row count read right after a reopen can be
+    partial.** Pass 2 started with 13 rows when the full list was 104. It did no harm
+    here because the first row read was a spell and the count is re-read each
+    iteration, but a transient 0 (or a small count) at the start of a pass would end
+    that pass at once, and a new pass with zero purchases is read as "scan complete".
+    Not observed to cause a wrong finish. No fix designed or agreed.
+12. **DEFECT (D-004, my logging): `Run outcome` shows spree-cumulative totals.** For
+    vendor 2 (which bought nothing) the line read `bought=70, spent=756pp...`, which is
+    vendor 1's total, because `S.bought` and `S.spentCopper` accumulate over the whole
+    spree by design. The label reads as if per vendor. A reader could misattribute.
+    Not fixed; needs a decision on wording (cumulative label vs per-vendor delta).
+13. **Log volume vs rotation.** About 1.7 KB/s verbose. At the 4 MB rotation limit that
+    is about 40 minutes of running; rotation keeps only one `.old`, so a long
+    multi-vendor spree would lose its earliest part. Whether that matters, and what to
+    do, is the developer's call; not observed to happen.
 
 ## Out of scope
 
