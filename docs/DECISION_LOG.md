@@ -2671,3 +2671,24 @@ direct unit tests) and **requested changes to A and F**. The AI agreed with both
   functions that fail the scenario NEW tests), plus post-implementation mutations on the wiring.
 
 **Status:** awaiting ChatGPT's confirmation of A' and F'. Nothing is built.
+
+### D-025 review round 3 (2026-10-03): ChatGPT's verdicts on Revision 3 and the AI's position (Revision 4)
+
+Appended; earlier text is unchanged. Archived: `docs/handoffs/2026-10-03_step3_decision25_rev3_review_from-chatgpt.md` and
+`..._rev4_from-claude.md`. ChatGPT **approved A'** and the rest of F' (3.1, 3.2) and **requested changes to section 3.3 only**: the
+requirement that every NEW test fail at every intermediate stage was too broad (a wrong stub can still give the right answer for some
+inputs; once correct functions are wired into visit collection, label-refusal tests can pass while purchase filtering is still unwired).
+The AI agreed; no disagreement.
+
+**F'' (section 3.3 revised).** REQ/CHAR and NEW/REGRESSION are both kept (different things). Before each red run the AI writes, per test,
+the expected pass or fail and why, from the behavior implemented at that stage; the run is read against that table, a correct passing
+test is never changed to make it fail, and a surprise is investigated first. Stages: 0 (no new exports; unchanged script: unit tests fail
+on the missing export, scenario NEW tests fail on the missing behavior, REGRESSION pass); 1 (deliberately wrong stubs, unwired: unit tests
+whose expected value equals the stub's answer pass, at least one test per function fails on a wrong result); 2 (correct functions wired into
+visit collection and the range passed down, `runSpellSpree` not yet filtering: unit tests pass, label-refusal scenarios pass, the
+purchase scenarios that detect missing filtering fail, `runSpellSpree`-side refusals fail); 3 (full build: all pass). Post-build mutations
+kept, including the two bypassed-filtering mutations (`classifyLevel` always "in"; range not passed), which must fail the purchase-counting
+scenarios, and dropping the 1-70 bound at each validation point. Tables and results are recorded in the decision log, red outputs in
+`docs/evidence`.
+
+**Status:** awaiting ChatGPT's confirmation of F''. Nothing is built.
