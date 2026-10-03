@@ -3121,3 +3121,13 @@ contain a 4-tome inventory of Bard disciplines (Deftdance, Puretone, Fearless, R
 inventories add no new mismatches.
 
 **Open:** a fresh, settled dump at Larquin Julinok (close and reopen his window, let the list settle, then run `dump`).
+
+### D-030 addendum 8 (2026-10-03): Larquin Julinok re-dumped; all ten tome vendors are now observed
+
+Evidence: the same log file (refreshed copy). The second dump at Larquin Julinok (Bard) is good: label `Larquin Julinok`, target also Larquin, 104 rows, **4 tomes** (Deftdance, Fearless, Puretone, Resistant
+Discipline), green "dump OK". It matches the earlier unlabelled 4-tome Bard inventory, and all four names match a client spell name exactly. It is not the copy of Heldin's seen in the first attempt. **All ten vendors in
+the developer's list have now been observed with their vendor name read from the merchant window.**
+
+**Reference note (from the developer):** ChatGPT found the documented way to read the open merchant's name, **`${Merchant.Name}`** ("the name of the currently open merchant", MacroQuest documentation), by
+searching the MQ documentation online. The spike reads the `MW_MerchantName` label instead (found in the UI files on disk); both gave the right vendor in all ten dumps, but `Merchant.Name` is the documented
+source and should be preferred in the build. The AI is not limited to files on the developer's disk: the MacroQuest documentation and other public sources can be searched when a fact is needed.

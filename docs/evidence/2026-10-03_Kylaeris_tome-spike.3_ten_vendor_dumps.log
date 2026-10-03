@@ -2604,3 +2604,112 @@
 2026-10-03 18:25:00 | +7410ms | tome-spike 0.1.0-spike.3 | [Ulin Velnik] row 105 | "Wretched Pauldrons (Enchanted)" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
 2026-10-03 18:25:00 | +7410ms | tome-spike 0.1.0-spike.3 | [Ulin Velnik] summary: 105 rows; 5 start with "Tome of "; 100 other rows; the discipline named by the tome is in the known list for 2, not for 3; name prefixes: Amanita Phalloide x1; Black Rage x1; Blistered Arachnid x1; Blue Wicker x1; Brick of x1; Bubonian Bandage x2; Bubonian Claws x1; Circled Toe x1; Corpse Shroud x1; Crown of x3; Crysotherium x1; Crystallized Sulfur x1; Dark Assassin x1; Dark Master x1; Dark Skeleton x1; Dathor Scale x2; Death Mask x1; Death Watcher's x1; Dense Hammered x1; Diaku Blood x1; Diaku Forged x3; Dream Weaver x3; Elysian Armplates x1; Elysian Boots x1; Elysian Crown x1; Emberstone x1; Erudite Meat x1; Essence of x1; Exquisite Platinum x1; Exquisite Silk x1; Fire Mephit x1; Flame Encased x1; Flawless Yellow x1; Flayed Paebala x1; Fyr Jen's x1; Half of x1; Helm of x1; Hive Fiend's x2; Jade Ring x1; Large Bone x1; Large Zelniak x1; Lucidem x1; Luclinite x1; Luggald Dagger x1; Mace of x1; Metallic Substance x1; Mithril Amulet x1; Nilitim's Grimoire x1; Nodding Blue x1; Phase Spider x1; Phosphorous Powder x1; Pliable Goo x1; Quality Plated x1; Rage Filled x1; Raw Shimmering x1; Rhodocrosite x1; Rune of x1; Sarcoscypha Fungus x1; Shadow Weave x2; Shadowy Assassin x1; Shadowy Assassin's x2; Shadowy Dirk x1; Shiv x1; Skull Charm x1; Skull Marked x3; Smashed War x1; Song: Battlecry x1; Spell: Cannibalize x1; Spell: Epitaph x1; Spell: Guard x1; Spell: Spirit x1; Spell: Words x1; Stralagite x1; Stratolite x1; Sunshard Ore x1; Sunshard Pebble x1; Tome of x5; Torn Page x1; Vah Shir x3; Velium Embossed x1; Velium Gemmed x1; Velium Warhammer x1; Warblade of x1; Windstone x1; Words of x1; Wretched Pauldrons x1
 2026-10-03 18:25:00 | +7410ms | tome-spike 0.1.0-spike.3 | [Ulin Velnik] dump OK for Ulin Velnik: 105 rows, 5 tomes, 100 other
+2026-10-03 18:28:32 | +7373ms | tome-spike 0.1.0-spike.3 | mode dump; vendor="Larquin Julinok" (merchant window label MW_MerchantName, bytes=Larquin Julinok); target(for comparison only, may be stale)="Larquin Julinok"; zone=poknowledge; character=Kylaeris; visible rows=104
+2026-10-03 18:28:32 | +7374ms | tome-spike 0.1.0-spike.3 | discipline scan: Me.CombatAbilityCount=unavailable; scanned up to slot 400; last filled slot=40
+2026-10-03 18:28:32 | +7374ms | tome-spike 0.1.0-spike.3 | known disciplines by Me.CombatAbility(index): 39: Focused Will Discipline; Resistant Discipline; Provoke; Fearless Discipline; Phantom Wind; Phantom Zephyr; Throw Stone; Bellow; Evasive Discipline; Charge Discipline; Defensive Discipline; Berate; Furious Discipline; Precision Discipline; Fortitude Discipline; Fellstrike Discipline; Aggressive Discipline; Stonewall Discipline; Incite; Spirit of Rage Discipline; Healing Will Discipline; Ashenhand Discipline; Earthwalk Discipline; Hundred Fists Discipline; Innerflame Discipline; Phantom Call; Phantom Echo; Planeswalk Discipline; Speed Focus Discipline; Stonestance Discipline; Thunderkick Discipline; Voiddance Discipline; Whirlwind Discipline; Silentfist Discipline; Mighty Strike Discipline; Bellow of the Mastruq; Elbow Strike; Commanding Voice; Champion's Aura
+2026-10-03 18:28:32 | +7374ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 1 | "Autumn Crocus" | qty=1 | price=0pp 8gp 3sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7374ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 2 | "Blue Diamond" | qty=1 | price=393pp 7gp 4sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7374ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 3 | "Bonded Loam" | qty=2 | price=131pp 2gp 5sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7375ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 4 | "Bone Chips" | qty=1 | price=0pp 0gp 1sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7375ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 5 | "Bubonian Bandage Turban" | qty=1 | price=5pp 2gp 5sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7375ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 6 | "Bubonian Bandage Turban (Enchanted)" | qty=2 | price=14pp 0gp 6sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7375ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 7 | "Bubonian Blood" | qty=1 | price=15pp 7gp 4sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7375ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 8 | "Bubonian Claws" | qty=1 | price=97pp 6gp 4sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7375ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 9 | "Bubonian Head" | qty=1 | price=70pp 8gp 7sp 5cp | lvl=--
+2026-10-03 18:28:32 | +7376ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 10 | "Card of Bristlebane" | qty=1 | price=7pp 5gp 5sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7376ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 11 | "Charred Dagger" | qty=1 | price=0pp 9gp 4sp 4cp | lvl=--
+2026-10-03 18:28:32 | +7376ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 12 | "Chunk of Condensed Flame" | qty=1 | price=0pp 9gp 2sp 7cp | lvl=--
+2026-10-03 18:28:32 | +7389ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 13 | "Consigned Bite of the Shissar IX" | qty=1 | price=0pp 6gp 2sp 1cp | lvl=--
+2026-10-03 18:28:32 | +7389ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 14 | "Crysotherium" | qty=2 | price=15pp 7gp 4sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7389ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 15 | "Dark Assassin Greaves" | qty=1 | price=3pp 9gp 8sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7390ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 16 | "Dark Steel Two Handed Sword (Enchanted)" | qty=1 | price=132pp 3gp 0sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7390ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 17 | "Dathor Scale Helm" | qty=4 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7390ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 18 | "Dathor Scale Helm (Enchanted)" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7390ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 19 | "Dathor Scale Helm (Legendary)" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7391ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 20 | "Death Mask of the Elysians" | qty=3 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7391ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 21 | "Death Mask of the Elysians (Enchanted)" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7391ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 22 | "Death Watcher's Shroud (Enchanted)" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7391ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 23 | "Death Watcher's Shroud (Legendary)" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7391ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 24 | "Diaku Forged Scimitar" | qty=3 | price=26pp 2gp 4sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7392ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 25 | "Diamond" | qty=2 | price=315pp 0gp 0sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7392ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 26 | "Dream Weaver Cloak (Enchanted)" | qty=1 | price=6pp 2gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7392ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 27 | "Dream Weaver Sandals" | qty=1 | price=3pp 0gp 4sp 4cp | lvl=--
+2026-10-03 18:28:32 | +7392ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 28 | "Dream Weaver Sleeves (Enchanted)" | qty=1 | price=3pp 4gp 6sp 4cp | lvl=--
+2026-10-03 18:28:32 | +7392ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 29 | "Dream Weaver Veil" | qty=1 | price=1pp 3gp 6sp 4cp | lvl=--
+2026-10-03 18:28:32 | +7393ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 30 | "Dream Weaver Webshield" | qty=1 | price=0pp 0gp 2sp 1cp | lvl=--
+2026-10-03 18:28:32 | +7393ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 31 | "Dreamstone" | qty=1 | price=354pp 3gp 7sp 4cp | lvl=--
+2026-10-03 18:28:32 | +7393ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 32 | "Elysian Gloves (Enchanted)" | qty=2 | price=8pp 8gp 2sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7393ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 33 | "Elysian Leggings" | qty=1 | price=5pp 4gp 5sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7393ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 34 | "Emberstone" | qty=4 | price=20pp 4gp 7sp 5cp | lvl=--
+2026-10-03 18:28:32 | +7394ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 35 | "Emerald Ring (Legendary)" | qty=1 | price=102pp 3gp 7sp 4cp | lvl=--
+2026-10-03 18:28:32 | +7394ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 36 | "Erudite Meat" | qty=1 | price=0pp 0gp 1sp 5cp | lvl=--
+2026-10-03 18:28:32 | +7394ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 37 | "Essence of Darkness" | qty=7 | price=5pp 2gp 5sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7394ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 38 | "Essence of Moonlight" | qty=1 | price=5pp 2gp 5sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7394ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 39 | "Fecund Luggald Flesh" | qty=1 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 18:28:32 | +7395ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 40 | "Flesh Eater's Eye" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7395ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 41 | "Frozen Long Sword of Permafrost" | qty=1 | price=38pp 7gp 4sp 5cp | lvl=--
+2026-10-03 18:28:32 | +7395ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 42 | "Gantru Charm" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7395ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 43 | "Gantru Charm (Enchanted)" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7396ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 44 | "Gantru Charm (Legendary)" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7396ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 45 | "Gantru Warmask" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7396ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 46 | "Ghast Fingerbones" | qty=1 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 18:28:32 | +7405ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 47 | "Glowing Orb of Luclinite" | qty=1 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 18:28:32 | +7405ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 48 | "Half of Rallos' Plans" | qty=1 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 18:28:32 | +7406ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 49 | "Helm of Raldukan" | qty=2 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7406ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 50 | "Hive Fiend's Brain" | qty=2 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7406ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 51 | "Indicolite" | qty=1 | price=15pp 7gp 4sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7406ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 52 | "Iolite" | qty=3 | price=275pp 6gp 2sp 5cp | lvl=--
+2026-10-03 18:28:32 | +7407ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 53 | "Living Fragment of Fire" | qty=1 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 18:28:32 | +7407ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 54 | "Luclinite" | qty=1 | price=133pp 8gp 7sp 5cp | lvl=--
+2026-10-03 18:28:32 | +7407ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 55 | "Mace of the Fallen Crusader" | qty=1 | price=5pp 8gp 1sp 6cp | lvl=--
+2026-10-03 18:28:32 | +7407ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 56 | "Mace of the Fallen Crusader (Legendary)" | qty=1 | price=28pp 4gp 3sp 1cp | lvl=--
+2026-10-03 18:28:32 | +7408ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 57 | "Modest Binding Powder" | qty=1 | price=2pp 3gp 6sp 2cp | lvl=--
+2026-10-03 18:28:32 | +7408ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 58 | "Nilitim's Grimoire Pg. 35" | qty=1 | price=5pp 0gp 4sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7408ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 59 | "Old Dragon Horn" | qty=1 | price=25pp 1gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7408ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 60 | "Phosphorous Powder" | qty=9 | price=3pp 3gp 0sp 7cp | lvl=--
+2026-10-03 18:28:32 | +7408ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 61 | "Pirate's Seal" | qty=1 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 18:28:32 | +7408ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 62 | "Platinum Gem Dusted Rune" | qty=1 | price=5pp 3gp 5sp 5cp | lvl=--
+2026-10-03 18:28:32 | +7409ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 63 | "Pliable Goo" | qty=7 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 18:28:32 | +7409ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 64 | "Polished Serpent Scale" | qty=1 | price=31pp 4gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7409ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 65 | "Pondweed" | qty=1 | price=10pp 5gp 0sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7409ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 66 | "Rhodocrosite" | qty=4 | price=3pp 9gp 3sp 7cp | lvl=--
+2026-10-03 18:28:32 | +7409ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 67 | "Rune of Conjunction" | qty=1 | price=7pp 7gp 6sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7410ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 68 | "Rune of Synergy" | qty=4 | price=7pp 3gp 4sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7410ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 69 | "Rune of the Cyclone" | qty=1 | price=2pp 7gp 2sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7410ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 70 | "Shadow Weave Ring (Enchanted)" | qty=2 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7410ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 71 | "Shadowy Assassin Sash" | qty=1 | price=2100pp 0gp 0sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7411ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 72 | "Shadowy Assassin Sash (Enchanted)" | qty=1 | price=2100pp 0gp 0sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7411ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 73 | "Shadowy Assassin's Cape" | qty=3 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7411ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 74 | "Shadowy Assassin's Cape (Enchanted)" | qty=3 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7411ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 75 | "Shadowy Assassin's Cape (Legendary)" | qty=3 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7411ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 76 | "Shadowy Dirk" | qty=1 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7411ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 77 | "Shiv" | qty=1 | price=0pp 7gp 1sp 8cp | lvl=--
+2026-10-03 18:28:32 | +7412ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 78 | "Skull Charm (Enchanted)" | qty=1 | price=16pp 6gp 9sp 5cp | lvl=--
+2026-10-03 18:28:32 | +7412ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 79 | "Skull Marked Shield" | qty=2 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7412ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 80 | "Skull Marked Shield (Enchanted)" | qty=3 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7422ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 81 | "Slate Powder" | qty=1 | price=0pp 1gp 5sp 7cp | lvl=--
+2026-10-03 18:28:32 | +7423ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 82 | "Soluble Loam" | qty=1 | price=262pp 5gp 0sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7423ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 83 | "Spell: Disinfecting Aura" | qty=1 | price=76pp 2gp 9sp 0cp | lvl= 52
+2026-10-03 18:28:32 | +7423ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 84 | "Spell: Epitaph of Life" | qty=1 | price=77pp 0gp 7sp 4cp | lvl= 52
+2026-10-03 18:28:32 | +7423ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 85 | "Spell: Plague of Insects" | qty=1 | price=89pp 3gp 6sp 7cp | lvl= 54
+2026-10-03 18:28:32 | +7423ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 86 | "Spell: Succussion of Shadows" | qty=1 | price=88pp 8gp 4sp 4cp | lvl= 54
+2026-10-03 18:28:32 | +7424ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 87 | "Spell: Words of Tranquility" | qty=1 | price=88pp 3gp 2sp 8cp | lvl= 54
+2026-10-03 18:28:32 | +7424ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 88 | "Spirit-Touched Phased Spider Thorax" | qty=1 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 18:28:32 | +7424ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 89 | "Sunshard Ore" | qty=1 | price=0pp 0gp 7sp 8cp | lvl=--
+2026-10-03 18:28:32 | +7424ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 90 | "Sunshard Pebble" | qty=1 | price=0pp 0gp 1sp 5cp | lvl=--
+2026-10-03 18:28:32 | +7424ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 91 | "Tegi Scales" | qty=2 | price=9pp 4gp 5sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7425ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 92 | "Tome of Deftdance Discipline" | qty=-- | price=82pp 4gp 5sp 2cp | lvl= 55 | derived="Deftdance Discipline" | in known list=no | Me.CombatAbility(derived)=nil Name=nil
+2026-10-03 18:28:32 | +7425ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 93 | "Tome of Fearless Discipline" | qty=-- | price=21pp 0gp 9sp 0cp | lvl= 40 | derived="Fearless Discipline" | in known list=YES | Me.CombatAbility(derived)=4 Name=nil
+2026-10-03 18:28:32 | +7425ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 94 | "Tome of Puretone Discipline" | qty=-- | price=117pp 4gp 9sp 2cp | lvl= 60 | derived="Puretone Discipline" | in known list=no | Me.CombatAbility(derived)=nil Name=nil
+2026-10-03 18:28:32 | +7426ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 95 | "Tome of Resistant Discipline" | qty=-- | price=6pp 9gp 9sp 7cp | lvl= 30 | derived="Resistant Discipline" | in known list=YES | Me.CombatAbility(derived)=2 Name=nil
+2026-10-03 18:28:32 | +7426ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 96 | "Umbracite" | qty=1 | price=188pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7426ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 97 | "Unwavering Sword of Faith" | qty=1 | price=0pp 0gp 0sp 2cp | lvl=--
+2026-10-03 18:28:32 | +7426ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 98 | "Vah Shir Skin Robe" | qty=2 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7427ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 99 | "Vah Shir Skin Robe (Enchanted)" | qty=2 | price=209pp 9gp 9sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7427ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 100 | "Warblade of the Fallen (Enchanted)" | qty=1 | price=2100pp 0gp 0sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7427ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 101 | "Warblade of the Fallen (Legendary)" | qty=1 | price=2100pp 0gp 0sp 0cp | lvl=--
+2026-10-03 18:28:32 | +7427ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 102 | "Windstone" | qty=5 | price=26pp 7gp 7sp 4cp | lvl=--
+2026-10-03 18:28:32 | +7428ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 103 | "Words of Anguish" | qty=1 | price=6pp 7gp 1sp 9cp | lvl=--
+2026-10-03 18:28:32 | +7428ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] row 104 | "Words of Convocation" | qty=1 | price=0pp 5gp 2sp 5cp | lvl=--
+2026-10-03 18:28:32 | +7428ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] summary: 104 rows; 4 start with "Tome of "; 100 other rows; the discipline named by the tome is in the known list for 2, not for 2; name prefixes: Autumn Crocus x1; Blue Diamond x1; Bonded Loam x1; Bone Chips x1; Bubonian Bandage x2; Bubonian Blood x1; Bubonian Claws x1; Bubonian Head x1; Card of x1; Charred Dagger x1; Chunk of x1; Consigned Bite x1; Crysotherium x1; Dark Assassin x1; Dark Steel x1; Dathor Scale x3; Death Mask x2; Death Watcher's x2; Diaku Forged x1; Diamond x1; Dream Weaver x5; Dreamstone x1; Elysian Gloves x1; Elysian Leggings x1; Emberstone x1; Emerald Ring x1; Erudite Meat x1; Essence of x2; Fecund Luggald x1; Flesh Eater's x1; Frozen Long x1; Gantru Charm x3; Gantru Warmask x1; Ghast Fingerbones x1; Glowing Orb x1; Half of x1; Helm of x1; Hive Fiend's x1; Indicolite x1; Iolite x1; Living Fragment x1; Luclinite x1; Mace of x2; Modest Binding x1; Nilitim's Grimoire x1; Old Dragon x1; Phosphorous Powder x1; Pirate's Seal x1; Platinum Gem x1; Pliable Goo x1; Polished Serpent x1; Pondweed x1; Rhodocrosite x1; Rune of x3; Shadow Weave x1; Shadowy Assassin x2; Shadowy Assassin's x3; Shadowy Dirk x1; Shiv x1; Skull Charm x1; Skull Marked x2; Slate Powder x1; Soluble Loam x1; Spell: Disinfecting x1; Spell: Epitaph x1; Spell: Plague x1; Spell: Succussion x1; Spell: Words x1; Spirit-Touched Phased x1; Sunshard Ore x1; Sunshard Pebble x1; Tegi Scales x1; Tome of x4; Umbracite x1; Unwavering Sword x1; Vah Shir x2; Warblade of x2; Windstone x1; Words of x2
+2026-10-03 18:28:32 | +7428ms | tome-spike 0.1.0-spike.3 | [Larquin Julinok] dump OK for Larquin Julinok: 104 rows, 4 tomes, 100 other
