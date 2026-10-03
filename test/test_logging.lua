@@ -44,6 +44,16 @@ local SCENARIOS = {
         logsRaw = dir, rootRaw = dir, logsUnreadable = true, nonSpells = { 'Pickled Cat Food' },
         spells = { { name = 'Alpha', price = 100 }, { name = 'Beta', price = 200 }, { name = 'Gamma', price = 300 } },
         reorderAfterBuy = true } end,
+    -- Plane of Knowledge spree over two vendors; the second buys nothing (the case that
+    -- slipped through in the first live log: vendor 2's outcome line showed vendor 1's totals).
+    spree = function(dir) return {
+        logsRaw = dir, rootRaw = dir, zone = 'poknowledge', checkClass = 'Cleric',
+        clickPrefix = 'Run Shopping Spree',
+        vendors = {
+            ['Vicar Ceraen'] = { nonSpells = { 'Pickled Cat Food' },
+                spells = { { name = 'Alpha', price = 100 }, { name = 'Beta', price = 200 }, { name = 'Gamma', price = 300 } } },
+            ['Vicar Thiran'] = { nonSpells = { 'Pickled Cat Food' } },
+        } } end,
     relative = function(dir) return {
         logsRaw = 'Logs', rootRaw = dir, spells = { { name = 'Alpha', price = 100 } } } end,
 }
@@ -122,9 +132,27 @@ local TESTS = {
           local r = c.reorder
           local outcomes = grep(r.lines, 'Run outcome (Bazaar)')
           if #outcomes ~= 1 then return false, 'expected exactly one Run outcome line, got ' .. #outcomes end
-          local want = string.format('bought=%d,', #r.sim.purchases)
+          local want = string.format('This vendor: bought=%d,', #r.sim.purchases)
           if not outcomes[1]:find(want, 1, true) then return false, 'outcome line lacks "' .. want .. '": ' .. outcomes[1] end
           if not outcomes[1]:find('state=Done', 1, true) then return false, 'outcome line lacks state=Done' end
+          return true
+      end },
+
+    { id = 'T11', src = 'D-009 R18 and ledger Open item 12: in the live log vendor 2 (bought nothing) reported the totals of vendor 1; expected counts are the per-vendor purchase record kept by the mock',
+      fn = function(c)
+          local r = c.spree
+          local v1 = #(r.sim.purchasesByVendor['Vicar Ceraen'] or {})
+          local v2 = #(r.sim.purchasesByVendor['Vicar Thiran'] or {})
+          if v1 ~= 3 or v2 ~= 0 then return false, string.format('scenario sanity: mock bought %d at vendor 1 and %d at vendor 2 (expected 3 and 0)', v1, v2) end
+          local o1 = grep(r.lines, 'Run outcome (Nav & Shop "Vicar Ceraen")')
+          local o2 = grep(r.lines, 'Run outcome (Nav & Shop "Vicar Thiran")')
+          if #o1 ~= 1 or #o2 ~= 1 then return false, string.format('expected one outcome line per vendor, got %d and %d', #o1, #o2) end
+          for _, w in ipairs({ 'This vendor: bought=3,', 'Spree total so far: bought=3,' }) do
+              if not o1[1]:find(w, 1, true) then return false, 'vendor 1 line lacks "' .. w .. '": ' .. o1[1] end
+          end
+          for _, w in ipairs({ 'This vendor: bought=0,', 'Spree total so far: bought=3,' }) do
+              if not o2[1]:find(w, 1, true) then return false, 'vendor 2 line lacks "' .. w .. '": ' .. o2[1] end
+          end
           return true
       end },
 
@@ -219,6 +247,9 @@ local MUTATIONS = {
       from = "if color == COLOR_ERR then level = 'ERROR' elseif", to = "if false then level = 'ERROR' elseif" },
     { name = 'startup stops logging build identity', fails = { 'T2' },
       from = "logObs(string.format('session start: build=v%s", to = "local _ = (string.format('session start: build=v%s" },
+    { name = 'outcome line prints the accumulated totals as the result of this vendor', fails = { 'T11' },
+      from = "S.bought - before.bought, S.skipped - before.skipped, formatCoin(S.spentCopper - before.spent),",
+      to = "S.bought, S.skipped, formatCoin(S.spentCopper)," },
     { name = 'known-limits statement removed', fails = { 'T9' },
       from = "logObs('known limits:", to = "local _ = ('known limits:" },
 }

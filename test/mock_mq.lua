@@ -20,7 +20,10 @@ end
 --       else only after the vendor is closed and reopened), stackOnExisting
 --       (bool: a bought scroll stacks onto an existing copy), preScrolls
 --       (names already sitting unscribed in bag 1), scribeRejectFirst (n),
---       logsRaw / rootRaw / logsUnreadable (log path scenarios), zone.
+--       logsRaw / rootRaw / logsUnreadable (log path scenarios), zone,
+--       vendors = { [npcName] = { spells=, nonSpells= } } (Plane of Knowledge
+--       shopping spree: each NPC has its own stock; click the Cleric class box,
+--       then Run Shopping Spree; NPCs not listed are absent from the zone).
 function M.new(opts)
     local sim = {
         opts = opts, clockMs = 0, cmds = {}, prints = {}, merchantOpen = true,
@@ -30,13 +33,23 @@ function M.new(opts)
     sim.money = opts.money or 10000000
 
     -- merchant rows, in vendor order
-    sim.rows = {}
-    local id = 1000
-    for _, n in ipairs(opts.nonSpells or {}) do
-        id = id + 1; sim.rows[#sim.rows + 1] = { name = n, id = id, price = 5 }
+    local function buildRows(spec)
+        local rows, id = {}, 1000
+        for _, n in ipairs(spec.nonSpells or {}) do
+            id = id + 1; rows[#rows + 1] = { name = n, id = id, price = 5 }
+        end
+        for _, sp in ipairs(spec.spells or {}) do
+            id = id + 1; rows[#rows + 1] = { name = 'Spell: ' .. sp.name, id = id, price = sp.price or 100 }
+        end
+        return rows
     end
-    for _, sp in ipairs(opts.spells or {}) do
-        id = id + 1; sim.rows[#sim.rows + 1] = { name = 'Spell: ' .. sp.name, id = id, price = sp.price or 100 }
+    sim.rows = buildRows(opts)
+    sim.vendorName = nil
+    sim.vendorIds = {}              -- npc name -> spawn id (PoK scenarios)
+    sim.purchasesByVendor = {}      -- npc name -> { scroll names bought there }
+    do
+        local n = 0
+        for name in pairs(opts.vendors or {}) do n = n + 1; sim.vendorIds[name] = 7000 + n end
     end
 
     local function rebuildVisible()
@@ -92,6 +105,11 @@ function M.new(opts)
             if r and sim.merchantOpen and sim.money >= r.price then
                 sim.money = sim.money - r.price
                 sim.purchases[#sim.purchases + 1] = r.name
+                if sim.vendorName then
+                    local list = sim.purchasesByVendor[sim.vendorName] or {}
+                    list[#list + 1] = r.name
+                    sim.purchasesByVendor[sim.vendorName] = list
+                end
                 local existing
                 if opts.stackOnExisting then
                     for s = 1, 10 do if sim.bag[s] and sim.bag[s].name == r.name then existing = sim.bag[s] end end
@@ -132,8 +150,25 @@ function M.new(opts)
         if cmd == '/notify MerchantWnd MW_UsableButton leftmouseup' then sim.usableChecked = not sim.usableChecked; return end
         local tid = cmd:match('^/target id (%d+)$')
         if tid then sim.targetId = tonumber(tid); return end
+        local tnpc = cmd:match('^/target npc "=(.+)"$')
+        if tnpc then
+            if sim.vendorIds[tnpc] then sim.targetId = sim.vendorIds[tnpc] end
+            return
+        end
         if cmd == '/click right target' then
-            if sim.targetId == 4242 then sim.merchantOpen = true; rebuildVisible() end
+            if opts.vendors then
+                for name, vid in pairs(sim.vendorIds) do
+                    if vid == sim.targetId then
+                        sim.vendorName = name
+                        sim.rows = buildRows(opts.vendors[name])
+                        sim.merchantOpen = true
+                        sim.known = sim.known   -- scribed spells stay known across vendors
+                        rebuildVisible()
+                    end
+                end
+            elseif sim.targetId == 4242 then
+                sim.merchantOpen = true; rebuildVisible()
+            end
             return
         end
         -- /windowstate etc: accepted, no model
@@ -204,11 +239,19 @@ function M.new(opts)
         Merchant = {},
         Target = {
             ID = function() return sim.targetId end,
-            CleanName = function() return 'Sim Vendor' end,
+            CleanName = function()
+                for name, vid in pairs(sim.vendorIds) do if vid == sim.targetId then return name end end
+                return 'Sim Vendor'
+            end,
             Name = function() return 'Sim_Vendor00' end,
         },
         Navigation = { Active = function() return false end, MeshLoaded = function() return true end },
-        Spawn = function() return node(nil) end,
+        Spawn = function(q)
+            local nm = tostring(q):match('"=(.-)"')
+            local vid = nm and sim.vendorIds[nm]
+            if vid then return node(true, { ID = function() return vid end }) end
+            return node(nil)
+        end,
     }
     setmetatable(mq.TLO.Merchant, { __index = function(_, k)
         if k == 'SelectedItem' then
@@ -229,7 +272,14 @@ function M.new(opts)
         end
         return false
     end
-    function ImGui.Checkbox(_, v) return v, false end
+    -- opts.checkClass = 'Cleric': tick that class's whole row once (PoK spree scenario)
+    function ImGui.Checkbox(label, v)
+        if opts.checkClass and not sim.classChecked and label == '##class_' .. opts.checkClass then
+            sim.classChecked = true
+            return true, true
+        end
+        return v, false
+    end
     function ImGui.TreeNode() return false end
     function ImGui.IsWindowHovered() return false end
     function ImGui.GetWindowPos() return 0, 0 end
