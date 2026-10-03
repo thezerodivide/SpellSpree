@@ -44,6 +44,10 @@ These add to the Development Protocol for this project only.
   the developer to act or wait, the cue is unmissable and the chat window is not spammed:
   chat gets only the cue and a final "done"; everything else goes to the log file. The P-1
   handoff review checks this too.
+- **P-6. Second-agent review loop (developer, 2026-10-03; D-015).** When another agent reviews
+  a proposal, the AI evaluates each recommendation on its merits and agrees or disagrees, with
+  reasons the developer can take back to that agent. It does not accept a change because it was
+  recommended. Rounds repeat until all parties agree; each round is recorded in the decision log.
 
 ## Sibling projects (Development Protocol §21)
 

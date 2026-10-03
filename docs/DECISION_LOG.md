@@ -29,6 +29,7 @@ Entries that supersede a specification item. Read this first.
 | D-012 | 2026-10-03 | Problem: spell vendors do not match the level tiers the script offers | problem confirmed by the developer; design question open (see addendum) |
 | D-013 | 2026-10-03 | Requirement: tier boxes become level ranges that buy only their own levels | requirement agreed; not built |
 | D-014 | 2026-10-03 | Design proposal: list-then-buy replaces repeat passes | proposed; awaiting developer approval per item |
+| D-015 | 2026-10-03 | Second-agent review loop: evaluate each recommendation, agree or disagree with reasons | confirmed |
 
 ---
 
@@ -1374,3 +1375,49 @@ Appended; the entry above is unchanged.
   tries (the number is an implementation value, not tuned), then skip the item and log why.
   Recommendation: yes. Evidence: the failure mode exists; the cost of a wrong purchase is spent
   currency on an item that is not wanted.
+
+---
+
+## D-015 — Second-agent review loop: evaluate each recommendation, agree or disagree with reasons
+
+**Date:** 2026-10-03 · **Status:** confirmed · **Supersedes:** nothing; applies Development
+Protocol section 13 (push back; do not agree to be agreeable) to proposals reviewed by another agent.
+
+### Story
+
+The developer will have another agent review the AI's proposals (first: the list-then-buy design,
+D-014, and the open decisions A-K) and make recommendations. The developer asked that the AI not
+accept a change simply because the other agent recommended it.
+
+### Requirement
+
+- R25. For each recommendation from the reviewing agent, the AI **evaluates it on the merits and
+  either agrees or disagrees**. If it disagrees, it says why, in a form the developer can take back
+  to the other agent. The loop repeats until the developer, the AI and the reviewing agent reach
+  consensus on every item. *(Developer, 2026-10-03.)*
+
+### Design choices
+
+None beyond R25.
+
+### Implementation choices
+
+- The AI checks any claim it can check against the live logs or the MacroQuest source before
+  answering, and says which it checked and which it could not.
+- Each round is recorded in the decision log (item, the reviewer's recommendation, the AI's
+  position and reasons, status) as an addendum to the decision under review. Nothing is promoted to
+  an agreed requirement until the developer says so.
+- An item stays open until all three parties agree; the AI does not drop its position without a
+  reason, and does not hold it without one.
+
+### Open
+
+- None.
+
+### Not yet verified
+
+- Nothing; this is a process rule.
+
+### Dependencies and shared seams
+
+- First applied to D-014 (items A, B, C, D, F, G, H) and D-013 (items I, J), plus K.
