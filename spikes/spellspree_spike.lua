@@ -20,7 +20,7 @@
 -- ============================================================================
 local mq = require('mq')
 
-local SPIKE_VERSION = '0.1.0-spike.1'
+local SPIKE_VERSION = '0.1.0-spike.2'
 local args = { ... }
 local mode = tostring(args[1] or 'probe'):lower()
 
@@ -332,6 +332,19 @@ elseif mode == 'watch' then
         log('no spell name given; using the first scroll in the list: ' .. tostring(want))
     end
     local bookName = trim(tostring(want):gsub('^Spell:%s*', ''):gsub('^Song:%s*', ''))
+    -- The watch is only worth running if the spell is on the vendor's list right now.
+    local startRow = tonumber(tlo(function() return itemList().List('=' .. tostring(want) .. ',' .. nameCol)() end))
+    if not startRow then
+        local frag, hits = bookName:lower(), {}
+        for r = 1, rows do
+            if names[r] and names[r]:lower():find(frag, 1, true) then hits[#hits + 1] = string.format('row %d: %q', r, names[r]) end
+        end
+        log(string.format('NOT WATCHING: %q is not on the vendor list right now (exact match). Is it already scribed, or is the name different? Rows containing %q: %s',
+            tostring(want), bookName, #hits > 0 and table.concat(hits, '; ') or 'none'))
+        log('Nothing was done. Run again with a name from the list, exactly as shown.')
+        return
+    end
+    log(string.format('%q is on the vendor list at row %d.', tostring(want), startRow))
     log(string.format('--- Q5: watching %q for %d s. BUY AND SCRIBE THAT ONE SPELL BY HAND NOW; do nothing else in the vendor window. ---', tostring(want), seconds))
     mq.cmd('/echo [spike] watching ' .. tostring(want) .. ' -- buy and scribe it by hand now')
 
