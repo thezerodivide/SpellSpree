@@ -21,6 +21,13 @@ end
 --       (bool: a bought scroll stacks onto an existing copy), preScrolls
 --       (names already sitting unscribed in bag 1), scribeRejectFirst (n),
 --       logsRaw / rootRaw / logsUnreadable (log path scenarios), zone,
+--       Step 1 (list-then-buy, D-017) scenarios, all of them models of what the live logs showed:
+--         spells[i].level (the Lvl column); staleMs (a scribed row stays in the list that long);
+--         partialAtOpen = { rows=, untilMs= } (the visible count is small right after open);
+--         neverSettles (the count keeps changing); events = { {atMs=, kind='vanish'|'appear', name=, price=} };
+--         misselect = { name=, times= } (a click on that row selects a different row that many times);
+--         driftOnce = { name=, afterMs= } (the selection moves away from that item shortly after it is made);
+--         stopAtMs (the Stop button is pressed once at that simulated time).
 --       manualBuy = { name=, buyAtMs=, scribeAtMs=, removeAtMs= } (the developer buys and
 --       scribes one spell by hand while the spike watches; the row leaves the list late),
 --       vendors = { [npcName] = { spells=, nonSpells= } } (Plane of Knowledge
@@ -30,7 +37,7 @@ function M.new(opts)
     local sim = {
         opts = opts, clockMs = 0, cmds = {}, prints = {}, merchantOpen = true,
         usableChecked = true, known = {}, targetId = 4242, finished = false,
-        scribeRejects = opts.scribeRejectFirst or 0, delays = 0, purchases = {},
+        scribeRejects = opts.scribeRejectFirst or 0, delays = 0, purchases = {}, buyClicks = {}, pending = {}, ticks = {},
     }
     sim.money = opts.money or 10000000
 
@@ -41,7 +48,7 @@ function M.new(opts)
             id = id + 1; rows[#rows + 1] = { name = n, id = id, price = 5 }
         end
         for _, sp in ipairs(spec.spells or {}) do
-            id = id + 1; rows[#rows + 1] = { name = 'Spell: ' .. sp.name, id = id, price = sp.price or 100 }
+            id = id + 1; rows[#rows + 1] = { name = 'Spell: ' .. sp.name, id = id, price = sp.price or 100, level = sp.level }
         end
         return rows
     end
@@ -99,11 +106,23 @@ function M.new(opts)
         local row = cmd:match('^/notify MerchantWnd ItemList listselect (%d+)$')
         if row then
             local r = sim.visible[tonumber(row)]
-            if r then sim.selected = r end
+            if r and opts.misselect and r.name == opts.misselect.name and (sim.misselected or 0) < (opts.misselect.times or 1) then
+                -- the list shifted under the click: a different row ends up selected
+                sim.misselected = (sim.misselected or 0) + 1
+                local other = sim.visible[tonumber(row) % #sim.visible + 1]
+                if other then sim.selected = other; return end
+            end
+            if r then
+                sim.selected = r
+                if opts.driftOnce and r.name == opts.driftOnce.name and not sim.drifted and not sim.driftAt then
+                    sim.driftAt = sim.clockMs + (opts.driftOnce.afterMs or 200)
+                end
+            end
             return
         end
         if cmd == '/notify MerchantWnd MW_Buy_Button leftmouseup' then
             local r = sim.selected
+            if r then sim.buyClicks[r.name] = (sim.buyClicks[r.name] or 0) + 1 end
             if r and sim.merchantOpen and sim.money >= r.price then
                 sim.money = sim.money - r.price
                 sim.purchases[#sim.purchases + 1] = r.name
@@ -139,6 +158,8 @@ function M.new(opts)
                     for i, r in ipairs(sim.visible) do
                         if r.name == it.name then table.remove(sim.visible, i); break end
                     end
+                elseif opts.staleMs then
+                    sim.pending[#sim.pending + 1] = { name = it.name, atMs = sim.clockMs + opts.staleMs }
                 end
             end
             return
@@ -181,7 +202,7 @@ function M.new(opts)
     if opts.manualBuy then
         local mb, done = opts.manualBuy, {}
         local function find(list) for i, r in ipairs(list) do if r.name == mb.name then return i, r end end end
-        sim.tick = function()
+        sim.ticks[#sim.ticks + 1] = function()
             if not done.buy and sim.clockMs >= mb.buyAtMs then
                 done.buy = true
                 local _, r = find(sim.rows)
@@ -200,6 +221,46 @@ function M.new(opts)
                 if i then table.remove(sim.visible, i) end
             end
         end
+    end
+
+    -- timed changes to the vendor list (Step 1 scenarios)
+    sim.ticks[#sim.ticks + 1] = function()
+        for _, ev in ipairs(opts.events or {}) do
+            if not ev.done and sim.clockMs >= ev.atMs then
+                ev.done = true
+                if ev.kind == 'vanish' then
+                    for i, r in ipairs(sim.visible) do if r.name == ev.name then table.remove(sim.visible, i); break end end
+                    for i, r in ipairs(sim.rows) do if r.name == ev.name then table.remove(sim.rows, i); break end end
+                elseif ev.kind == 'appear' then
+                    local r = { name = ev.name, id = 9000 + #sim.rows, price = ev.price or 100, level = ev.level }
+                    sim.rows[#sim.rows + 1] = r
+                    sim.visible[#sim.visible + 1] = r
+                end
+            end
+        end
+        for _, p in ipairs(sim.pending) do
+            if not p.done and sim.clockMs >= p.atMs then
+                p.done = true
+                for i, r in ipairs(sim.visible) do if r.name == p.name then table.remove(sim.visible, i); break end end
+            end
+        end
+        if sim.driftAt and sim.clockMs >= sim.driftAt and not sim.drifted then
+            sim.drifted = true
+            local cur = sim.selected
+            for i, r in ipairs(sim.visible) do
+                if r == cur then sim.selected = sim.visible[i % #sim.visible + 1]; break end
+            end
+        end
+    end
+    sim.tick = function() for _, f in ipairs(sim.ticks) do f() end end
+
+    -- the row count the list reports (can be small right after open, or never stable)
+    function sim.visibleCount()
+        if opts.neverSettles then return #sim.visible + (sim.delays % 2) end
+        if opts.partialAtOpen and sim.clockMs < opts.partialAtOpen.untilMs then
+            return math.min(#sim.visible, opts.partialAtOpen.rows)
+        end
+        return #sim.visible
     end
 
     -- ---------------------------------------------------------------- mq
@@ -225,7 +286,7 @@ function M.new(opts)
                 Child = function(cn)
                     if cn == 'ItemList' then
                         return node(true, {
-                            Items = function() return #sim.visible end,
+                            Items = function() return sim.visibleCount() end,
                             SelectedIndex = function()
                                 for i, r in ipairs(sim.visible) do if r == sim.selected then return i end end
                             end,
@@ -238,15 +299,26 @@ function M.new(opts)
                                 col = tonumber(col)
                                 if not body then return ret(nil) end
                                 if tonumber(body) then
+                                    if tonumber(body) > sim.visibleCount() then return ret(nil) end
                                     local r = sim.visible[tonumber(body)]
                                     if not r then return ret(nil) end
-                                    if col == 1 then return ret('') elseif col == 2 then return ret(r.name) elseif col == 3 then return ret(tostring(r.price) .. 'cp') end
+                                    -- columns as in the live window: icon, name, Qty, platinum, gold, silver, copper, Lvl
+                                    local P = r.price
+                                    if col == 1 then return ret('')
+                                    elseif col == 2 then return ret(r.name)
+                                    elseif col == 3 then return ret('--')
+                                    elseif col == 4 then return ret(tostring(math.floor(P / 1000)))
+                                    elseif col == 5 then return ret(tostring(math.floor((P % 1000) / 100)))
+                                    elseif col == 6 then return ret(tostring(math.floor((P % 100) / 10)))
+                                    elseif col == 7 then return ret(tostring(P % 10))
+                                    elseif col == 8 then return ret(r.level and string.format('%3d', r.level) or '--') end
                                     return ret(nil)
                                 end
                                 if col ~= 2 then return ret(nil) end
                                 local exact = body:sub(1, 1) == '='
                                 local want = (exact and body:sub(2) or body):lower()
                                 for i, r in ipairs(sim.visible) do
+                                    if i > sim.visibleCount() then break end
                                     local nm = r.name:lower()
                                     if (exact and nm == want) or (not exact and nm:sub(1, #want) == want) then return ret(i) end
                                 end
@@ -357,6 +429,10 @@ function M.new(opts)
     sim.clickPrefix = opts.clickPrefix or 'Buy From Open Vendor'
     function ImGui.Begin(_, open) return (not sim.finished), true end
     function ImGui.Button(label)
+        if label == 'Stop' and opts.stopAtMs and not sim.stopped and sim.clockMs >= opts.stopAtMs then
+            sim.stopped = true
+            return true
+        end
         if sim.clickPrefix and label:sub(1, #sim.clickPrefix) == sim.clickPrefix then
             sim.clickPrefix = nil
             return true
