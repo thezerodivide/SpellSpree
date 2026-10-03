@@ -40,6 +40,7 @@ Entries that supersede a specification item. Read this first.
 | D-023 | 2026-10-03 | A question is not permission to change anything | confirmed |
 | D-024 | 2026-10-03 | Adopt TDD with ChatGPT's guardrails, beginning with Step 3 | adopted by the developer |
 | D-025 | 2026-10-03 | Step 3 design proposal: purchases bounded by the selected level range | proposed; ChatGPT review and developer approval pending |
+| D-026 | 2026-10-03 | Proposal: a test hook for directly testable units (the testing infrastructure, before Step 3) | proposed; ChatGPT review and developer approval pending |
 
 ---
 
@@ -2418,3 +2419,69 @@ D-020 addendum: the user must decide which spells are bought). The Lvl (column 8
 ### Dependencies and shared seams
 - Builds on Step 1's built list and Step 2's second visit; changes the expected results of Step 2's `S1`, the logging suite's PoK
   scenarios and the eligibility check's PoK scenario (data and expectations, each explained in the step's addendum).
+
+### D-024 addendum (2026-10-03): the AI's claim about test speed was wrong; measured numbers
+
+Appended; earlier text is unchanged. The AI said the scenario suites take "one to three minutes" and used that as a reason for
+the faster-testing refactor. It had not measured them. **Measured (wall clock, this machine):** `test_listthenbuy` 1.0 s
+(baseline only) and 9.7 s with its mutation checks; `test_logging` 2.3 s; `test_step2` 5.2 s baseline and **36 s** with
+mutations. One scenario costs about 70 ms wall (CPU 0.07 s; 0.01 s with file logging off); `os.execute` costs about 10-14 ms.
+The slow part of `test_step2` is `S6`: its scenario (no vendor configured) ends in "No vendors selected" without the summary line
+the harness waits for, so the run continues until the harness's 400,000-delay runaway guard, about 5 s, repeated in every
+mutation run. That is a harness termination problem, not a property of the script or the mock.
+
+---
+
+## D-026 — Proposal: a test hook for directly testable units (the testing infrastructure, before Step 3)
+
+**Date:** 2026-10-03 · **Status:** **proposed; not approved.** Each item A-F is for the developer to approve, change or reject on
+its own, after review by ChatGPT (D-015). **Would implement** D-024 R39 (the testability refactor, which D-024 made a separate
+proposal) and the developer's decision, 2026-10-03, to build it before Step 3: "That infrastructure will help with every step or
+feature going forward." Nothing is built.
+
+### Story
+D-024 adopted TDD and kept the testability refactor out of Step 3. Today every test runs the whole script against the mock, so a
+test of one small rule (a level check, a coin format, the ledger) depends on the mock's modeled behavior (`docs/MOCK_MODEL.md`)
+and its failure points at a scenario, not a function. The suites are not slow (D-024 addendum): the benefit of a refactor is
+isolation and precision, not speed. The script is one file that runs its window and main loop when loaded; its helpers are local
+functions, so a test cannot call them.
+
+### Requirement
+- D-024 R36-R39 (TDD; the refactor is its own reviewed change). **Developer, 2026-10-03:** build the testing infrastructure first.
+
+### Design choices (the developer approves each separately)
+- **A. A test hook, nothing moved.** Just before the script creates its window (`mq.imgui.init`), a guarded block runs only if a
+  global `SPELLSPREE_UNIT` table exists: it copies references to selected local functions into that table and returns from the
+  chunk, so no window, no events and no main loop start. With the global unset (production, and every existing scenario test) the
+  block does nothing. No existing code is moved or rewritten.
+- **B. Initial exports.** The pure helpers (`parseCopperFromText`, `withCommas`, `formatCoin`, `formatCoinPPOnly`, `isScrollName`,
+  `parseClassLine`), and the outcome ledger as it already is (`setOutcome`, `markRemainingNotAttempted`, `logLedger`, the `OUTCOME`
+  table) with the state table `S`. Later steps add their own (Step 3: the tier-range and level-in-range functions).
+- **C. Characterization unit tests first (TDD).** A new `test/unit_*.lua` loads the script with the hook and a minimal stub of
+  `mq`/`ImGui` and tests the exported functions directly with explicit inputs, citing the decision each behavior comes from
+  (coin formatting and the ledger: D-009, D-017 F''; scroll naming: the original script's rule). They are written before the hook,
+  and their red run (hook missing) is recorded.
+- **D. No behavior change, proven.** With the hook unset the script behaves exactly as before: the three existing suites and the
+  eligibility check pass unchanged, and a mechanical check shows the only difference in `spellspree.lua` is the guarded block.
+- **E. A harness fix for the non-terminating scenario (test-only).** `sim_run` also ends a run when the script reports "No vendors
+  selected", so `S6` stops taking a runaway guard's worth of time. No change to the script.
+- **F. Targeted mutation checks on the unit tests** (for example, break the coin rounding or the scroll-prefix rule, and the
+  ledger's "no outcome" detection). Delivery: committed and tested; not a handed-over build by itself; it ships with
+  `1.6.0-test.4` (Steps 2 and 3).
+
+### Implementation choices (the AI's)
+- The hook block is a few lines at one place near the end of the file and states why it exists. Unit tests use a stub `print`.
+
+### Open
+- Whether this is worth doing given the measured speeds: the AI's honest view is that the benefit is isolation and precision
+  (tests that do not depend on mock assumptions), plus the fix in E, and that it is modest in size. The developer has decided to
+  do it first.
+- A return-from-chunk guard is the one structural change to the production file; its safety (inert when the global is unset) is
+  to be shown by the tests in D.
+
+### Not yet verified
+- Everything; nothing is built. That `return` from the main chunk behaves the same under MacroQuest's Lua as under LuaJIT is only
+  a concern when the global is set, which production never does.
+
+### Dependencies and shared seams
+- Step 3 would add exported functions; Step 2 and Step 1 code is untouched. `docs/MOCK_MODEL.md` is unaffected (unit tests use no mock).
