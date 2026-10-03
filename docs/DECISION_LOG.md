@@ -2797,3 +2797,31 @@ developer's call. I. TDD plan with mock additions (identity change at a set time
 pure parts through the hook, seven targeted mutations.
 
 **Status:** awaiting ChatGPT's review. Nothing is built.
+
+### D-028 review round 1 (2026-10-03): ChatGPT's context questions and the AI's answers (Revision 2)
+
+Appended; earlier text is unchanged. Archived: `docs/handoffs/2026-10-03_step5_decision28_rev1_review_from-chatgpt.md` and
+`..._rev2_from-claude.md`. ChatGPT asked six context questions and gave no verdicts (D-015 addendum). The answers changed the design:
+
+1. **Code and storage.** Quoted `logResolvePath`, `logWriteFile`, `logFail` and the startup block. Identity is stored nowhere today; new:
+   `LOG.identity` and `LOG.identityKey` (the sanitized file-name key) set in `logResolvePath`. Rotation: the counter increments per write
+   and the 4 MiB size check runs on writes 1, 101, 201...; a switch resets it to 0 so the new file is checked at its first write.
+2. **Unavailable** = `n/a`, `NULL` or empty after trimming (the TLO text helper returns `n/a` for nil/error and passes `''` and `NULL`
+   through; live values are unobserved). Comparison is on the sanitized key (what decides the file), not on the raw values.
+3. **Failures.** Every write in a sync goes through `logWriteFile` (own pcall, `logFail` on error): a failed transition line, path
+   resolution or header write turns file logging off with one window notice; an unexpected error in the sync is caught by its own pcall and
+   reported as `logFail('identity sync failed: ...')`. Logging is never re-enabled in the session; nothing raises into a run.
+4. **Other paths** (source): Re-detect, the two "stop when out of money" toggles, Run and Buy presses, three Stop handlers, class detection,
+   "Unexpected error", and the price-tell event (`[price quote]`, DEBUG, fires outside runs: live lines at 15:08 and 15:09). Revision 1
+   covered only the run and its press; the requirement is wider. **Design change:** a throttled sync (at most once per 2,000 ms of
+   `mq.gettime()`) inside `logWriteFile`, held while a run is dispatched (`LOG.hold`), plus forced syncs at the Run/Buy press and just
+   before the hold. Accepted limit: records within 2 s after a switch may use the old file unless a forced sync intervenes.
+5. **Mid-run.** "A swap mid-run would break the run" was an assumption, unverified; withdrawn. A run is one press through its final summary
+   (all vendor visits); no sync during it, so a spree stays whole in one file; the first record after it writes `identity changed`.
+6. **Switching back.** The existing file is appended to (mode `'a'`), with a `continued session` header; the size check runs on it at the
+   first write. Test added: A -> B -> A.
+
+Side observation recorded, not in scope: the detected-class list in the window is computed at load and on Re-detect only, not on a
+character change.
+
+**Status:** awaiting ChatGPT's verdicts on A-I and the NEW DETAIL items. Nothing is built.
