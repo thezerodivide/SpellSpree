@@ -643,3 +643,30 @@ Not verified: the exact cause of the lazy, batched removal; whether the pattern 
 the same on other vendors and spell counts; the arithmetic coincidence that the
 pass-1 shrinks (3, 11, 3, 2, 7) skip (k-1) rows each = 21 equals the 21 spells
 bought in passes 2 and 3 is a consistency check, not a proof.
+
+### D-001 addendum 3 (2026-10-03): developer correction of addendum 2; the conflict is withdrawn
+
+Appended; addendum 2 is unchanged and stays as the record of what the AI said.
+
+The developer corrected the AI's framing of the live evidence: the spells are passed
+over because the vendor window changes mid-pass; the Lua reads the list item by item
+and cannot prevent that; this is not something the Lua is doing. The AI checked this
+against the live log and agrees on the cause: scribed rows leave the list late and in
+batches, and a partial list follows a reopen; item order was stable (alphabetical,
+passes 3 and 4 read identical sequences; the only inversions were a sort nuance and
+the 13 -> 104 rebuild). So the log shows rows shifting, not items reordering relative
+to each other; the effect on a row-number walk is the same.
+
+**Effect on addendum 2:** its label ("conflict with an implementation choice") and
+its proposed direction (index adjustment by rows removed) are **withdrawn as a
+request for change**. The extra passes (four instead of about two on vendor 1) are the
+accepted cost of the multi-pass design, which absorbed the shifts: nothing was lost.
+The factual observations in addendum 2 stand. Ledger Open item 10 was reframed from
+"defect" to "observation, no change requested" in place, with the original struck
+through. Open item 11 (partial count after reopen) is unaffected.
+
+**Lesson recorded for the AI:** I presented a design assessment of the developer's
+approach as a defect and attached a fix, when the evidence only supported
+"the vendor window shifts rows mid-pass and passes absorb it". Next time, state the
+observation first and let the developer decide whether it is a problem (Protocol
+sections 3 and 13).

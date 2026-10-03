@@ -11,7 +11,7 @@ Current: `1.6.0-test.1` (D-004 file logging, D-005 version), pushed to GitHub an
 
 - State: `v1.6.0-test.1` (file logging) is committed, tagged and pushed. It **has now been run live once** (vendor 1, Cleric 1-25, Benedict; log excerpt in `docs/evidence/`). Logging worked as designed.
 - The live log answered: where the log goes, that mkdir/names work, that price-quote events fire, that the usable-only filter drops scribed spells (also developer-confirmed), that Stop works, and showed the scan **skips spells in pass 1** (item 10) so vendor 1 needed 4 passes. All 70 spells were still bought and scribed.
-- Open decisions for the developer: which of items 10-13 to take on and in what order (each its own change, one at a time, P-1 log review and P-3 tag before any handoff); item 10 is the one with real cost (extra passes), item 12 is a small fix to my own logging.
+- Open decisions for the developer: which of items 11-13 to take on, if any, and in what order (each its own change, one at a time, P-1 log review and P-3 tag before any handoff). Item 10 (scan misses within a pass) is a reframed observation, no change requested. Item 12 is a small fix to my own logging.
 - Not yet exercised live: stacked-scroll re-buy (item 4), the Bazaar (item 3), long sprees (item 13).
 
 ## Resolved behavior
@@ -129,21 +129,22 @@ as the pre-logging baseline in four scenarios.
    npc`, `/click` conversions to `sendCmd` are verified by static reading only.
 9. **Repo housekeeping:** README, licence, `.gitignore`, `.gitattributes` not
    decided.
-10. **DEFECT (D-001 implementation): the scan skips spells when scribed rows vanish
-    in batches.** After a scribe, if the visible row count has dropped, the code keeps
-    the same row index, which is right only if exactly one row (the one just
-    scribed) was removed. The live log shows batches of 3, 11, 3, 2 and 7 rows
-    removed at once. Concrete case: after `Blessing of Piety` (row 70) the count
-    went 153 -> 150, the scan kept row 70 and read `Calm`; `Bravery`, which sorts
-    between them, was never selected in pass 1 and was bought first thing in pass 2.
-    Consistency check: the shrinks in pass 1 (3, 11, 3, 2, 7) skip (k-1) rows each =
-    21, and 21 spells were bought in passes 2 and 3 that pass 1 never selected.
-    Consequence in the run seen: **no spell was permanently missed** (a pass that
-    buys nothing has no scribes, hence no skips, so termination on a zero-buy pass is
-    sound) but vendor 1 needed four passes instead of two. Not a hypothesis about
-    cause alone: the mechanism is read from the log; the exact arithmetic is a
-    consistency check, not proof. **No fix designed or agreed.** Conflicts with the
-    D-001 implementation choice "row-removal compensation" (see D-001 addendum 2).
+10. ~~**DEFECT (D-001 implementation): the scan skips spells...**~~ **Reframed,
+    developer correction 2026-10-03: this is the vendor window's behavior, the very
+    problem the multi-pass design exists to absorb, not a defect.** Observed (live
+    log, vendor 1): while the scan walks the list by row number, the vendor window
+    changes under it. Scribed rows disappear late and in batches (153 -> 150 -> 139
+    -> 136 -> 134 -> 127 in steps of 3, 11, 3, 2, 7), so rows shift relative to the
+    cursor; a row from pass 2's first purchase vanished about 5 s later with no scribe
+    at that moment, and `Elysium Bone Powder` was read twice as a result (the seen-set
+    flagged it). Item order itself did **not** change: it stayed alphabetical, passes 3
+    and 4 read identical sequences, and the only inversions were a sort nuance
+    (`Ward Undead`/`Ward of Vie`) and the 13 -> 104 list rebuild after reopen. Result:
+    pass 1 never selected 21 spells that passes 2 and 3 then bought; vendor 1 took four
+    passes; **nothing was lost** (a zero-buy pass cannot skip). **No change requested;
+    the extra passes are the accepted cost of the design (S-1).** The AI's earlier
+    suggestion (adjust the index by the number of rows actually removed) stays
+    unagreed and is not planned. See D-001 addendum 3.
 11. **HAZARD (D-001 implementation): row count read right after a reopen can be
     partial.** Pass 2 started with 13 rows when the full list was 104. It did no harm
     here because the first row read was a spell and the count is re-read each
