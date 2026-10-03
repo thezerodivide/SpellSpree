@@ -2960,3 +2960,40 @@ The developer clarified that **Ratlanta and Heeby are the same person**: Heeby i
 of this log (D-001, the project-ownership note) name the author as Ratlanta, which is the name shown in the Discord exchange where permission to take over
 development was given; the README and the release notes for 1.6.0 credit him as @Heeby, his Discord name there. Both names refer to the original author of
 SpellSpree (v1.4 and earlier). No earlier entry is changed.
+
+## D-030 — Discipline tomes: user story received; learning check confirmed; investigation spike built
+
+Date: 2026-10-03. Source: the developer's user-story draft (archived: `docs/handoffs/2026-10-03_tomes_user_story_draft.md`, screenshot
+`docs/evidence/2026-10-03_tome_vendor_list.png`) and the developer's answers in chat. The draft authorizes neither implementation nor the investigations.
+
+**The AI's reading of the story against the code (recorded for the design that follows).**
+- Tomes are invisible to the current build: the list builder keeps only names starting `Spell: ` or `Song: `; every other row, including `Tome of ...`,
+  is counted as "non-scroll, ignored". Tome support is a new item kind, not a flag on the old one.
+- Berserker, Monk, Rogue and Warrior are not in the class order or the vendor table (the class-name mapping already recognizes them). Each needs a class
+  row with only a **Discipline Tomes** checkbox, since they have no spell tiers.
+- Step 3 makes the range a required argument of the purchase run; a tome visit would pass the explicit no-range value the Bazaar uses; the Lvl column
+  would be logged and not used.
+- "At most one purchase attempt per tome per visit" is what list-then-buy already gives.
+- Already-known disciplines and cross-vendor duplicates are **linked**: the usable-only filter does not hide known tomes, and a learned tome stays listed, so a
+  second vendor that overlaps with the first would be bought again unless what the character knows can be detected. Options (A: check known disciplines,
+  probably through `Me.CombatAbility` with the tome name minus "Tome of "; B: no known check, with a per-run list of tomes already bought, which fixes overlap
+  within one run only and wastes platinum on a re-run; C: buy everything every time, not recommended). The AI recommended A with B as the fallback.
+
+**Developer's answers (2026-10-03).** (1) **The learning check is confirmed:** right-clicking a purchased tome consumes it (its bag slot empties), as a scroll
+does; "confirmed by me after having done it on 10 different characters." So the build's existing completion check (the slot empties) is expected to carry
+over to tomes; this rests on the developer's live confirmation, not on a test. (2) The developer **agreed to the proposed spikes.**
+
+**The spike (built, not run).** `spikes/spellspree_tome_spike.lua`, version `0.1.0-spike.1`, read-only (it does not buy, select, click or learn anything), three
+modes, chat output kept to a few lines and everything else in `spike_<server>_<character>.log`: `names` (for each of the ten vendors: the build's exact lookup
+`npc "=<name>"`, a loose search, and the real name text byte by byte, so Zhao's punctuation is read, not guessed); `dump` (with a vendor open: every row's name,
+Qty, price and Lvl, a tally of name prefixes, the disciplines the character knows by `Me.CombatAbility(index)`, and for each tome whether the discipline it
+names is known); `watch "<tome name>" [seconds]` (while the developer buys and learns one tome by hand: copies in bags, money, whether the discipline reads as
+known, the cursor item, and chat lines mentioning learn / already / cannot / discipline / tome, only when something changes). Run against the mock
+(`luajit test/spike_sim.lua tomes`): it ran cleanly, sent no command, bought nothing, and its log read sensibly. SIMULATION ONLY: it says nothing about what the
+real client returns for `Me.CombatAbility`, `NearestSpawn` or the chat patterns; those are what the live run is for.
+
+**What the spike must answer before a design:** whether the exact-name lookup finds all ten vendors and what Zhao's name really is; what the vendors sell besides
+`Tome of ...`; whether the two Berserker vendors overlap; whether `Me.CombatAbility` can tell known from unknown disciplines and how its names compare with the
+tome names; and what the game says on learning a new tome and on right-clicking a tome for a discipline already known.
+
+**Status:** spike handed over; no design or implementation yet.

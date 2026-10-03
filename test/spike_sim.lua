@@ -47,3 +47,21 @@ if which == 'watchmissing' then
     print('##### WATCH, NAME NOT ON LIST: script ok=' .. tostring(sim.ok) .. ' err=' .. tostring(sim.runErr) .. ' simulated ms=' .. sim.clockMs)
     show(dir)
 end
+
+-- the discipline-tome spike (spikes/spellspree_tome_spike.lua, D-030): names, dump and watch against the mock
+if which == 'tomes' then
+    local tomes = { 'Tome of Aggressive Discipline', 'Tome of Bellow', 'Tome of Berate', 'Tome of Charge Discipline' }
+    local vend = { ['Larquin Julinok'] = { nonSpells = tomes, spells = {} }, ["Zhao V'karin"] = { nonSpells = { 'Tome of Bellow' }, spells = {} } }
+    local dir = fresh('tomes_names')
+    local sim = R.run('spikes/spellspree_tome_spike.lua', { logsRaw = dir, rootRaw = dir, zone = 'poknowledge', vendors = vend }, 'names')
+    print('##### TOMES names: script ok=' .. tostring(sim.ok) .. ' err=' .. tostring(sim.runErr) .. ' cmds sent=' .. #sim.cmds .. ' purchases=' .. #sim.purchases)
+    show(dir)
+    dir = fresh('tomes_dump')
+    sim = R.run('spikes/spellspree_tome_spike.lua', { logsRaw = dir, rootRaw = dir, nonSpells = tomes, spells = {} }, 'dump')
+    print('\n##### TOMES dump: script ok=' .. tostring(sim.ok) .. ' err=' .. tostring(sim.runErr) .. ' cmds sent=' .. #sim.cmds .. ' purchases=' .. #sim.purchases)
+    show(dir)
+    dir = fresh('tomes_watch')
+    sim = R.run('spikes/spellspree_tome_spike.lua', { logsRaw = dir, rootRaw = dir, nonSpells = tomes, spells = {} }, 'watch', 'Tome of Bellow', '4')
+    print('\n##### TOMES watch: script ok=' .. tostring(sim.ok) .. ' err=' .. tostring(sim.runErr) .. ' cmds sent=' .. #sim.cmds .. ' purchases=' .. #sim.purchases)
+    show(dir)
+end
