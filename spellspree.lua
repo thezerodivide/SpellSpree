@@ -203,6 +203,10 @@ local function walkChildTree(parentNode, found, depth)
     end
 end
 
+-- Forward declaration: the command logger (sendCmd) is defined with the file
+-- logger further down, after the S state table it depends on.
+local sendCmd
+
 -- Contains mq.delay() (forces the Inventory window open briefly) -- must be
 -- called from the main loop (a yieldable thread), never from inside the
 -- ImGui draw() callback. Same crash triune's own comment warns about:
@@ -211,7 +215,7 @@ local function classesFromInventoryWindow()
     local wasOpen = false
     pcall(function() wasOpen = mq.TLO.Window('InventoryWindow').Open() end)
     if not wasOpen then
-        mq.cmd('/windowstate InventoryWindow open')
+        sendCmd('open the Inventory window so its class display can be read for class detection (it was not open)', '/windowstate InventoryWindow open')
         mq.delay(250)
     end
 
@@ -257,7 +261,7 @@ local function classesFromInventoryWindow()
     end
 
     if not wasOpen then
-        mq.cmd('/windowstate InventoryWindow close')
+        sendCmd('close the Inventory window again; it was not open before class detection', '/windowstate InventoryWindow close')
     end
 
     return #found > 0 and found or nil
@@ -328,16 +332,154 @@ local S = {
 
 local MAX_LOG_LINES = 400
 
+-- ============================================================================
+-- File logging (decision log D-004; Development Protocol section 8).
+-- ----------------------------------------------------------------------------
+-- Everything below writes to <MacroQuest logs dir>/spellspree/
+-- spellspree_<server>_<character>.log, one line per record:
+--   date time | +ms since load | build | LEVEL | message
+-- Levels: INFO/WARN/ERROR (what logLine already narrated), CMD (a command sent
+-- to the game, with the reason it was sent), OBS (something read from the game
+-- or computed that a decision was based on), DEBUG (dbgLine; file always,
+-- window only when DEBUG is true).
+--
+-- A logging failure must never change what the script does: every write is
+-- inside pcall, and the first failure turns file logging off and says so once
+-- in the window.
+-- ============================================================================
+local LOG_MAX_BYTES = 4 * 1024 * 1024
+local LOG_ROTATE_CHECK_EVERY = 100
+local LOG = { path = nil, dir = nil, disabled = false, writes = 0, resolution = nil, t0 = nil }
+
+local function logClockMs()
+    local ok, t = pcall(function() return mq.gettime() end)
+    if ok and type(t) == 'number' then return t end
+    return math.floor(os.clock() * 1000)
+end
+LOG.t0 = logClockMs()
+
+-- A TLO read for a log line: tostring of the value, or 'n/a' if it can't be read.
+local function tloText(fn)
+    local ok, v = pcall(fn)
+    if ok and v ~= nil then return tostring(v) end
+    return 'n/a'
+end
+
+local function logSafePart(s)
+    return (tostring(s or 'unknown'):gsub('[^%w_%-]', '_'))
+end
+
+local function logIsAbsolute(p)
+    return p:match('^%a:[/\\]') ~= nil or p:match('^[/\\]') ~= nil
+end
+
+local function logEnsureDir(path)
+    if path:find('["\r\n]') then return false end
+    local native = path:gsub('/', '\\')
+    local ok = os.execute('if not exist "' .. native .. '" mkdir "' .. native .. '"')
+    return ok == true or ok == 0
+end
+
+-- Returns the log file path, or nil plus the reason it can't be had.
+-- MacroQuest.Path('logs') is the client's own logs directory (read from MQ
+-- source, MQ2MacroQuestType.cpp). Its compiled-in default is the relative
+-- string "Logs", so a non-absolute value is joined onto Path('root'). What the
+-- live client actually returns is recorded in LOG.resolution and logged at
+-- startup, so the first live log answers it.
+local function logResolvePath()
+    local logsRaw, rootRaw
+    pcall(function() logsRaw = mq.TLO.MacroQuest.Path('logs')() end)
+    pcall(function() rootRaw = mq.TLO.MacroQuest.Path('root')() end)
+    local server = tloText(function() return mq.TLO.EverQuest.Server() end)
+    local char = tloText(function() return mq.TLO.Me.CleanName() end)
+    LOG.resolution = string.format("MacroQuest.Path('logs')=%s, MacroQuest.Path('root')=%s, server=%s, character=%s",
+        tostring(logsRaw), tostring(rootRaw), server, char)
+
+    local base = (type(logsRaw) == 'string' and logsRaw ~= '') and logsRaw or nil
+    if not base then return nil, "MacroQuest.Path('logs') unreadable" end
+    if not logIsAbsolute(base) then
+        if type(rootRaw) ~= 'string' or rootRaw == '' then
+            return nil, 'logs path is relative (' .. base .. ") and MacroQuest.Path('root') is unreadable"
+        end
+        base = rootRaw:gsub('[/\\]+$', '') .. '/' .. base
+    end
+    local dir = base:gsub('[/\\]+$', '') .. '/spellspree'
+    if not logEnsureDir(dir) then return nil, 'could not create ' .. dir end
+    LOG.dir = dir
+    return dir .. '/spellspree_' .. logSafePart(server) .. '_' .. logSafePart(char) .. '.log'
+end
+
+local function logFail(reason)
+    LOG.disabled = true
+    table.insert(S.log, { text = 'File logging is OFF: ' .. reason .. ' (window log only).', color = COLOR_ERR, t = os.date('%H:%M:%S') })
+    print('\ay[SpellSpree]\ax File logging is OFF: ' .. reason)
+end
+
+local function logWriteFile(level, text)
+    if LOG.disabled then return end
+    local ok, err = pcall(function()
+        if not LOG.path then
+            local path, why = logResolvePath()
+            if not path then logFail(why); return end
+            LOG.path = path
+        end
+        LOG.writes = LOG.writes + 1
+        if LOG.writes % LOG_ROTATE_CHECK_EVERY == 1 then
+            local prev = io.open(LOG.path, 'rb')
+            if prev then
+                local size = prev:seek('end')
+                prev:close()
+                if size and size > LOG_MAX_BYTES then
+                    os.remove(LOG.path .. '.old')
+                    os.rename(LOG.path, LOG.path .. '.old')
+                end
+            end
+        end
+        local f = io.open(LOG.path, 'a')
+        if not f then logFail('could not open ' .. LOG.path); return end
+        f:write(string.format('%s | +%dms | v%s | %-5s | %s\n', os.date('%Y-%m-%d %H:%M:%S'),
+            logClockMs() - LOG.t0, VERSION, level, (tostring(text):gsub('[\r\n]+', ' / '))))
+        f:close()
+    end)
+    if not ok then logFail(tostring(err)) end
+end
+
 local function logLine(text, color)
     table.insert(S.log, { text = text, color = color or COLOR_INFO, t = os.date('%H:%M:%S') })
     if #S.log > MAX_LOG_LINES then table.remove(S.log, 1) end
     print(string.format('\ay[SpellSpree]\ax %s', text))
+    local level = 'INFO'
+    if color == COLOR_ERR then level = 'ERROR' elseif color == COLOR_WARN then level = 'WARN' end
+    logWriteFile(level, text)
 end
 
--- Diagnostic log line -- a no-op unless DEBUG is on. See the DEBUG flag.
+-- Diagnostic log line. Always goes to the log file; shows in the window only
+-- when DEBUG is on. See the DEBUG flag.
 local function dbgLine(text)
-    if not DEBUG then return end
-    logLine(text, COLOR_MUTE)
+    if DEBUG then logLine(text, COLOR_MUTE) else logWriteFile('DEBUG', text) end
+end
+
+-- An observation a decision was based on. File only.
+local function logObs(text)
+    logWriteFile('OBS', text)
+end
+
+-- Every command sent to the game goes through here so the log records what was
+-- sent and why, BEFORE it is sent (so a hang or crash still leaves the record).
+-- mq.cmdf is string.format followed by the same execute path as mq.cmd (MQ
+-- source, lua_MQBindings.cpp command_format), so formatting here and calling
+-- mq.cmd is equivalent. MQ gives no return value for these commands; success is
+-- only ever inferred from state read afterward.
+sendCmd = function(reason, fmt, ...)
+    local cmd = fmt
+    if select('#', ...) > 0 then cmd = string.format(fmt, ...) end
+    logWriteFile('CMD', string.format('%s   [reason: %s]', cmd, reason))
+    mq.cmd(cmd)
+end
+
+local function errHandler(e)
+    if debug and debug.traceback then return debug.traceback(tostring(e), 2) end
+    return tostring(e)
 end
 
 -- NOTE: earlier versions of this script tried to verify purchases/scribes by
@@ -571,8 +713,10 @@ end
 -- once-per-session guard, this can re-open a bag that got closed later in
 -- the run without ever risking closing one that's already open.
 local function openBagIfClosed(bagIdx)
-    if bagOpenState(bagIdx) == true then return false end
-    mq.cmdf('/itemnotify pack%d rightmouseup', bagIdx)
+    local st = bagOpenState(bagIdx)
+    if st == true then return false end
+    sendCmd(string.format('open bag %d: bagOpenState=%s (not open); the click toggles, so it is only sent when not open', bagIdx, tostring(st)),
+        '/itemnotify pack%d rightmouseup', bagIdx)
     -- Widened from 200ms -- on a slower connection, the window opening and
     -- its contents actually becoming readable through the TLO can take
     -- longer than 200ms to round-trip; better to spend an extra moment than
@@ -592,7 +736,9 @@ local function ensureBagOpen(bagIdx)
     -- State unreadable: nothing to do but fall back to the old "click each
     -- bag at most once per session" rule.
     if open == nil and S.openedBags[bagIdx] then return end
-    mq.cmdf('/itemnotify pack%d rightmouseup', bagIdx)
+    sendCmd(string.format('open bag %d: bagOpenState=%s (%s)', bagIdx, tostring(open),
+        open == nil and 'unreadable, so using the once-per-session rule' or 'not open'),
+        '/itemnotify pack%d rightmouseup', bagIdx)
     mq.delay(400)
     S.openedBags[bagIdx] = true
 end
@@ -724,7 +870,8 @@ local function verifyUsableFilterOn()
             -- instead of assuming -- but this is now a hard requirement, not
             -- a warning: if it's not confirmed on, the run does not start.
             for attempt = 1, 2 do
-                mq.cmdf('/notify MerchantWnd %s leftmouseup', name)
+                sendCmd(string.format('turn on the usable-items-only checkbox %s (attempt %d/2; Checked() read false)', name, attempt),
+                    '/notify MerchantWnd %s leftmouseup', name)
                 mq.delay(300)
                 if isChecked() then
                     logLine(string.format('Enabled "usable items only" filter (%s).', name), COLOR_GOOD)
@@ -915,15 +1062,17 @@ end
 -- own, meaning the single check could run in the gap before the window ever
 -- appears, silently missing a quantity prompt that was still on its way.
 local function handleQuantityWindowIfOpen()
-    for _ = 1, 5 do -- up to ~750ms
+    for poll = 1, 5 do -- up to ~750ms
         local ok, isOpen = pcall(function() return mq.TLO.Window('QuantityWnd').Open() end)
         if ok and isOpen then
-            mq.cmd('/notify QuantityWnd QTYW_Accept_Button leftmouseup')
+            logObs(string.format('QuantityWnd open at poll %d/5 -- accepting it.', poll))
+            sendCmd('accept the quantity window that opened after Buy', '/notify QuantityWnd QTYW_Accept_Button leftmouseup')
             mq.delay(150)
             return
         end
         mq.delay(150)
     end
+    logObs('QuantityWnd did not open within 5 polls (~750ms) after Buy. Not necessarily a problem: whether a single-scroll purchase shows one is not established.')
 end
 
 -- Confirm a scribe-confirmation dialog if one pops up (varies by client/UI --
@@ -931,17 +1080,19 @@ end
 -- as handleQuantityWindowIfOpen above, for the same latency-tolerance reason.
 local SCRIBE_CONFIRM_CANDIDATES = { 'ConfirmationDialogBox', 'ScribeConfirmWnd' }
 local function handleScribeConfirmIfOpen()
-    for _ = 1, 5 do -- up to ~750ms
+    for poll = 1, 5 do -- up to ~750ms
         for _, wname in ipairs(SCRIBE_CONFIRM_CANDIDATES) do
             local ok, isOpen = pcall(function() return mq.TLO.Window(wname).Open() end)
             if ok and isOpen then
-                pcall(function() mq.cmdf('/notify %s CD_Yes_Button leftmouseup', wname) end)
+                logObs(string.format('%s open at poll %d/5 -- confirming it.', wname, poll))
+                pcall(function() sendCmd(string.format('confirm the scribe dialog %s', wname), '/notify %s CD_Yes_Button leftmouseup', wname) end)
                 mq.delay(150)
                 return
             end
         end
         mq.delay(150)
     end
+    logObs('No scribe-confirmation window (ConfirmationDialogBox/ScribeConfirmWnd) seen within 5 polls (~750ms). Not necessarily a problem: whether this client shows one is not established.')
 end
 
 -- The very first scribe click can silently fail to register if the mouse is
@@ -980,6 +1131,7 @@ local function waitForMouseOffOverlay()
         end
         mq.delay(100)
     end
+    logObs(string.format('mouse left the SpellSpree window after %.1fs of waiting.', os.clock() - startedAt))
 end
 
 
@@ -988,10 +1140,18 @@ end
 -- callback), so mq.delay() here is safe. Stop button just flips
 -- S.stopRequested, checked between every step.
 -- ============================================================================
-local function closeVendor()
+local function closeVendor(reason)
     if merchantOpen() then
-        pcall(function() mq.cmd('/notify MerchantWnd MW_Done_Button leftmouseup') end)
+        pcall(function() sendCmd(reason or 'close the merchant window', '/notify MerchantWnd MW_Done_Button leftmouseup') end)
+    else
+        logObs('closeVendor: merchant window already closed; nothing sent.')
     end
+end
+
+-- Final outcome of one vendor run, in one line, so a log can be read from its end.
+local function logRunOutcome(label)
+    logLine(string.format('Run outcome (%s): state=%s, reason="%s", bought=%d, skipped=%d, spent=%s.',
+        label, tostring(S.state), tostring(S.lastStopReason), S.bought, S.skipped, formatCoin(S.spentCopper)), COLOR_GOLD)
 end
 
 -- Close and reopen the currently targeted merchant between scan passes. This
@@ -1014,7 +1174,7 @@ local function reopenCurrentMerchantForNextPass(passNumber)
 
     logLine(string.format('[merchant scan] Pass %d bought at least one spell; closing merchant to force a fresh filtered list before the next pass. Preserved merchant target: %s (#%d).',
         passNumber, tostring(merchantTargetName or 'unknown'), merchantTargetId), COLOR_WARN)
-    closeVendor()
+    closeVendor(string.format('close the merchant to force a fresh usable-only list before pass %d', passNumber + 1))
 
     local closed = false
     for _ = 1, 20 do -- up to ~2s
@@ -1024,6 +1184,7 @@ local function reopenCurrentMerchantForNextPass(passNumber)
         end
         mq.delay(100)
     end
+    logObs(string.format('merchantOpen after the Done click: closed=%s', tostring(closed)))
     if not closed then
         logLine('[merchant scan] Merchant window did not close cleanly between passes -- stopping rather than scanning a stale list.', COLOR_ERR)
         return false, 'Merchant did not close between passes'
@@ -1038,10 +1199,12 @@ local function reopenCurrentMerchantForNextPass(passNumber)
     -- survived closing MerchantWnd. Verify the ID before attempting to reopen.
     local targetRestored = false
     for attempt = 1, 10 do -- up to ~3s
-        mq.cmdf('/target id %d', merchantTargetId)
+        sendCmd(string.format('re-acquire merchant %s after closing its window (attempt %d/10)', tostring(merchantTargetName or 'unknown'), attempt),
+            '/target id %d', merchantTargetId)
         mq.delay(300)
         local currentTargetId = nil
         pcall(function() currentTargetId = tonumber(mq.TLO.Target.ID()) end)
+        logObs(string.format('target check after /target id: Target.ID=%s expected=%d', tostring(currentTargetId), merchantTargetId))
         if currentTargetId == merchantTargetId then
             targetRestored = true
             break
@@ -1055,7 +1218,7 @@ local function reopenCurrentMerchantForNextPass(passNumber)
 
     logLine(string.format('[merchant scan] Re-targeted %s (#%d); right-clicking to reopen merchant.',
         tostring(merchantTargetName or 'merchant'), merchantTargetId), COLOR_MUTE)
-    mq.cmd('/click right target')
+    sendCmd('reopen the merchant by right-clicking the re-acquired target', '/click right target')
     local reopened = false
     for _ = 1, 25 do -- up to ~5s
         if merchantOpen() then
@@ -1064,6 +1227,7 @@ local function reopenCurrentMerchantForNextPass(passNumber)
         end
         mq.delay(200)
     end
+    logObs(string.format('merchantOpen after /click right target: reopened=%s', tostring(reopened)))
     if not reopened then
         logLine('[merchant scan] Merchant window did not reopen between passes -- stopping.', COLOR_ERR)
         return false, 'Merchant did not reopen between passes'
@@ -1112,6 +1276,9 @@ local function runSpellSpree()
     -- "to open" it, and since that click TOGGLES the bag, slam it shut
     -- instead -- exactly the "bag randomly closes between vendors" bug.
     logLine('Starting up...', COLOR_GOLD)
+    logObs(string.format('run start: zone=%s target=%s merchantOpen=%s stopOnOutOfMoney=%s money=%s bought/skipped so far=%d/%d',
+        zoneShort(), tloText(function() return mq.TLO.Target.CleanName() end), tostring(merchantOpen()),
+        tostring(S.stopOnOutOfMoney), formatCoin(myTotalCopper()), S.bought, S.skipped))
     logLine('This will open bags as needed to buy and scribe into -- please leave them open once they pop up (closing one mid-run can briefly misread a purchase as failed).', COLOR_WARN)
 
     if not merchantOpen() then
@@ -1145,7 +1312,7 @@ local function runSpellSpree()
             S.lastStopReason = 'Inventory full'
             return
         end
-        dbgLine(string.format('First free slot right now: %s.', slotLabel(checkBag, checkSlot)))
+        logObs(string.format('first free slot at run start: %s.', slotLabel(checkBag, checkSlot)))
     end
 
     -- Walk the ENTIRE VISIBLE merchant list. MerchantWnd -> ItemList is the
@@ -1245,7 +1412,7 @@ local function runSpellSpree()
                 end
                 S.state = STATE.DONE
                 S.lastStopReason = 'Full refreshed merchant pass bought zero spells'
-                closeVendor()
+                closeVendor('scan complete: a full pass bought zero spells')
                 return
             end
 
@@ -1288,10 +1455,13 @@ local function runSpellSpree()
         -- can share names, and the visible row count already tells us whether this
         -- index exists. If the name never changes from the prior row, retry the
         -- listselect once, log it, then accept the returned selection.
-        mq.cmdf('/notify MerchantWnd ItemList listselect %d', idx)
+        sendCmd(string.format('select visible row #%d of %d to read what item it holds (pass %d)', idx, rowCountBeforeRow, scanPass),
+            '/notify MerchantWnd ItemList listselect %d', idx)
         local sel, selName = nil, nil
         local selectionAdvanced = false
+        local selPolls = 0
         for _ = 1, 12 do
+            selPolls = selPolls + 1
             mq.delay(30)
             sel = merchantSelectedItem()
             if sel then
@@ -1305,7 +1475,8 @@ local function runSpellSpree()
 
         if sel and not selectionAdvanced and previousSelectedName ~= nil and selName == previousSelectedName then
             logLine(string.format('[merchant scan] Row #%d selection still reads "%s"; retrying listselect once because selection did not visibly advance.', idx, selName), COLOR_WARN)
-            mq.cmdf('/notify MerchantWnd ItemList listselect %d', idx)
+            sendCmd(string.format('retry selecting row #%d: selection still reads the previous row\'s name', idx),
+                '/notify MerchantWnd ItemList listselect %d', idx)
             for _ = 1, 12 do
                 mq.delay(30)
                 sel = merchantSelectedItem()
@@ -1323,6 +1494,9 @@ local function runSpellSpree()
         end
 
         S.lastScanSelName = selName
+        logObs(string.format('row #%d/%d select result: name=%s itemID=%s polls=%d advanced=%s previousName=%s',
+            idx, rowCountBeforeRow, selName or 'nil (nothing selected)', tloText(function() return sel.ID() end),
+            selPolls, tostring(selectionAdvanced), tostring(previousSelectedName)))
 
         if not sel then
             logLine(string.format('[merchant scan] Could not read Merchant.SelectedItem for visible row #%d -- skipping that row.', idx), COLOR_WARN)
@@ -1369,6 +1543,9 @@ local function runSpellSpree()
                 mq.delay(250)
                 mq.doevents()
                 local q = priceQuotes[name]
+                logObs(string.format('price quote for "%s": %s; money on hand %s', name,
+                    q and formatCoin(q.copper) or 'none received (not proof either way: chat events have been unreliable here)',
+                    formatCoin(myTotalCopper())))
                 if q and q.copper > myTotalCopper() then
                     if S.stopOnOutOfMoney then
                         logLine(string.format('Vendor quoted "%s" at %s -- you have %s. Not enough. Stopping.',
@@ -1414,6 +1591,7 @@ local function runSpellSpree()
                     S.lastStopReason = 'Inventory full'
                     return
                 end
+                logObs(string.format('expected landing slot for "%s": %s', name, slotLabel(targetBag, targetSlot)))
                 waitForMouseOffOverlay()
                 -- Nothing to open when the target is an empty top-level slot
                 -- itself (no bag equipped there at all) -- see slotIdx == 0
@@ -1422,17 +1600,22 @@ local function runSpellSpree()
 
                 -- Baseline for stack-detection below -- see findExistingCopy.
                 local existingBag, existingSlot, existingStackBefore = findExistingCopy(name)
+                logObs(string.format('pre-buy existing copy of "%s": %s', name,
+                    existingBag and string.format('%s, stack %s', slotLabel(existingBag, existingSlot), tostring(existingStackBefore)) or 'none found'))
 
                 logLine(string.format('Buying "%s"...', name), COLOR_INFO)
                 local copperBeforeBuy = myTotalCopper()
-                mq.cmd('/notify MerchantWnd MW_Buy_Button leftmouseup')
+                sendCmd(string.format('buy the selected item "%s" (selection was read back as this item; money before %s)', name, formatCoin(copperBeforeBuy)),
+                    '/notify MerchantWnd MW_Buy_Button leftmouseup')
                 handleQuantityWindowIfOpen()
 
                 -- Wait for money on hand to actually drop -- the real,
                 -- TLO-based confirmation that the transaction posted, instead
                 -- of a blind delay or a chat line that isn't firing reliably.
                 local paid = false
+                local paidPolls = 0
                 for _ = 1, 15 do -- up to ~3s
+                    paidPolls = paidPolls + 1
                     if myTotalCopper() < copperBeforeBuy then
                         paid = true
                         break
@@ -1440,6 +1623,8 @@ local function runSpellSpree()
                     mq.delay(200)
                     mq.doevents()
                 end
+                logObs(string.format('money check after buying "%s": before=%s now=%s paid=%s (polls=%d/15)',
+                    name, formatCoin(copperBeforeBuy), formatCoin(myTotalCopper()), tostring(paid), paidPolls))
                 if not paid then
                     -- Race-condition safety net: the proactive check right
                     -- after selecting this item should have already caught
@@ -1523,11 +1708,15 @@ local function runSpellSpree()
                 -- in an open top-level slot: bagSlotItem only ever looks
                 -- INSIDE a bag, so it always came up empty for those.
                 local landed, landedOk = nil, false
+                local landPolls = 0
                 for _ = 1, 15 do -- up to ~3s
+                    landPolls = landPolls + 1
                     landed = readTargetSlot(targetBag, targetSlot)
                     if landed then landedOk = true; break end
                     mq.delay(200)
                 end
+                logObs(string.format('landing read of %s for "%s": %s (polls=%d/15)', slotLabel(targetBag, targetSlot), name,
+                    landed and ('found "' .. itemDisplayName(landed) .. '"') or 'nothing readable there', landPolls))
                 if landed then
                     local landedName = itemDisplayName(landed)
                     if landedName ~= name then
@@ -1681,7 +1870,8 @@ local function runSpellSpree()
                             end
                         end
 
-                        mq.cmd(targetSlotNotifyCmd(targetBag, targetSlot))
+                        sendCmd(string.format('scribe "%s": right-click the scroll at %s (attempt %d/%d)', name, slotLabel(targetBag, targetSlot), attempt, maxAttempts),
+                            targetSlotNotifyCmd(targetBag, targetSlot))
                         handleScribeConfirmIfOpen()
 
                         for _ = 1, 5 do
@@ -1692,6 +1882,8 @@ local function runSpellSpree()
                             end
                             mq.delay(200)
                         end
+                        logObs(string.format('scribe attempt %d/%d for "%s": %s', attempt, maxAttempts, name,
+                            scribed and 'scroll no longer reads in the slot (scribe inferred; MQ gives no direct confirmation)' or 'scroll still reads in the slot'))
                         if scribed then break end
                         if S.stopRequested then break end
 
@@ -1715,6 +1907,7 @@ local function runSpellSpree()
                             mq.delay(200)
                         end
                         local stuck = cursorItemName()
+                        logObs('cursor after scribing "' .. name .. '": ' .. tostring(stuck or 'empty'))
                         if stuck then
                             logLine(string.format('"%s" scribed, but something is still on the cursor afterward ("%s") -- stopping to be safe.', name, stuck), COLOR_ERR)
                             S.state = STATE.STOPPED
@@ -1742,6 +1935,7 @@ local function runSpellSpree()
                                 idx = idx + 1
                             end
                         else
+                            logObs(string.format('row count after scribing row #%d: unchanged at %s after the ~500ms wait; advancing to the next row.', idx, tostring(afterScribeRowCount)))
                             idx = idx + 1
                         end
                     else
@@ -1821,7 +2015,7 @@ local function runNavAndShop(npcName)
     local npcId = spawn.ID()
 
     logLine(string.format('Found "%s" (#%d) -- navigating...', npcName, npcId), COLOR_INFO)
-    mq.cmdf('/nav id %d', npcId)
+    sendCmd(string.format('navigate to "%s" (#%d)', npcName, npcId), '/nav id %d', npcId)
     mq.delay(300)
 
     local navStartAt = os.clock()
@@ -1831,7 +2025,7 @@ local function runNavAndShop(npcName)
             logLine('Stopped by user.', COLOR_WARN)
             S.state = STATE.STOPPED
             S.lastStopReason = 'Stopped by user'
-            mq.cmd('/nav stop')
+            sendCmd('stop navigation: user pressed Stop', '/nav stop')
             return
         end
         local navActive = false
@@ -1841,7 +2035,7 @@ local function runNavAndShop(npcName)
             logLine(string.format('Navigation to "%s" timed out after 60s -- stopping.', npcName), COLOR_ERR)
             S.state = STATE.STOPPED
             S.lastStopReason = 'Navigation timed out'
-            mq.cmd('/nav stop')
+            sendCmd('stop navigation: 60s limit reached', '/nav stop')
             return
         end
         if (os.clock() - lastNavMsgAt) > 5.0 then
@@ -1860,9 +2054,10 @@ local function runNavAndShop(npcName)
     local targetOk = false
     for attempt = 1, 10 do -- up to ~3s
         if S.stopRequested then break end
-        mq.cmdf('/target npc "=%s"', npcName)
+        sendCmd(string.format('target "%s" after arriving (attempt %d/10)', npcName, attempt), '/target npc "=%s"', npcName)
         mq.delay(300)
         pcall(function() targetOk = mq.TLO.Target.ID() == npcId end)
+        logObs(string.format('target check: Target.ID=%s expected=%s ok=%s', tloText(function() return mq.TLO.Target.ID() end), tostring(npcId), tostring(targetOk)))
         if targetOk then break end
     end
     if not targetOk then
@@ -1873,7 +2068,7 @@ local function runNavAndShop(npcName)
     end
 
     waitForMouseOffOverlay()
-    mq.cmd('/click right target')
+    sendCmd(string.format('open the merchant window of "%s" by right-clicking the target', npcName), '/click right target')
 
     local merchOpen = false
     for _ = 1, 25 do -- up to ~5s
@@ -1892,11 +2087,12 @@ local function runNavAndShop(npcName)
 
     logLine('Merchant window open -- starting the buy run.', COLOR_GOOD)
     runSpellSpree()
+    logRunOutcome('Nav & Shop "' .. npcName .. '"')
 
     -- Always close, no matter how the buy run ended -- this is meant to be a
     -- full, self-contained cycle, not something that leaves a vendor window
     -- hanging open for you to deal with afterward.
-    closeVendor()
+    closeVendor('Nav & Shop finished; always close the merchant however the buy run ended')
     logLine('Nav & Shop: done, merchant closed.', COLOR_GOLD)
 end
 
@@ -2020,6 +2216,7 @@ local function runBazaarShop()
     logLine('Bazaar: working the merchant window you have open.', COLOR_GOLD)
 
     runSpellSpree()
+    logRunOutcome('Bazaar')
     printSpreeSummary()
 end
 
@@ -2148,6 +2345,7 @@ local function draw()
         ImGui.SetCursorPosX(ImGui.GetWindowWidth() - 90)
         if ImGui.Button('Re-detect', 80, 0) then
             S.reDetectRequested = true
+            logLine('User pressed Re-detect.', COLOR_MUTE)
         end
 
         ImGui.Dummy(0, 2)
@@ -2192,7 +2390,10 @@ local function draw()
 
         ImGui.Dummy(0, 4)
         local newStop, stopChanged = ImGui.Checkbox('Stop when out of money (uncheck to skip and keep shopping)', S.stopOnOutOfMoney)
-        if stopChanged then S.stopOnOutOfMoney = newStop end
+        if stopChanged then
+            S.stopOnOutOfMoney = newStop
+            logLine('User set "stop when out of money" to ' .. tostring(newStop) .. '.', COLOR_MUTE)
+        end
 
         ImGui.Dummy(0, 4)
         local canSpree = (S.state ~= STATE.RUNNING) and selectedCount > 0
@@ -2200,13 +2401,17 @@ local function draw()
         if ImGui.Button(string.format('Run Shopping Spree (%d selected)', selectedCount), 260, 0) then
             S.stopRequested = false
             S.shoppingSpreeRequested = true
+            logLine('User pressed Run Shopping Spree.', COLOR_MUTE)
         end
         if not canSpree then ImGui.EndDisabled() end
 
         ImGui.SameLine()
         local canStop = (S.state == STATE.RUNNING)
         if not canStop then ImGui.BeginDisabled() end
-        if ImGui.Button('Stop', 100, 0) then S.stopRequested = true end
+        if ImGui.Button('Stop', 100, 0) then
+            S.stopRequested = true
+            logLine('User pressed Stop.', COLOR_WARN)
+        end
         if not canStop then ImGui.EndDisabled() end
 
         if selectedCount == 0 and S.state ~= STATE.RUNNING then
@@ -2225,7 +2430,10 @@ local function draw()
 
         ImGui.Dummy(0, 4)
         local newStop, stopChanged = ImGui.Checkbox('Stop when out of money (uncheck to skip and keep shopping)', S.stopOnOutOfMoney)
-        if stopChanged then S.stopOnOutOfMoney = newStop end
+        if stopChanged then
+            S.stopOnOutOfMoney = newStop
+            logLine('User set "stop when out of money" to ' .. tostring(newStop) .. '.', COLOR_MUTE)
+        end
 
         ImGui.Dummy(0, 4)
         local canBazaar = (S.state ~= STATE.RUNNING) and mOpen
@@ -2233,13 +2441,17 @@ local function draw()
         if ImGui.Button('Buy From Open Vendor', 260, 0) then
             S.stopRequested = false
             S.bazaarRequested = true
+            logLine('User pressed Buy From Open Vendor.', COLOR_MUTE)
         end
         if not canBazaar then ImGui.EndDisabled() end
 
         ImGui.SameLine()
         local canStop = (S.state == STATE.RUNNING)
         if not canStop then ImGui.BeginDisabled() end
-        if ImGui.Button('Stop', 100, 0) then S.stopRequested = true end
+        if ImGui.Button('Stop', 100, 0) then
+            S.stopRequested = true
+            logLine('User pressed Stop.', COLOR_WARN)
+        end
         if not canStop then ImGui.EndDisabled() end
 
         if S.state ~= STATE.RUNNING then
@@ -2267,7 +2479,10 @@ local function draw()
 
         if S.state == STATE.RUNNING then
             ImGui.Dummy(0, 4)
-            if ImGui.Button('Stop', 100, 0) then S.stopRequested = true end
+            if ImGui.Button('Stop', 100, 0) then
+            S.stopRequested = true
+            logLine('User pressed Stop.', COLOR_WARN)
+        end
         end
     end
 
@@ -2350,6 +2565,13 @@ end
 -- helpers) happens here, never inside the ImGui draw callback.
 -- ============================================================================
 logLine(string.format('SpellSpree v%s loaded. Check some vendors below and hit Run Shopping Spree.', VERSION), COLOR_GOLD)
+logObs(string.format('session start: build=v%s source=%s', VERSION, tloText(function() return debug.getinfo(1, 'S').source end)))
+logObs('log path resolution: ' .. tostring(LOG.resolution))
+logObs('log file: ' .. tostring(LOG.path))
+logObs(string.format('environment at load: zone=%s character=%s server=%s class=%s merchantOpen=%s',
+    zoneShort(), tloText(function() return mq.TLO.Me.CleanName() end), tloText(function() return mq.TLO.EverQuest.Server() end),
+    tloText(function() return mq.TLO.Me.Class.ShortName() end), tostring(merchantOpen())))
+logObs('known limits: MacroQuest returns nothing from /notify, /itemnotify, /target, /click or /nav. Each CMD line records what was sent and why; whether it worked is only inferred from the OBS lines that read game state afterward. A CMD followed by unchanged state means no effect was observed, not that the command was proven ignored.')
 
 while open do
     mq.doevents()
@@ -2370,7 +2592,7 @@ while open do
     end
     if S.shoppingSpreeRequested and S.state ~= STATE.RUNNING then
         S.shoppingSpreeRequested = false
-        local ok, err = pcall(runShoppingSpree)
+        local ok, err = xpcall(runShoppingSpree, errHandler)
         if not ok then
             logLine('Unexpected error: ' .. tostring(err), COLOR_ERR)
             S.state = STATE.STOPPED
@@ -2379,7 +2601,7 @@ while open do
     end
     if S.bazaarRequested and S.state ~= STATE.RUNNING then
         S.bazaarRequested = false
-        local ok, err = pcall(runBazaarShop)
+        local ok, err = xpcall(runBazaarShop, errHandler)
         if not ok then
             logLine('Unexpected error: ' .. tostring(err), COLOR_ERR)
             S.state = STATE.STOPPED
