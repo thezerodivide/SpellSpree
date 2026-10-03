@@ -2734,3 +2734,45 @@ agents (the AI reports it to the developer). The developer still receives every 
 
 **Applied to:** D-025 (Step 3). Its consensus (ChatGPT's review of Revision 4, items A'-G agreed) is therefore treated as approved at
 the moment of this message, and the Step 3 build starts.
+
+## D-025 — APPROVED (by consensus, D-027) and BUILT: Step 3, purchases bounded by the selected level range
+
+Date: 2026-10-03. Approval: the AI and ChatGPT reached consensus on A'-G (D-025 review round 4); under D-027 that is the developer's approval.
+Design as recorded in the round 4 entry above. Built test-first (D-024 / P-9, D-025 F'').
+
+**Red runs (docs/evidence, each read against the per-stage table kept in the test files, `st[n]`):** stage 0 (`..._step3_stage0.txt`:
+unchanged script; unit tests fail on the missing export, the scenario NEW tests fail on assertions about the missing behavior, T13 and T18
+pass); stage 1 (`..._stage1.txt`: wrong stubs; U18, U19, U21 pass because the stub's answer equals the expected value, U17, U20, U22, U23
+fail on wrong results; scenarios as stage 0); stage 2 (`..._stage2.txt`: correct functions wired into visit collection and the range
+passed down; unit tests pass; T8 and T9, the label refusals, pass; T10-T12 (runSpellSpree-side refusals) and every filtering scenario fail
+because the script still buys the out-of-range spells). All three matched the tables with no mismatch. Stage 3 (`..._stage3.txt`): full
+build, 0 mismatches. **Results:** `test_units.lua` 23 tests + 13 mutations + wrapper mutation, all as predicted; `test_step3.lua` 21 tests +
+14 mutations (including the two bypassed-filtering ones, `classifyLevel` always "in" and the range not passed: both fail the
+purchase-counting scenarios); `test_step2.lua` 9 tests + 5 mutations + 2 harness mutations; `test_listthenbuy.lua` 22 + 10;
+`test_logging.lua` 11 + 9; the eligibility comparison against the previous commit buys exactly the in-range spells and the money matches.
+
+**Corrections found while building (each recorded, none changes the agreed design):**
+1. The Revision 3 text for the money-short scenario said the Skipped counter would be 0 and the names list empty. That was a mistake about
+   existing behavior: the first unaffordable purchase has always been counted as skipped (the not-paid branch of `processEntry`
+   increments `S.skipped` and records the name; only the second in a row stops the run). The scenario shows `skipped=1` and
+   `Skipped (1): Spell: E3`, as it did before Step 3; the test (T14) now expects exactly that, and still requires that no range or
+   unreadable skip appears in the counter or the names. The expected value comes from the code, not from the run.
+2. T17 initially did not check for a LEDGER DEFECT and the skipped counters; the mutation runs showed it, and it now uses the same checks
+   as T14/T15 (the plan, Revision 3 section 3.2, required them).
+3. Mutation predictions that were wrong and corrected with their reasons (in the test file): the label off-by-one also changes the
+   reason text (T14, T15, T17); a stop at the first eligible entry never reaches a preclassified entry (so one mutation does not fail
+   T17); a stop at the last-but-one entry leaves only an eligible entry after it (T14); Step 2's mutation 1 now also fails S8.
+4. A shared mock event table made T16's event fire only in the first run of a process; each run now gets its own copy (test-only).
+5. Existing expectations changed on purpose, as listed in Revision 1/3: Step 2 `S1` (1 + 1 instead of 2 + 0), the logging suite's PoK
+   scenario (spells given levels 5, 15, 25), the eligibility check (compares against the previous build's purchases within the visited
+   ranges).
+
+**Pre-handoff log review (P-1).** Read the real build's simulated logs (all four tiers, a mixed list, the stop scenarios, the Bazaar).
+They carry: the range line with counts per visit, an OBS line with the reason for every preclassified entry, the built list with each
+level text, the ledger with the reasons, the final scan with the out-of-range count, and the outcome line per visit; refusals are ERROR
+lines. Nothing needed for a live run is missing. One thing to expect: a 61-70 visit that leaves many 1-25 spells prints their names once,
+in the ledger's "deliberately skipped" line (one long line); that is the approved design.
+
+**Not verified (simulation does not show it):** the live client's Lvl column for every spell row (every live row read so far had a number);
+that the script starts normally with the unit-test hook present; the whole run on the live vendor window. The combined live run of
+`1.6.0-test.4` covers them. Version bumped to `1.6.0-test.4` with this handoff (P-2, P-3); `1.6.0` is not created.
