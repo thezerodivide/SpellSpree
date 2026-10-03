@@ -2395,6 +2395,18 @@ local function draw()
     ImGui.End()
 end
 
+-- Unit-test hook (decision log D-026). Only a test sets _G.SPELLSPREE_UNIT, to an empty table: the script then fills that table
+-- with these pieces and stops here, so nothing below runs (no window, no events, no main loop). Nothing above this point touches
+-- the game or the log file. Normal runs never set it.
+if type(rawget(_G, 'SPELLSPREE_UNIT')) == 'table' then
+    local unit = _G.SPELLSPREE_UNIT
+    unit.parseClassLine, unit.parseCopperFromText, unit.withCommas = parseClassLine, parseCopperFromText, withCommas
+    unit.formatCoin, unit.formatCoinPPOnly, unit.isScrollName = formatCoin, formatCoinPPOnly, isScrollName
+    unit.setOutcome, unit.markRemainingNotAttempted, unit.logLedger = setOutcome, markRemainingNotAttempted, logLedger
+    unit.OUTCOME, unit.S, unit.LOG = OUTCOME, S, LOG
+    return
+end
+
 mq.imgui.init('SpellSpreeWindow', draw)
 
 -- Best-effort price-quote listener -- see the block comment above

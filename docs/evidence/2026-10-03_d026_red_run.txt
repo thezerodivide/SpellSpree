@@ -1,0 +1,19 @@
+=== baseline: spellspree.lua through the unit-test hook ===
+FAIL   U1 [CHAR] formatCoin splits copper into pp/gp/sp/cp, omits zero parts, adds thousands commas, and shows 0cp for zero -- spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui
+FAIL   U2 [CHAR] formatCoin rounds a fractional copper amount to the nearest copper (99.6 is 1gp, 99.4 is 99cp) -- spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui
+FAIL   U3 [CHAR] withCommas groups digits in threes, handles negatives, and treats nil as 0 -- spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui
+FAIL   U4 [CHAR] formatCoinPPOnly rounds platinum UP so any remainder still shows as at least 1pp (comment above the function) -- spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui
+FAIL   U5 [CHAR] parseCopperFromText sums every "<number> <denomination>" pair (confirmed live tell wording: 159 platinum 2 gold 1 silver 9 copper) and returns nil when none is present -- spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui
+FAIL   U6 [REQ] D-014 A': a scroll name is "Spell: " or "Song: " at the start, with the space; anything else (no space, not at the start, nil) is not a scroll -- spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui
+FAIL   U7 [CHAR] parseClassLine maps a class display line to the short class name, ignoring a leading level number, and returns nil for level lines, NULL and unknown text -- spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui
+FAIL   U8 [REQ] D-017 F'': setOutcome records the outcome and its detail on the entry -- spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui
+FAIL   U9 [REQ] D-017 F'': a second outcome for the same entry is ignored (the first is kept) and logged as a LEDGER DEFECT naming the entry -- spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui
+FAIL   U10 [REQ] D-017 F'' outcome 5: markRemainingNotAttempted marks only entries from the given index on that have no outcome yet, records the reason, and logs no defect -- spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui
+FAIL   U11 [REQ] D-017 F'': logLedger logs a count for every outcome (in the fixed order) and names, with details, for every outcome except the first -- spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui
+FAIL   U12 [REQ] D-017 F'' (ledger item "an entry with no outcome is a defect"): an entry that ends with no outcome is logged as a LEDGER DEFECT, is given NO OUTCOME RECORDED and is listed under it -- spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui
+FAIL   U13 [REQ] D-026 B and C'': the hook exposes every piece the unit tests use, with the right types -- spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui
+FAIL   U14 [REQ] D-026 C'': the stubs are strict (any use of an unlisted mq field raises an error naming it; mq.gettime works) -- spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui
+FAIL   U15 [REQ] D-026 C'': the wrapper restores everything and raises a named error after a syntax error, an initialization error and a missing export; the real script still loads afterwards -- syntax: a following load of the real script failed (spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui); initerr: a following load of the real script failed (spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui); nohook: a following load of the real script failed (spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui)
+FAIL   U16 [REQ] D-026 C'': a failing test body also leaves the process as found -- the original error: got spellspree.lua:2398: unit-test stub: unexpected use of mq.imgui, expected body failure
+
+NOT OK: 16 failure(s) (baseline only, mutations skipped)
