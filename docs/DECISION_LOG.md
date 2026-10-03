@@ -21,6 +21,7 @@ Entries that supersede a specification item. Read this first.
 | D-004 | 2026-10-03 | File logging (first change after baseline) | design approved; implemented in simulation only, not live-tested (see addendum 2026-10-03) |
 | D-005 | 2026-10-03 | Versioning: keep v1.5 line, SemVer from now on | confirmed; see addendum 2026-10-03 for the strings |
 | D-006 | 2026-10-03 | Test-build numbering agreed; unique filenames no longer required | confirmed; version-to-commit tie open |
+| D-007 | 2026-10-03 | Commit and tag every handed-over build | confirmed |
 
 ---
 
@@ -506,3 +507,58 @@ carry the same build identity (D-004 already does this).
 
 - Supersedes the filename half of D-002 Open and ledger Open item 5; builds on
   D-005. Shares `VERSION` with D-004 (printed in every log line).
+
+### D-006 addendum (2026-10-03): open question resolved by D-007
+
+Appended; the entry above is unchanged. The "how a handed-over build is tied to
+an exact commit" question under D-006 Open is resolved by D-007.
+
+---
+
+## D-007 — Commit and tag every handed-over build
+
+**Date:** 2026-10-03 · **Status:** confirmed · **Supersedes:** nothing. Resolves
+the open question in D-006.
+
+### Story
+
+With no unique filename per build (D-006 R15), a version string alone cannot
+guarantee which code the developer tested: two different working-tree states can
+carry the same `VERSION`. The AI suggested committing and tagging each build
+before handing it over so a version always names one exact commit. The developer
+agreed.
+
+### Requirement
+
+- R16. Before a build is handed over for live testing, it is committed, and the
+  commit is tagged with the build's version number. *(Developer, 2026-10-03.)*
+
+### Design choices
+
+- Tag name: `v<VERSION>`, e.g. `v1.6.0-test.1`. *(AI's concrete form of the
+  agreed rule; the developer agreed to "tag it with its version number".)*
+
+### Implementation choices
+
+- Annotated tags, pushed to `origin` together with the commits, so the version
+  maps to a commit on GitHub and not just on this machine.
+- The tag goes on the commit that is handed over (the branch head at handoff),
+  which may include docs and tests added after the code change. `VERSION` in
+  `spellspree.lua` at that commit equals the tag.
+- First application: `v1.6.0-test.1`, on the commit that records this decision.
+
+### Open
+
+- None.
+
+### Not yet verified
+
+- That the developer wants tags pushed (the AI pushed the first one with the
+  commits on the reading that a tag only on this machine would not serve its
+  purpose).
+
+### Dependencies and shared seams
+
+- Builds on D-005 (SemVer) and D-006 (no unique filename). Shares the handoff
+  gate with D-003: a handoff needs both the pre-handoff log review and a tagged
+  commit.
