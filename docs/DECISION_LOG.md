@@ -1512,3 +1512,16 @@ Enchanter and Wizard**. It stays an open item for those three. Because R21 makes
 mapping fail safe (a range buys fewer spells, never wrong ones), the three classes do not block
 the design; their evidence will come from the level-range build logging each vendor's level
 counts on first visit, or from the developer telling the AI sooner.
+
+### D-013 addendum 3 (2026-10-03): correction to addendum 2 - Wizard and Enchanter were also tested
+
+Appended; addendum 2 is unchanged and stays as the record of what the developer first said.
+
+**Developer, 2026-10-03:** the vendor-level pattern was **also tested on Wizard and Enchanter**.
+Covered classes are therefore **11 of the 12** with spell vendors in the script's tables:
+Paladin, Shadowknight, Cleric, Necromancer, Beastlord, Magician, Shaman, Ranger, Bard, Wizard,
+Enchanter. **Not covered: Druid only** (the developer has not mentioned it; the AI does not
+assume). Addendum 2's "not covered: Druid, Enchanter, Wizard" is superseded by this. The reasoning
+in addendum 2 is unchanged: Druid does not block the design, because R21 makes a wrong mapping fail
+safe, and the level-range build's first-visit level logging (or the developer telling the AI) will
+provide Druid's evidence.
