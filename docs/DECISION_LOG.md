@@ -3131,3 +3131,17 @@ the developer's list have now been observed with their vendor name read from the
 **Reference note (from the developer):** ChatGPT found the documented way to read the open merchant's name, **`${Merchant.Name}`** ("the name of the currently open merchant", MacroQuest documentation), by
 searching the MQ documentation online. The spike reads the `MW_MerchantName` label instead (found in the UI files on disk); both gave the right vendor in all ten dumps, but `Merchant.Name` is the documented
 source and should be preferred in the build. The AI is not limited to files on the developer's disk: the MacroQuest documentation and other public sources can be searched when a fact is needed.
+
+### D-030 addendum 9 (2026-10-03): the tome design handed to ChatGPT (Step 6, Revision 1)
+
+All ten tome vendors are observed and the spike questions are answered (addenda 2-8), so the design was written and sent for ChatGPT's review (D-015; consensus is approval, D-027).
+Handoff: `docs/handoffs/2026-10-03_step6_decision30_rev1_from-claude.md`. Summary of the proposal: (A) a `TOME_VENDORS` table (Berserker: Kurlond first, then Gaddi; Zhao with the backtick) and a
+**Discipline Tomes** checkbox per class, with Warrior, Monk, Rogue and Berserker added with only that checkbox; (B) `runSpellSpree` takes a second required argument, the item kind
+(`scroll` or `tome`), refused if missing; a tome visit passes the no-range value, so there is no level bounding; (C) a tome is a row whose name begins exactly `Tome of `; (D) a known check per visit,
+read as TAC reads it and compared with every non-alphanumeric character removed, known tomes skipped as a ledger-only outcome, un-derivable names (`Diversive Strike`) bought once; (E) a run-wide
+record of tomes handled, so the second Berserker visit buys nothing; (F) the existing purchase steps, then right-click and check that the slot emptied, plus a chat watch for "You already know this
+discipline." that records the outcome and clears the cursor with `/autoinventory` (stop if it stays); (G) the six outcomes reused, with tome labels substituted in the ledger; (H) logging per tome visit;
+(I) nothing else changes; (J) delivery as `1.7.0-test.N`; (K) the TDD plan, staged red runs and mutations. **Not observed live and named as such:** a learn of a new tome, `/autoinventory`,
+`Merchant.Name`. Five judgment points were put to ChatGPT.
+
+**Status:** awaiting ChatGPT's review. Nothing is built.
