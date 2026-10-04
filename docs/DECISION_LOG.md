@@ -3217,3 +3217,23 @@ delivered as `1.7.0-test.1`. Release `1.7.0` is not authorized.
 **Not verified live (stated):** a learn of a new tome (chat text, the count dropping, the known list refreshing), `/autoinventory` with a tome on the cursor, `Merchant.Name`.
 
 **Status:** approved; building.
+
+### D-030 addendum 14 (2026-10-03): Step 6 built and delivered as `1.7.0-test.1`
+**Built test-first, staged:** stage 0 (unchanged script) all new tests red; stage 1 (wrong stubs) red; stage 2 (pure functions correct, unwired) unit tests U36-U44 green, scenario tests D1-D34 red, D35 regression green; stage 3 (full wiring) 0 mismatches. Evidence: `docs/evidence/2026-10-03_step6_stage0.txt` .. `_stage3.txt`, `_stage3_units.txt`.
+
+**Stage 3 findings (all fixed, none changed the design):**
+- Learn timing: after a click that took the tome away the code waited a further 1000 ms before reclassifying, so the observation ran about 4.2 s instead of about 3 s (D16 caught it). The pause is skipped when the post-click polls already show the tome is no longer clickable.
+- Test errors found by the run: D22's counter closure was shared between runs (now built fresh per run by `_fresh`), D22's count read once per first tome not twice, D23 ticked the class box (which by design ticks ranges only) instead of the Discipline Tomes box, D32's Stop time moved by 1 s with the faster timing (now 7500 ms, passes from 6500 to 8000).
+- Four older mutation targets (test_units #5, test_step3 #5 and #8, test_listthenbuy #6) named text that the wiring changed; their targets were updated, their predictions were not.
+
+**Mutations:** 22 mutants of the tome code with predictions written first (`docs/evidence/2026-10-03_step6_mutations_notes.txt`, `_run1.txt`, `_run2.txt`). Run 1: five mutants also failed tests that were not predicted (consequences of the mutation, prediction errors), one was NOT caught (mutation 16, the pending observation right-clicking: the mock only counted clicks that reached a tome in a slot). Tests D10, D13, D14, D20 now assert that every right-click command reached a tome in its slot. Run 2: every mutant caught by its corrected prediction. Two have an empty prediction on purpose (13: the fresh slot read cannot be separated from the observation by a mock whose reads are instant; 17: the recovery's cursor recheck is covered by unit test U44).
+
+**P-1 log review of a simulated Berserker run:** the log reads clearly. One inconsistency found and fixed before delivery: the per-entry `outcome for ...` line still said "bought and scribed" on tome visits while the ledger used the tome labels; both now use them. Left as is: the start-of-run warning still says "buy and scribe into".
+
+**All suites green:** tomes D1-D35, units U1-U44, logswitch, step3, step2, listthenbuy, logging.
+
+**Decisions made while building (within the approved design):** the Bazaar and Nav & Shop paths pass the item kind `'scroll'`; the visit kind is a required argument of `runSpellSpree` (a missing or unknown kind is refused, fail closed); `S.visitVendor` names the vendor for logs and for the run-wide record.
+
+**Not verified live (unchanged):** a learn of a new tome (chat text, the count dropping, the known list refreshing), `/autoinventory` with a tome on the cursor, `Merchant.Name` during a visit, a Berserker run across both vendors. Diversive Strike has no alias.
+
+**Status:** delivered as `1.7.0-test.1`, awaiting the developer's live run. `1.7.0` is not released; that needs the developer's instruction.
