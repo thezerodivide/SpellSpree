@@ -38,7 +38,9 @@ end
 --         the tome goes to the cursor, not consumed. Options: tomeTransientCursorMs (the tome sits on the cursor that long, then is consumed), tomeLearnDelayMs (consumed
 --         only that long after the click), tomeRejectFirst (the first n right-clicks do nothing), knownMessageNever (no chat line), landAs = function(row) (the name that
 --         lands in the bag), tomeVanishAfterClick (the tome leaves its slot without being consumed or on the cursor), tomeRelocateAfterClick (it moves to another slot),
---         tomeReplaceAfterClick = 'Tome of X' (a different item takes its slot), autoinventoryFails. sim.tomeClicks / sim.tomeClickSlots / sim.autoinvCount record
+--         tomeReplaceAfterClick = 'Tome of X' (a different item takes its slot); these three act on the FIRST right-click only, and the tome they take away stays counted by
+--         FindItemCount (it is hidden, not gone) until hiddenReleaseMs, when it is consumed and the discipline learned. autoinventoryFails, autoinvDelayMs (the cursor empties that
+--         long after /autoinventory), fillBagOnCursor (every free bag slot fills when a known tome lands on the cursor), startCursor = 'Name' (an item on the cursor at the start). sim.tomeClicks / sim.tomeClickSlots / sim.autoinvCount record
 --         what the script did; sim.cursor is the cursor item. mq.event handlers are kept and run by mq.doevents on the chat lines queued in sim.chat.
 --       Step 5 (log follows the character, D-028): identities = { {atMs=, server=, character=}, ... } (the server and character name the TLOs
 --         return from each simulated time on; a nil or non-string value models an unreadable read); logsUnreadableAfterMs (Path('logs') reads
@@ -60,7 +62,7 @@ function M.new(opts)
     local sim = {
         opts = opts, clockMs = 0, cmds = {}, prints = {}, merchantOpen = not opts.startClosed,
         usableChecked = true, known = {}, targetId = 4242, finished = false,
-        scribeRejects = opts.scribeRejectFirst or 0, delays = 0, purchases = {}, buyClicks = {}, pending = {}, ticks = {}, selectClicks = {}, chat = {}, events = {}, tomeClicks = 0, tomeClickSlots = {}, autoinvCount = 0, tomeRejects = 0, later = {},
+        scribeRejects = opts.scribeRejectFirst or 0, delays = 0, purchases = {}, buyClicks = {}, pending = {}, ticks = {}, selectClicks = {}, chat = {}, events = {}, tomeClicks = 0, tomeClickSlots = {}, autoinvCount = 0, tomeRejects = 0, later = {}, hidden = {}, cursor = opts.startCursor and { name = opts.startCursor } or nil,
     }
     sim.money = opts.money or 10000000
 
@@ -184,7 +186,11 @@ function M.new(opts)
             sim.autoinvCount = sim.autoinvCount + 1
             if sim.cursor and not opts.autoinventoryFails then
                 local s = firstFreeBagSlot()
-                if s then sim.bag[s] = { name = sim.cursor.name, stack = 1, teaches = sim.cursor.teaches }; sim.cursor = nil end
+                if s then
+                    local item = sim.cursor
+                    local function put() sim.bag[s] = { name = item.name, stack = 1, teaches = item.teaches }; sim.cursor = nil end
+                    if opts.autoinvDelayMs then sim.later[#sim.later + 1] = { atMs = sim.clockMs + opts.autoinvDelayMs, fn = put } else put() end
+                end
             end
             return
         end
@@ -200,18 +206,35 @@ function M.new(opts)
                     if it.stack > 1 then it.stack = it.stack - 1 else sim.bag[n] = nil end
                 end
                 local function learn() sim.knownDisc[#sim.knownDisc + 1] = it.teaches; sim.knownDiscSet[it.teaches] = #sim.knownDisc end
-                if opts.tomeVanishAfterClick then takeFromSlot(); return end
-                if opts.tomeRelocateAfterClick then
+                local function hide()
+                    sim.hidden[it.name] = (sim.hidden[it.name] or 0) + 1
+                    if opts.hiddenReleaseMs then
+                        sim.later[#sim.later + 1] = { atMs = sim.clockMs + opts.hiddenReleaseMs, fn = function()
+                            sim.hidden[it.name] = sim.hidden[it.name] - 1; learn()
+                        end }
+                    end
+                end
+                if opts.tomeVanishAfterClick and not sim.vanished then sim.vanished = true; takeFromSlot(); hide(); return end
+                if opts.tomeRelocateAfterClick and not sim.relocated then
+                    sim.relocated = true
                     local s2 = firstFreeBagSlot()
                     sim.bag[n] = nil
                     if s2 then sim.bag[s2] = it end
                     return
                 end
-                if opts.tomeReplaceAfterClick then sim.bag[n] = { name = opts.tomeReplaceAfterClick, stack = 1 }; return end
+                if opts.tomeReplaceAfterClick and not sim.replaced then
+                    sim.replaced = true
+                    sim.bag[n] = { name = opts.tomeReplaceAfterClick, stack = 1 }
+                    hide()
+                    return
+                end
                 if sim.knownDiscSet[it.teaches] then
                     if not opts.knownMessageNever then sim.chat[#sim.chat + 1] = 'You already know this discipline.' end
                     takeFromSlot()
                     sim.cursor = { name = it.name, teaches = it.teaches }
+                    if opts.fillBagOnCursor then
+                        for s4 = 1, 10 do if not sim.bag[s4] then sim.bag[s4] = { name = 'Junk Filler', stack = 1 } end end
+                    end
                 elseif opts.tomeTransientCursorMs then
                     takeFromSlot()
                     sim.cursor = { name = it.name, teaches = it.teaches }
@@ -528,6 +551,7 @@ function M.new(opts)
         local n = 0
         for _, it in pairs(sim.bag) do if it.name:lower() == want then n = n + (it.stack or 1) end end
         if sim.cursor and sim.cursor.name:lower() == want then n = n + 1 end   -- observed live: the cursor item is counted
+        for hn, hc in pairs(sim.hidden) do if hn:lower() == want then n = n + hc end end
         if opts.countOverride then return node(opts.countOverride(tostring(spec), n)) end
         return node(n)
     end
@@ -578,6 +602,7 @@ function M.new(opts)
             sim.redetected = true
             return true
         end
+        if label:sub(1, 19) == 'Run Shopping Spree ' then sim.lastRunLabel = label end
         if opts.presses and sim.clickPrefix and label:sub(1, #sim.clickPrefix) == sim.clickPrefix then
             sim.pressCount = sim.pressCount or 0
             local notBefore = opts.pressNotBeforeMs and opts.pressNotBeforeMs[sim.pressCount + 1] or 0
@@ -587,6 +612,7 @@ function M.new(opts)
             end
             return false
         end
+        if label:sub(1, 19) == 'Run Shopping Spree ' then sim.lastRunLabel = label end   -- the visit count shown on the button (D-030)
         if sim.clickPrefix and label:sub(1, #sim.clickPrefix) == sim.clickPrefix then
             sim.clickPrefix = nil
             return true

@@ -69,6 +69,9 @@ local OUT = { SCRIBED = 'bought and scribed', SKIPPED = 'deliberately skipped', 
     NONE = 'NO OUTCOME RECORDED' }
 
 local EXTRA3 = { { 'parseTierRange', 'function' }, { 'validateRange', 'function' }, { 'classifyLevel', 'function' } }
+local EXTRA6 = { { 'isTomeName', 'function' }, { 'tomeDiscipline', 'function' }, { 'normalizeDiscipline', 'function' }, { 'validSlotNumber', 'function' },
+    { 'buildKnownIndex', 'function' }, { 'tomeKnownVerdict', 'function' }, { 'learnState', 'function' }, { 'scanKnownDisciplines', 'function' },
+    { 'recoverKnownTome', 'function' } }
 local EXTRA5 = { { 'logSyncIdentity', 'function' }, { 'logWriteFile', 'function' }, { 'logLine', 'function' }, { 'logObs', 'function' }, { 'logFail', 'function' },
     { 'logUnavailable', 'function' }, { 'logIdentityKeyFor', 'function' } }
 
@@ -365,7 +368,7 @@ local TESTS = {
     -- nothing, logUnavailable says false, logIdentityKeyFor says 'x'); 2 = the functions correct but nothing calls them from
     -- logWriteFile or the run paths (logFail already idempotent); 3 = the full build. `own` = the test builds its own stubs and calls
     -- withUnit itself.
-    { id = 'U24', kind = 'REQ', new = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+    { id = 'U24', kind = 'REQ', new = true, extra = EXTRA5,
       src = 'D-028 C / Revision 2 section 2: an identity value is unavailable when it is nil, "n/a", "NULL" or empty after trimming; ordinary names are available',
       fn = function(u)
           for _, v in ipairs({ 'n/a', 'NULL', '', '   ', '\t' }) do eq(u.logUnavailable(v), true, string.format('%q', v)) end
@@ -373,7 +376,7 @@ local TESTS = {
           for _, v in ipairs({ 'Benedict', 'multiclass', 'A b', 'null', 'na' }) do eq(u.logUnavailable(v), false, string.format('%q', v)) end
       end },
 
-    { id = 'U25', kind = 'REQ', new = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+    { id = 'U25', kind = 'REQ', new = true, extra = EXTRA5,
       src = 'D-028 A\' (Revision 3 section 2) / Revision 2 section 2: the destination key is the sanitized server and character, as the file name uses them; names that sanitize alike share a key, different names do not',
       fn = function(u)
           eq(u.logIdentityKeyFor('multiclass', 'Benedict'), 'multiclass_Benedict', 'plain')
@@ -383,7 +386,7 @@ local TESTS = {
           eq(u.logIdentityKeyFor('serverA', 'Benedict') ~= u.logIdentityKeyFor('serverB', 'Benedict'), true, 'different servers')
       end },
 
-    { id = 'U26', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+    { id = 'U26', kind = 'REQ', new = true, own = true, extra = EXTRA5,
       src = 'D-028 B / B\': a forced sync after the character changed writes the transition line to the old file, then a session header marked "continued session" and a "Logging to a new file" notice to the new file; the counter is reset; nothing from before is moved',
       fn = function()
           local env = newSyncEnv('u26')
@@ -411,7 +414,7 @@ local TESTS = {
           end, EXTRA5, { mq = env.mq })
       end },
 
-    { id = 'U27', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+    { id = 'U27', kind = 'REQ', new = true, own = true, extra = EXTRA5,
       src = 'D-028 A\' / I\'\': a raw identity that differs but sanitizes to the same file writes the identity-change record and a continued session header to the SAME file, with no file switch, no notice, and the counter not reset (the new lines increment it normally)',
       fn = function()
           local env = newSyncEnv('u27'); env.char = 'A_b'
@@ -431,7 +434,7 @@ local TESTS = {
           end, EXTRA5, { mq = env.mq })
       end },
 
-    { id = 'U28', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+    { id = 'U28', kind = 'REQ', new = true, own = true, extra = EXTRA5,
       src = 'D-028 B\' / A\': one sync reads the server and the character once each and uses that one snapshot for the transition text, the file name, the stored identity and the header; the sync does not start a nested sync from its own writes',
       fn = function()
           local env = newSyncEnv('u28')
@@ -462,7 +465,7 @@ local TESTS = {
           end, EXTRA5, { mq = env.mq })
       end },
 
-    { id = 'U29', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+    { id = 'U29', kind = 'REQ', new = true, own = true, extra = EXTRA5,
       src = 'D-028 C: an unavailable identity keeps the current file and writes one OBS line (not one per sync); once it is readable and differs, the file switches',
       fn = function()
           local env = newSyncEnv('u29')
@@ -480,7 +483,7 @@ local TESTS = {
           end, EXTRA5, { mq = env.mq })
       end },
 
-    { id = 'U30', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+    { id = 'U30', kind = 'REQ', new = true, own = true, extra = EXTRA5,
       src = 'D-028 E / I\'\': a failed transition write, an unresolvable new destination, a failed header write and an unexpected exception each leave logging disabled, both guards cleared, exactly one failure notice and no success notice; a later sync writes nothing',
       fn = function()
           local cases = {
@@ -512,7 +515,7 @@ local TESTS = {
           end
       end },
 
-    { id = 'U31', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+    { id = 'U31', kind = 'REQ', new = true, own = true, extra = EXTRA5,
       src = 'D-028 A\' (Revision 2 section 4): an unforced sync acts at most once every 2,000 ms of mq.gettime(); a forced sync ignores the interval',
       fn = function()
           local env = newSyncEnv('u31')
@@ -533,7 +536,7 @@ local TESTS = {
           end, EXTRA5, { mq = env.mq })
       end },
 
-    { id = 'U32', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+    { id = 'U32', kind = 'REQ', new = true, own = true, extra = EXTRA5,
       src = 'D-028 E\'\': while a run holds the file, detection continues but routing stays pinned: one note per distinct observed identity (observed, original, "records stay"); once the hold is cleared a forced sync switches',
       fn = function()
           local env = newSyncEnv('u32')
@@ -560,7 +563,7 @@ local TESTS = {
           end, EXTRA5, { mq = env.mq })
       end },
 
-    { id = 'U33', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'fail', [3] = 'pass' },
+    { id = 'U33', kind = 'REQ', new = true, own = true, extra = EXTRA5,
       src = 'D-028 A\' (Revision 2 section 4): every record passes logWriteFile, which runs the throttled sync first, so a record written after the interval goes to the new file and the transition record to the old one',
       fn = function()
           local env = newSyncEnv('u33')
@@ -576,7 +579,7 @@ local TESTS = {
           end, EXTRA5, { mq = env.mq })
       end },
 
-    { id = 'U35', kind = 'REQ', new = true, own = true, extra = EXTRA5, st = { [0] = 'fail', [3] = 'pass' },
+    { id = 'U35', kind = 'REQ', new = true, own = true, extra = EXTRA5,
       src = "D-028 A' (the recursion guard): with the throttle shut off, so that nothing but LOG.syncing stops a nested sync, a switch still writes the transition line, the header and the notice exactly once each. Added after the mutation runs showed the throttle hides the guard in the other tests",
       fn = function()
           local copy = TMP .. '\\throttle0.lua'
@@ -609,7 +612,7 @@ local TESTS = {
           if not ok then error(err, 0) end
       end },
 
-    { id = 'U34', kind = 'REQ', new = true, extra = EXTRA5, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+    { id = 'U34', kind = 'REQ', new = true, extra = EXTRA5,
       src = 'D-028 B\' (Revision 3 section 3): logFail is idempotent: the first call turns file logging off and writes one window notice; a second call writes nothing',
       fn = function(u)
           u.S.log = {}
@@ -618,6 +621,169 @@ local TESTS = {
           eq(u.LOG.disabled, true, 'disabled')
           eq(countTexts(u.S.log, 'File logging is OFF'), 1, 'one notice')
           eq(countTexts(u.S.log, 'second reason'), 0, 'the second reason is not reported')
+      end },
+
+    -- ---- Step 6 (D-030): discipline tomes. `st[n]` is the expected result at red-run stage n, written before the stage was run: 0 = unchanged script (nothing
+    -- exported); 1 = the new functions exposed as wrong stubs (isTomeName false, tomeDiscipline nil, normalizeDiscipline '', validSlotNumber nil,
+    -- buildKnownIndex {}, tomeKnownVerdict 'unknown', learnState 'insufficient', scanKnownDisciplines empty, recoverKnownTome 'failed'); 2 = the functions correct but
+    -- nothing calls them; 3 = the full build.
+    { id = 'U36', kind = 'REQ', new = true, extra = EXTRA6, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-030 C: a row is a tome only if its name begins exactly "Tome of " (case-sensitive, from the start) with something after it; scrolls, near-misses and non-strings are not',
+      fn = function(u)
+          for _, n in ipairs({ 'Tome of Bellow', 'Tome of Inner Flame Discipline', 'Tome of Diversive Strike', 'Tome of A' }) do eq(u.isTomeName(n), true, n) end
+          for _, n in ipairs({ 'Spell: Calm', 'Song: Chant', 'tome of bellow', 'Tome Of Bellow', ' Tome of Bellow', 'Tome ofBellow', 'Tome of', 'Tome of ', 'Tome of   ',
+              'Tomes of Lore', 'Spell: Tome of Bellow', 'A Tome of Bellow', '' }) do eq(u.isTomeName(n), false, string.format('%q', n)) end
+          eq(u.isTomeName(nil), false, 'nil'); eq(u.isTomeName(5), false, 'a number')
+      end },
+
+    { id = 'U37', kind = 'REQ', new = true, extra = EXTRA6, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-030 D: the discipline a tome names is its name without "Tome of ", trimmed; nil for anything that is not a tome',
+      fn = function(u)
+          eq(u.tomeDiscipline('Tome of Bellow'), 'Bellow', 'Bellow')
+          eq(u.tomeDiscipline('Tome of Inner Flame Discipline'), 'Inner Flame Discipline', 'Inner Flame')
+          eq(u.tomeDiscipline('Tome of  Spaced  '), 'Spaced', 'trimmed')
+          eq(u.tomeDiscipline('Spell: Calm'), nil, 'a scroll')
+          eq(u.tomeDiscipline(nil), nil, 'nil')
+      end },
+
+    { id = 'U38', kind = 'REQ', new = true, extra = EXTRA6, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-030 D / Revision 2 answer 3: a discipline name is normalized by lower-casing and removing every character outside a-z and 0-9 (so Inner Flame and Innerflame agree)',
+      fn = function(u)
+          eq(u.normalizeDiscipline('Inner Flame Discipline'), 'innerflamediscipline', 'Inner Flame')
+          eq(u.normalizeDiscipline('Innerflame Discipline'), 'innerflamediscipline', 'Innerflame')
+          eq(u.normalizeDiscipline('Stone Stance Discipline'), u.normalizeDiscipline('Stonestance Discipline'), 'Stone Stance')
+          eq(u.normalizeDiscipline("Champion's Aura"), 'championsaura', 'apostrophe')
+          eq(u.normalizeDiscipline('Zhao V`karin'), 'zhaovkarin', 'backtick')
+          eq(u.normalizeDiscipline(nil), '', 'nil')
+          eq(u.normalizeDiscipline('Bellow') ~= u.normalizeDiscipline('Bellow of the Mastruq'), true, 'different names stay different')
+      end },
+
+    { id = 'U39', kind = 'REQ', new = true, extra = EXTRA6, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-030 D\' (Revision 3): a by-name result counts only as a positive whole slot number; nil, empty, NULL, zero, negative, fractions, text and non-numbers do not',
+      fn = function(u)
+          eq(u.validSlotNumber(5), 5, '5'); eq(u.validSlotNumber('23'), 23, '"23"'); eq(u.validSlotNumber(40), 40, '40')
+          for _, v in ipairs({ 0, -1, 2.5, '', 'NULL', 'abc', '1e', true, false, '0', '-3', '2.5' }) do eq(u.validSlotNumber(v), nil, tostring(v)) end
+          eq(u.validSlotNumber(nil), nil, 'nil'); eq(u.validSlotNumber({}), nil, 'a table')
+      end },
+
+    { id = 'U40', kind = 'REQ', new = true, extra = EXTRA6, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-030 D\' : the known list is indexed by normalized name; two distinct raw names that normalize alike share a key (ambiguous), the same raw name twice does not',
+      fn = function(u)
+          local ix = u.buildKnownIndex({ 'Bellow', 'Innerflame Discipline', 'Foo Bar', 'FooBar', 'Bellow' })
+          eq(#(ix['bellow'] or {}), 1, 'a repeated name is one entry')
+          eq(#(ix['innerflamediscipline'] or {}), 1, 'Innerflame')
+          eq(#(ix['foobar'] or {}), 2, 'two distinct names share a key')
+          eq(ix['nothere'], nil, 'an unknown key')
+      end },
+
+    { id = 'U41', kind = 'REQ', new = true, extra = EXTRA6, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-030 D\' : a tome is known if the list matches unambiguously, or the exact by-name lookup gave a positive slot; an ambiguous list match alone is never known; an alias is used only when given',
+      fn = function(u)
+          local ix = u.buildKnownIndex({ 'Bellow', 'Innerflame Discipline', 'Foo Bar', 'FooBar', 'Divertive Strike' })
+          local v, via = u.tomeKnownVerdict('Bellow', ix, nil); eq(v, 'known', 'list match'); eq(via, 'list', 'via the list')
+          v = u.tomeKnownVerdict('Inner Flame Discipline', ix, nil); eq(v, 'known', 'normalized match')
+          v, via = u.tomeKnownVerdict('Fearless Discipline', ix, 7); eq(v, 'known', 'by-name positive'); eq(via, 'by-name', 'via the by-name lookup')
+          v = u.tomeKnownVerdict('Fearless Discipline', ix, 0); eq(v, 'unknown', 'by-name zero')
+          v = u.tomeKnownVerdict('Fearless Discipline', ix, nil); eq(v, 'unknown', 'no match at all')
+          v = u.tomeKnownVerdict('Foo-Bar', ix, nil); eq(v, 'ambiguous', 'ambiguous list match is not known')
+          v, via = u.tomeKnownVerdict('Foo-Bar', ix, 3); eq(v, 'known', 'ambiguous list, but a positive exact by-name result'); eq(via, 'by-name', 'via by-name')
+          v = u.tomeKnownVerdict('Diversive Strike', ix, nil); eq(v, 'unknown', 'no alias is configured')
+          v = u.tomeKnownVerdict('Diversive Strike', ix, nil, { ['Diversive Strike'] = 'Divertive Strike' }); eq(v, 'known', 'a given alias is used')
+      end },
+
+    { id = 'U42', kind = 'REQ', new = true, extra = EXTRA6, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-030 F\'\' : the learn state is decided from the slot, the cursor and the count against the original baseline: cursor first, then the slot, then the count',
+      fn = function(u)
+          local T = 'Tome of Bellow'
+          local function st(o) return u.learnState(o, 2, T) end
+          eq(st({ cursorName = 'Mystery Bone', slotName = T, count = 2 }), 'cursor-other', 'something else on the cursor')
+          eq(st({ cursorName = T, slotName = nil, count = 2 }), 'pending', 'the tome on the cursor')
+          eq(st({ cursorName = T, slotName = nil, count = nil }), 'pending', 'pending even when the count is unreadable')
+          eq(st({ slotName = T, count = 2 }), 'clickable', 'the tome still in the slot, cursor empty')
+          eq(st({ slotName = T, count = nil }), 'clickable', 'clickable even when the count is unreadable')
+          eq(st({ slotName = nil, count = 1 }), 'learned', 'slot empty, cursor empty, count n0-1')
+          eq(st({ slotName = 'Tome of Other', count = 1 }), 'learned', 'a different item in the slot, count n0-1')
+          eq(st({ slotName = nil, count = 2 }), 'insufficient', 'slot empty but the count did not drop')
+          eq(st({ slotName = nil, count = nil }), 'insufficient', 'an unreadable count never establishes learning')
+          eq(st({ slotName = nil, count = 'x' }), 'insufficient', 'a non-number count')
+          eq(st({ slotName = nil, count = 0 }), 'insufficient', 'count below n0-1 is not accepted as learned')
+          eq(st({ slotName = nil, count = 1.5 }), 'insufficient', 'a fractional count')
+      end },
+
+    { id = 'U43', kind = 'REQ', new = true, own = true, extra = EXTRA6, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-030 D\' / Revision 2 answer 2: the known scan stops after 60 empty slots (no count available), counts raising reads and empty slots separately, records the last filled slot, honors Me.CombatAbilityCount, and reports hitting the 400-slot limit',
+      fn = function()
+          local function scan(slots, opts)
+              opts = opts or {}
+              local reads = 0
+              local TLO = setmetatable({
+                  Me = setmetatable({
+                      CombatAbilityCount = opts.count and function() return opts.count end or nil,
+                      CombatAbility = function(i)
+                          reads = reads + 1
+                          if opts.errors and opts.errors[i] then error('read error') end
+                          local nm = slots[i]
+                          if not nm then return nilNode() end
+                          if opts.nameViaCall then return setmetatable({}, { __call = function() return nm end, __index = function() return nil end }) end
+                          return setmetatable({ Name = function() return nm end }, { __call = function() return nm end })
+                      end,
+                  }, { __index = function() return nilNode() end }),
+              }, { __index = function() return nilNode() end })
+              local out
+              U.withUnit(SCRIPT, function(u) out = u.scanKnownDisciplines() end, EXTRA6, { mq = { TLO = TLO } })
+              return out, reads
+          end
+          local slots = {}
+          for i = 1, 40 do slots[i] = 'Disc ' .. i end
+          slots[7] = nil                                                   -- one gap, as observed
+          local r, reads = scan(slots)
+          eq(#r.names, 39, 'names found'); eq(r.lastSlot, 40, 'last filled slot'); eq(r.ended, 'empty-run', 'ended by the empty run')
+          eq(r.emptySlots >= 60, true, 'the 60 empty slots after slot 40 are counted'); eq(r.readErrors, 0, 'no read errors'); eq(reads, 100, 'stopped 60 empties after the last filled slot (40 + 60)')
+          r = scan(slots, { errors = { [3] = true, [4] = true } })
+          eq(r.readErrors, 2, 'two raising reads counted apart'); eq(#r.names, 37, 'the other names are still read')
+          r, reads = scan(slots, { count = 5 })
+          eq(reads, 5, 'with a count available only that many slots are read'); eq(r.ended, 'count', 'ended by the count'); eq(#r.names, 5, 'five names')
+          local full = {}
+          for i = 1, 400 do full[i] = 'D' .. i end
+          r = scan(full)
+          eq(r.ended, 'limit', 'the 400-slot limit is reported'); eq(#r.names, 400, 'all 400 read')
+          r = scan({ 'Via Call' }, { nameViaCall = true })
+          eq(r.names[1], 'Via Call', 'a name read by calling the node when .Name is empty')
+      end },
+
+    { id = 'U44', kind = 'REQ', new = true, own = true, extra = EXTRA6, st = { [0] = 'fail', [1] = 'fail', [2] = 'pass', [3] = 'pass' },
+      src = 'D-030 F\' / Revision 3 section 3.1: recovery re-reads the cursor and needs the exact tome there, needs a free slot, sends /autoinventory once and polls up to 10 times for an empty cursor',
+      fn = function()
+          local function run(cursorSeq, freeSlot)
+              local cmds, polls = {}, 0
+              local reads = 0
+              local cursor = setmetatable({}, {
+                  __call = function() reads = reads + 1; local v = cursorSeq(reads, #cmds); return v end,
+                  __index = function(_, k) if k == 'Name' then return function() return cursorSeq(reads, #cmds) end end end,
+              })
+              local mqStub = {
+                  TLO = setmetatable({ Cursor = cursor }, { __index = function() return nilNode() end }),
+                  cmd = function(c) cmds[#cmds + 1] = c end, cmdf = function(f, ...) cmds[#cmds + 1] = string.format(f, ...) end,
+                  delay = function() polls = polls + 1 end, doevents = function() end,
+              }
+              local result, detail
+              U.withUnit(SCRIPT, function(u)
+                  u.LOG.disabled = true
+                  result, detail = u.recoverKnownTome('Tome of Bellow', function() return freeSlot and 1 or nil end)
+              end, EXTRA6, { mq = mqStub })
+              return result, detail, cmds, polls
+          end
+          local T = 'Tome of Bellow'
+          local r, _, cmds = run(function(_, sent) if sent == 0 then return T end return nil end, true)
+          eq(r, 'recovered', 'the cursor empties after the command'); eq(#cmds, 1, 'one command'); eq(cmds[1], '/autoinventory', 'the command')
+          r, _, cmds = run(function() return nil end, true)
+          eq(r, 'changed', 'the cursor was already empty at the recheck'); eq(#cmds, 0, 'no command is sent')
+          r, _, cmds = run(function() return 'Mystery Bone' end, true)
+          eq(r, 'changed', 'something else on the cursor'); eq(#cmds, 0, 'no command is sent')
+          r, _, cmds = run(function() return T end, false)
+          eq(r, 'no-room', 'no free slot'); eq(#cmds, 0, 'no command is sent')
+          local r2, _, cmds2, polls = run(function() return T end, true)
+          eq(r2, 'failed', 'the cursor never empties'); eq(#cmds2, 1, 'one command only'); eq(polls, 10, 'ten polls of 200 ms')
       end },
 
     { id = 'U16', kind = 'REQ', src = 'D-026 C\'\': a failing test body also leaves the process as found',
