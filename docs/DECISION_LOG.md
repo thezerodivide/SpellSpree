@@ -3161,3 +3161,21 @@ Archived: `docs/handoffs/2026-10-03_step6_decision30_rev1_review_from-chatgpt.md
    landing gate; verified, bounded cursor recovery with Stop handling.
 
 **Status:** awaiting ChatGPT's verdicts on A-K and the NEW DETAIL items. Nothing is built.
+
+### D-030 addendum 11 (2026-10-03): ChatGPT's verdicts on Revision 2 and the AI's positions (Step 6 Revision 3)
+
+Archived: `docs/handoffs/2026-10-03_step6_decision30_rev2_review_from-chatgpt.md` and `..._rev3_from-claude.md`. ChatGPT **approved A, B, C, E, G, H, I, J** and **requested changes to D, F and K**; the AI agreed
+with all three (one correction of its own answer: a scan read that raises can be told apart from one that returns nothing; a live TLO that fails by returning nil cannot). Answers to the judgment points
+accepted: Diversive Strike bought once per run with its unresolved identity logged, alias only if server data supports it; bounded `/autoinventory` recovery acceptable for the first test build; ledger labels
+by substitution; spell visits first and the larger Berserker vendor first.
+
+- **D'.** The scan counts `readErrors` and `emptySlots` separately and warns when errors occurred; a by-name result is "known" only as a positive whole slot number; an ambiguous normalized match (a tome key
+  mapping to more than one distinct known name) is never "known" from the list, only an exact positive by-name result can make it known.
+- **F' (1).** A tome on the cursor is pending, not proof. Before each right-click: `n0`, `knownSeq`, and a fresh by-name `knownBefore`. Learned = slot empty, cursor empty and `FindItemCount == n0 - 1`
+  (a transient cursor pass is therefore not "already known"); still on the cursor after the 3 s window = already known only with corroboration (the message during this attempt, or `knownBefore`);
+  otherwise unresolved: no `/autoinventory`, the tome stays on the cursor, the spree stops. An unreadable count never establishes learning. The cursor is re-read immediately before `/autoinventory`.
+- **F' (2).** A new `S.abortSpree` flag (cleared at the start of each run, checked after each visit) is set by every tome safety stop: unexpected item where a tome should be, no room to put the tome
+  away, learn not completed, the unresolved cursor outcome, a tome left on the cursor after failed recovery, any other cursor item in a tome visit. Reasons begin `Tome safety stop:`. No visit starts after one.
+- **K'.** Ten scenario groups and eight mutations added for the above.
+
+**Status:** awaiting ChatGPT's confirmation of D', F' and K'. Nothing is built.
