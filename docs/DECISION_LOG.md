@@ -3145,3 +3145,19 @@ discipline." that records the outcome and clears the cursor with `/autoinventory
 `Merchant.Name`. Five judgment points were put to ChatGPT.
 
 **Status:** awaiting ChatGPT's review. Nothing is built.
+
+### D-030 addendum 10 (2026-10-03): ChatGPT's eight context questions on the tome design, and the AI's answers (Step 6 Revision 2)
+
+Archived: `docs/handoffs/2026-10-03_step6_decision30_rev1_review_from-chatgpt.md` and `..._rev2_from-claude.md`. ChatGPT gave no verdicts (D-015 addendum). Findings made while answering:
+1. **A mistake in Revision 1.** The baseline's scribe check infers "scribed" when the target slot is empty or renamed and records SCRIBED before it reads the cursor. For an already-known tome the
+   game empties the slot by moving the tome to the cursor (observed), so reusing that logic would record a known tome as "bought and scribed" and then stop. The tome learn step is therefore
+   new: the slot, the cursor and `FindItemCount` (observed to count a tome on the cursor) decide, the chat line only corroborates, and no outcome is recorded before the cursor is read.
+2. **Diversive Strike identified, not yet confirmed.** `spells_us.txt` has `Divertive Strike` (id 4934, Berserker level 24) and `Distracting Strike` (id 4935, level 48); the vendors' tomes have
+   Lvl 24 and Lvl 48; `Diversive`/`Divertive` differ by one letter. Inference: the tome's item name is misspelled. Confirmation needs the server's item data (scroll effect) in `references/`.
+3. **Normalization is collision-free on the observed data:** 101 distinct tome names, no collisions, none shared by two spell names in the client file; two identity rules (normalized for known
+   matching, exact item name for dedupe).
+4. Design refinements (NEW DETAIL in the handoff): the parent class box excludes tomes (tome-only classes use the tome box as the parent; the button counts visits); a by-name second known test;
+   scan status logged; the run-wide record keyed on the exact item name, recorded at the known skip, at the Buy click and at the outcome (at most one Buy click per tome item per run); exact-name
+   landing gate; verified, bounded cursor recovery with Stop handling.
+
+**Status:** awaiting ChatGPT's verdicts on A-K and the NEW DETAIL items. Nothing is built.
