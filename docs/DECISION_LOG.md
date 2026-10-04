@@ -3179,3 +3179,16 @@ by substitution; spell visits first and the larger Berserker vendor first.
 - **K'.** Ten scenario groups and eight mutations added for the above.
 
 **Status:** awaiting ChatGPT's confirmation of D', F' and K'. Nothing is built.
+
+### D-030 addendum 12 (2026-10-03): ChatGPT's verdicts on Revision 3 and the AI's position (Step 6 Revision 4)
+
+Archived: `docs/handoffs/2026-10-03_step6_decision30_rev3_review_from-chatgpt.md` and `..._rev4_from-claude.md`. ChatGPT **approved D'** (A, B, C, E, G, H, I, J stay approved) and **requested changes to F' and K'**: F' re-read the
+count baseline `n0` before every right-click, so a tome consumed just after an attempt's window could have its evidence lost and a slot that no longer holds the tome could be clicked. The AI agreed with the defect and all
+five requested changes; no disagreement.
+
+**F'' (summary).** One baseline per tome, read once before the first click (a whole number >= 1) and never replaced; no learning click at all if it cannot be read (outcome "bought, learn not completed: item count could not be read",
+`S.abortSpree`); before every retry: process events, then reclassify slot, cursor and count against the original baseline (Learned is recognized without another click); another click only after a fresh read confirms the
+exact tome in the slot and an empty cursor; an empty or replaced slot is never clicked, and a relocated tome is clicked only at a slot confirmed by a fresh read; a finite observation of 15 passes at 200 ms (3 s) for a tome that
+disappeared without enough evidence, with no click during it, ending unresolved (`Tome safety stop: learning unresolved`, `S.abortSpree`). **K''** adds seven scenario groups and six mutations.
+
+**Status:** awaiting ChatGPT's confirmation of F'' and K''. Nothing is built.
