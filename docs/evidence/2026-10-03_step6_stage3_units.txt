@@ -1,0 +1,76 @@
+=== baseline: spellspree.lua through the unit-test hook ===
+PASS   U1 [CHAR] formatCoin splits copper into pp/gp/sp/cp, omits zero parts, adds thousands commas, and shows 0cp for zero
+PASS   U2 [CHAR] formatCoin rounds a fractional copper amount to the nearest copper (99.6 is 1gp, 99.4 is 99cp)
+PASS   U3 [CHAR] withCommas groups digits in threes, handles negatives, and treats nil as 0
+PASS   U4 [CHAR] formatCoinPPOnly rounds platinum UP so any remainder still shows as at least 1pp (comment above the function)
+PASS   U5 [CHAR] parseCopperFromText sums every "<number> <denomination>" pair (confirmed live tell wording: 159 platinum 2 gold 1 silver 9 copper) and returns nil when none is present
+PASS   U6 [REQ] D-014 A': a scroll name is "Spell: " or "Song: " at the start, with the space; anything else (no space, not at the start, nil) is not a scroll
+PASS   U7 [CHAR] parseClassLine maps a class display line to the short class name, ignoring a leading level number, and returns nil for level lines, NULL and unknown text
+PASS   U8 [REQ] D-017 F'': setOutcome records the outcome and its detail on the entry
+PASS   U9 [REQ] D-017 F'': a second outcome for the same entry is ignored (the first is kept) and logged as a LEDGER DEFECT naming the entry
+PASS   U10 [REQ] D-017 F'' outcome 5: markRemainingNotAttempted marks only entries from the given index on that have no outcome yet, records the reason, and logs no defect
+PASS   U11 [REQ] D-017 F'': logLedger logs a count for every outcome (in the fixed order) and names, with details, for every outcome except the first
+PASS   U12 [REQ] D-017 F'' (ledger item "an entry with no outcome is a defect"): an entry that ends with no outcome is logged as a LEDGER DEFECT, is given NO OUTCOME RECORDED and is listed under it
+PASS   U13 [REQ] D-026 B and C'': the hook exposes every piece the unit tests use, with the right types
+PASS   U14 [REQ] D-026 C'': the stubs are strict (any use of an unlisted mq field raises an error naming it; mq.gettime works)
+PASS   U15 [REQ] D-026 C'': the wrapper restores everything and raises a named error after a syntax error, an initialization error and a missing export; the real script still loads afterwards
+PASS   U17 [REQ] D-025 A': the four real tier labels parse to their inclusive ranges, and a label whose endpoints are equal is a valid range
+PASS   U18 [REQ] D-025 A' (Revision 3): a label that does not parse, or parses outside 1-70, or has reversed endpoints, gives nil and a reason
+PASS   U19 [REQ] D-025 A' (Revision 3): validateRange accepts a table whose low and high are whole numbers with 1 <= low <= high <= 70
+PASS   U20 [REQ] D-025 A' (Revision 3): validateRange refuses reversed endpoints, an endpoint outside 1-70, non-integers, text, missing fields and non-tables, with a reason
+PASS   U21 [REQ] D-025 B / R21: levels inside the range, inclusive of both endpoints, are "in" (padded text counts: " 25 " and a tab)
+PASS   U22 [REQ] D-025 B / R21 / R34: levels just outside a range, above 70, below 1, zero and negative are "outside", with the reason naming the range and the level
+PASS   U23 [REQ] D-025 B / D-014 item I: text that is not a whole number (blank, --, words, decimals, trailing characters, embedded spaces, nil) is "unreadable", with the trimmed text in the reason
+PASS   U24 [REQ] D-028 C / Revision 2 section 2: an identity value is unavailable when it is nil, "n/a", "NULL" or empty after trimming; ordinary names are available
+PASS   U25 [REQ] D-028 A' (Revision 3 section 2) / Revision 2 section 2: the destination key is the sanitized server and character, as the file name uses them; names that sanitize alike share a key, different names do not
+PASS   U26 [REQ] D-028 B / B': a forced sync after the character changed writes the transition line to the old file, then a session header marked "continued session" and a "Logging to a new file" notice to the new file; the counter is reset; nothing from before is moved
+PASS   U27 [REQ] D-028 A' / I'': a raw identity that differs but sanitizes to the same file writes the identity-change record and a continued session header to the SAME file, with no file switch, no notice, and the counter not reset (the new lines increment it normally)
+PASS   U28 [REQ] D-028 B' / A': one sync reads the server and the character once each and uses that one snapshot for the transition text, the file name, the stored identity and the header; the sync does not start a nested sync from its own writes
+PASS   U29 [REQ] D-028 C: an unavailable identity keeps the current file and writes one OBS line (not one per sync); once it is readable and differs, the file switches
+PASS   U30 [REQ] D-028 E / I'': a failed transition write, an unresolvable new destination, a failed header write and an unexpected exception each leave logging disabled, both guards cleared, exactly one failure notice and no success notice; a later sync writes nothing
+PASS   U31 [REQ] D-028 A' (Revision 2 section 4): an unforced sync acts at most once every 2,000 ms of mq.gettime(); a forced sync ignores the interval
+PASS   U32 [REQ] D-028 E'': while a run holds the file, detection continues but routing stays pinned: one note per distinct observed identity (observed, original, "records stay"); once the hold is cleared a forced sync switches
+PASS   U33 [REQ] D-028 A' (Revision 2 section 4): every record passes logWriteFile, which runs the throttled sync first, so a record written after the interval goes to the new file and the transition record to the old one
+PASS   U35 [REQ] D-028 A' (the recursion guard): with the throttle shut off, so that nothing but LOG.syncing stops a nested sync, a switch still writes the transition line, the header and the notice exactly once each. Added after the mutation runs showed the throttle hides the guard in the other tests
+PASS   U34 [REQ] D-028 B' (Revision 3 section 3): logFail is idempotent: the first call turns file logging off and writes one window notice; a second call writes nothing
+PASS   U36 [REQ] D-030 C: a row is a tome only if its name begins exactly "Tome of " (case-sensitive, from the start) with something after it; scrolls, near-misses and non-strings are not
+PASS   U37 [REQ] D-030 D: the discipline a tome names is its name without "Tome of ", trimmed; nil for anything that is not a tome
+PASS   U38 [REQ] D-030 D / Revision 2 answer 3: a discipline name is normalized by lower-casing and removing every character outside a-z and 0-9 (so Inner Flame and Innerflame agree)
+PASS   U39 [REQ] D-030 D' (Revision 3): a by-name result counts only as a positive whole slot number; nil, empty, NULL, zero, negative, fractions, text and non-numbers do not
+PASS   U40 [REQ] D-030 D' : the known list is indexed by normalized name; two distinct raw names that normalize alike share a key (ambiguous), the same raw name twice does not
+PASS   U41 [REQ] D-030 D' : a tome is known if the list matches unambiguously, or the exact by-name lookup gave a positive slot; an ambiguous list match alone is never known; an alias is used only when given
+PASS   U42 [REQ] D-030 F'' : the learn state is decided from the slot, the cursor and the count against the original baseline: cursor first, then the slot, then the count
+PASS   U43 [REQ] D-030 D' / Revision 2 answer 2: the known scan stops after 60 empty slots (no count available), counts raising reads and empty slots separately, records the last filled slot, honors Me.CombatAbilityCount, and reports hitting the 400-slot limit
+PASS   U44 [REQ] D-030 F' / Revision 3 section 3.1: recovery re-reads the cursor and needs the exact tome there, needs a free slot, sends /autoinventory once and polls up to 10 times for an empty cursor
+PASS   U16 [REQ] D-026 C'': a failing test body also leaves the process as found
+
+=== mutation checks: each broken build must fail exactly its named test(s) ===
+PASS   mutation 1 formatCoin no longer rounds to the nearest copper -- caught by U2
+PASS   mutation 2 the "Spell:" prefix no longer requires the space -- caught by U6
+PASS   mutation 3 an entry with no outcome is no longer detected by logLedger -- caught by U12
+PASS   mutation 4 a second outcome overwrites the first -- caught by U9
+PASS   mutation 5 the ledger counts line reports 0 for every outcome -- caught by U11
+PASS   mutation 6 a level at the low end of a range is no longer in range -- caught by U21
+PASS   mutation 7 a level at the high end of a range is no longer in range -- caught by U21
+PASS   mutation 8 unreadable text is treated as in range -- caught by U23
+PASS   mutation 9 surrounding whitespace is no longer trimmed from the level text -- caught by U21,U23
+PASS   mutation 10 the 1-70 bound is dropped from validateRange -- caught by U18,U20
+PASS   mutation 11 reversed endpoints are accepted by validateRange -- caught by U18,U20
+PASS   mutation 12 off by one in the label parse (low + 1) -- caught by U17,U18
+PASS   mutation 13 logSyncIdentity never syncs -- caught by U26,U27,U28,U29,U30,U31,U32,U33,U35
+PASS   mutation 14 LOG.path is not cleared on a switch -- caught by U26,U28,U29,U30,U31,U32,U33
+PASS   mutation 15 LOG.writes is not reset on a switch -- caught by U26
+PASS   mutation 16 the identity-changed line is not written -- caught by U26,U27,U28,U30,U33,U35
+PASS   mutation 17 an unreadable identity is not recognised (the script switches on it) -- caught by U29
+PASS   mutation 18 the new file header is not marked as a continued session -- caught by U26,U27,U35
+PASS   mutation 19 there is no recursion guard -- caught by U35
+PASS   mutation 20 the destination is decided on the raw identity only (the same file is treated as a switch) -- caught by U27
+PASS   mutation 21 the path resolution reads the identity again instead of using the snapshot -- caught by U28,U35
+PASS   mutation 22 the success notice is written even after a failure -- caught by U30
+PASS   mutation 23 logFail is not idempotent -- caught by U34
+PASS   mutation 24 detection is suppressed while a run holds the file -- caught by U32
+PASS   mutation 25 logWriteFile no longer runs the throttled sync -- caught by U33
+PASS   mutation 26 markRemainingNotAttempted no longer skips entries that already have an outcome -- caught by U10
+PASS   wrapper mutation: loading and running the chunk outside the protected call -- caught by the syntax-error and initialization-error cases (U15)
+
+ALL OK: 0 failure(s)

@@ -1,0 +1,53 @@
+== test_units.lua stage 1 (U36-U44) ==
+=== baseline: spellspree.lua through the unit-test hook ===
+OK   U36 expected fail, got fail -- Tome of Bellow: got false, expected true
+OK   U37 expected fail, got fail -- Bellow: got nil, expected Bellow
+OK   U38 expected fail, got fail -- Inner Flame: got , expected innerflamediscipline
+OK   U39 expected fail, got fail -- 5: got nil, expected 5
+OK   U40 expected fail, got fail -- a repeated name is one entry: got 0, expected 1
+OK   U41 expected fail, got fail -- list match: got unknown, expected known
+OK   U42 expected fail, got fail -- something else on the cursor: got insufficient, expected cursor-other
+OK   U43 expected fail, got fail -- names found: got 0, expected 39
+OK   U44 expected fail, got fail -- the cursor empties after the command: got failed, expected recovered
+
+stage 1: 0 mismatch(es) against the expected table
+
+== test_tomes.lua stage 1 ==
+=== baseline: spellspree.lua against the simulated MQ ===
+OK   D1 expected fail, got fail -- visited [], expected only Beorobin Amondson
+OK   D2 expected fail, got fail -- "Tome of Level Zero" was bought 0 time(s), expected 1
+OK   D3 expected fail, got fail -- "Tome of Real Discipline" was bought 0 time(s), expected 1
+OK   D4 expected fail, got fail -- "Tome of Phantom Shadow" was bought 0 time(s), expected 1
+OK   D5 expected fail, got fail -- the scan line is missing or wrong
+OK   D6 expected fail, got fail -- visited []
+OK   D7 expected fail, got fail -- Dear X got nil Buy clicks, expected 1
+OK   D8 expected fail, got fail -- Head Strike should have exactly one Buy click (at the second vendor), saw nil
+OK   D9 expected fail, got fail -- expected 5 "bought and learned" in the ledger
+OK   D10 expected fail, got fail -- /autoinventory was sent 0 time(s), expected 1
+OK   D11 expected fail, got fail -- the tome should be "bought and learned"
+OK   D12 expected fail, got fail -- count_nil: the outcome should name the count failure: nil
+OK   D13 expected fail, got fail -- the tome should have been left on the cursor
+OK   D14 expected fail, got fail -- /autoinventory was sent 0 time(s), expected 1
+OK   D15 expected fail, got fail -- two tomes, so two right-clicks in all (one each), saw 0
+OK   D16 expected fail, got fail -- replaced: expected exactly 1 right-click, saw 0
+OK   D17 expected fail, got fail -- expected a second click at the new slot, saw 0 click(s)
+OK   D18 expected fail, got fail -- two tomes, one click each; saw 0
+OK   D19 expected fail, got fail -- the scan line should show readErrors=1
+OK   D20 expected fail, got fail -- byname_zero: the tome should have been bought (it is not known by either test)
+OK   D21 expected fail, got fail -- the ambiguity was not logged
+OK   D22 expected fail, got fail -- visited [], expected [K, K, G]
+OK   D23 expected fail, got fail -- visited []
+OK   D24 expected fail, got fail -- no ledger
+OK   D25 expected fail, got fail -- visited [Cavalier Waut]
+OK   D26 expected fail, got fail -- the tomes box alone visited []
+OK   D27 expected fail, got fail -- visited []
+OK   D28 expected fail, got fail -- no merchant name line
+OK   D29 expected fail, got fail -- the outcome reason: nil
+OK   D30 expected fail, got fail -- recfail: one command and the tome still on the cursor expected
+OK   D31 expected fail, got fail -- the second vendor must not be visited
+OK   D32 expected fail, got fail -- /autoinventory should have been sent once
+OK   D33 expected fail, got fail -- count_nil: the spree was not ended with the "ending the shopping spree early" message
+OK   D34 expected fail, got fail -- no ERROR line with "No item kind"
+OK   D35 expected pass, got pass
+
+stage 1: 0 mismatch(es) against the expected table

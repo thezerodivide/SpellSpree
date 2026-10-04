@@ -362,7 +362,7 @@ local MUTATIONS = {
     { name = 'entries not reached after a stop get no outcome', fails = { 'L10', 'L11', 'L12', 'L13' },
       from = "        if not entries[i].outcome then setOutcome(entries[i], OUTCOME.NOT_ATTEMPTED, reason) end", to = "        if false then setOutcome(entries[i], OUTCOME.NOT_ATTEMPTED, reason) end" },
     { name = 'duplicate names are not collapsed', fails = { 'L17' },
-      from = "            if byName[name] then", to = "            if false then" },
+      from = "isScrollName(name) then\n            if byName[name] then", to = "isScrollName(name) then\n            if false then" },
     { name = 'the final scan no longer reports new scrolls', fails = { 'L16' },
       from = "                newScrolls[#newScrolls + 1] = name", to = "                local _ = name" },
     -- L19 also measures the 15 s maximum, so it fails here too (my first prediction predates L19)

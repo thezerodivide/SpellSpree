@@ -486,7 +486,7 @@ local MUTATIONS = {
     { name = 'an unreadable level counts as in range', fails = { 'T6', 'T14', 'T15', 'T16', 'T17', 'T19' },
       from = "    return 'unreadable', string.format('level unreadable (\"%s\")', trimmed)", to = "    return 'in', ''" },
     { name = 'the Bazaar is given a range (1-25)', fails = { 'T13', 'T19' },
-      from = "runSpellSpree({ unrestricted = true })", to = "runSpellSpree({ low = 1, high = 25, label = '1-25' })" },
+      from = "runSpellSpree({ unrestricted = true }, 'scroll')", to = "runSpellSpree({ low = 1, high = 25, label = '1-25' }, 'scroll')" },
     -- T14, T15, T17 also fail: the reason text names the range ("outside the selected level range 2-25"), which my first prediction missed
     { name = 'off by one in the label parse (low + 1)', fails = { 'T1', 'T2', 'T3', 'T4', 'T5', 'T7', 'T14', 'T15', 'T17', 'T19', 'T20', 'T21' },
       from = "local range = { low = tonumber(a), high = tonumber(b) }", to = "local range = { low = tonumber(a) + 1, high = tonumber(b) }" },
@@ -494,7 +494,7 @@ local MUTATIONS = {
     { name = 'classifyLevel says "in" for everything', fails = ALL_BUYERS,
       from = "    if levelText == nil then return 'unreadable', 'level unreadable (no value)' end", to = "    do return 'in', '' end\n    if levelText == nil then return 'unreadable', 'level unreadable (no value)' end" },
     { name = 'the range is not passed from the visit to runSpellSpree', fails = without({ 'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T14', 'T15', 'T16', 'T17', 'T18', 'T19', 'T20', 'T21' }, {}),
-      from = "runNavAndShop(entry.name, entry.range)", to = "runNavAndShop(entry.name)" },
+      from = "runNavAndShop(entry.name, entry.range, entry.kind)", to = "runNavAndShop(entry.name, nil, entry.kind)" },
     { name = 'the 1-70 bound is dropped (both validation points share the function)', fails = { 'T8', 'T12' },
       from = "if low < RANGE_MIN or high > RANGE_MAX then return false, string.format(", to = "if false then return false, string.format(" },
     { name = 'the 1-70 bound is dropped at the label parse only', fails = { 'T8' },

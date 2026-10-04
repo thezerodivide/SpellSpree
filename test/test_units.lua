@@ -829,7 +829,7 @@ local MUTATIONS = {
     { name = 'a second outcome overwrites the first', fails = { 'U9' },
       from = '    if entry.outcome then\n        logLine(string.format(\'LEDGER DEFECT: an outcome was recorded twice', to = '    if false then\n        logLine(string.format(\'LEDGER DEFECT: an outcome was recorded twice' },
     { name = 'the ledger counts line reports 0 for every outcome', fails = { 'U11' },
-      from = "string.format('%s=%d', o, #groups[o])", to = "string.format('%s=%d', o, 0)" },
+      from = "string.format('%s=%d', label(o), #groups[o])", to = "string.format('%s=%d', label(o), 0)" },
     -- Step 3 (D-025): sets written before the first run
     { name = 'a level at the low end of a range is no longer in range', fails = { 'U21' },
       from = "if n >= low and n <= high then", to = "if n > low and n <= high then" },

@@ -1,0 +1,13 @@
+Step 6 mutation run notes (D-030)
+Predictions were written into test/test_tomes.lua before the first run. Run 1 (file _run1) came after one harness fix: two scenarios held counters in
+closures that were shared between evaluations (D14, D22 failed in every mutant); they are now built fresh per run (_fresh).
+Run 1 mismatches, all prediction errors or test gaps, none a code defect:
+ - mutation 2 (normalization keeps spaces): D21 and D28 also fail (the ambiguity and the "Tome check" counts depend on the same normalization).
+ - mutation 5 (known check removed): D28 also fails (it asserts the known count in the tome check line).
+ - mutation 6 (recovery sends nothing): D30 also fails (it expects the one command).
+ - mutation 7 (Berserker's second vendor missing): D7, D14, D15 also fail (they need both vendors).
+ - mutation 10 (cursor tome known without corroboration): D33 also fails (the unresolved stop it checks never happens).
+ - mutation 16 (the pending observation right-clicks the tome): NOT caught. The mock only counted clicks that reached a tome in a slot, so an extra click at an
+   empty slot was invisible. Fixed in the tests: noStrayClicks() asserts every rightmouseup command reached a tome in its slot (D10, D13, D14, D20).
+Run 2 (file _run2): every mutant is caught by exactly the corrected prediction. Two mutants have an empty prediction on purpose (13: the fresh slot read
+cannot be separated from the observation by a mock whose reads are instant; 17: recovery's cursor recheck is covered by unit test U44).

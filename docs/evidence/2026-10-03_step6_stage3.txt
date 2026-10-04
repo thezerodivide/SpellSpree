@@ -1,0 +1,73 @@
+=== baseline: spellspree.lua against the simulated MQ ===
+PASS   D1 [REQ, NEW] D-030 A / requirement 1-3: the tome-only class Monk appears and its parent box selects Discipline Tomes: one visit to its vendor, no range needed; all five unknown tomes are bought and learned, once each
+PASS   D2 [REQ, NEW] D-030 B / requirement 3: a tome visit has no level bounding: tomes at level 0, 71, with no level and with text for a level are all bought
+PASS   D3 [REQ, NEW] D-030 C: only a row named "Tome of <something>" is a tome: near-misses ("tome of fire", "Tomes of Lore", "Tome of", "Tome Of Water"), a Song: scroll, a Spell: scroll and plain items are never selected or clicked
+PASS   D4 [REQ, NEW] D-030 D: tomes of disciplines the character already knows are skipped before any click: exactly spelled, and spelled with a space the discipline name lacks (Inner Flame / Innerflame, Stone Stance / Stonestance); the others are bought; the skips are ledger outcomes and not in the Skipped counter
+PASS   D5 [REQ, NEW] D-030 D: each tome visit logs how the known-discipline scan went (names found, read errors and empty slots counted apart, last filled slot, how it ended) and each tome's verdict
+PASS   D6 [REQ, NEW] D-030 E (the Berserker overlap): visiting both vendors in order (Kurlond Axebringer, then Gaddi Buruca): every tome is bought once in total; the second vendor's tomes are all skipped as "already handled earlier in this run (<vendor>)"
+PASS   D7 [REQ, NEW] D-030 E: a tome whose Buy click was sent but whose payment was not seen is recorded as attempted and is NOT clicked again at the second vendor (at most one Buy click per tome item per run)
+PASS   D8 [REQ, NEW] D-030 E: a tome that never reached the Buy click at the first vendor (selection never verified) is tried again, and bought, at the second
+PASS   D9 [REQ, NEW] D-030 F'' / G: a normal tome: bought, right-clicked once, consumed, the discipline learned; the ledger labels it "bought and learned" (never "bought and scribed") and counts it; no /autoinventory
+PASS   D10 [REQ, NEW] D-030 F'' (Revision 3 section 3.1): a known discipline the check cannot see (the tome's name cannot be derived): the game answers "You already know this discipline." and puts the tome on the cursor; with the message as corroboration it is put away with one /autoinventory, recorded "bought, learn not completed" with the reason, and the run goes on
+PASS   D11 [REQ, NEW] D-030 F'' (Revision 3): a tome that merely passes through the cursor for 400 ms and is then consumed is Learned, never "already known": no /autoinventory, outcome "bought and learned"
+PASS   D12 [REQ, NEW] D-030 F'' (Revision 4): an unreadable initial count (nil, a raising read, text, zero) sends no learning click, records "bought, learn not completed" with the count failure, stops the whole spree (the second vendor is never visited) and says so
+PASS   D13 [REQ, NEW] D-030 F'' (Revision 3): the tome is on the cursor with no message and no by-name evidence: the outcome is unresolved, no /autoinventory is sent, the tome stays on the cursor and the whole spree stops
+PASS   D14 [REQ, NEW] D-030 F'' (Revision 3): corroboration by the by-name lookup taken just before the click alone (no message) is enough: put away with /autoinventory, the run continues
+PASS   D15 [REQ, NEW] D-030 F'' (Revision 4): learning that completes between two attempts is recognized from the slot, the cursor and the count against the original baseline, with no second right-click; the baseline is read once per tome and logged
+PASS   D16 [REQ, NEW] D-030 F'' (Revision 4): an emptied, vanished or replaced target slot is never right-clicked: after the first click that took the tome away (count unchanged) no further right-click is sent; the operation ends unresolved within 3 s and stops the whole spree
+PASS   D17 [REQ, NEW] D-030 F'' (Revision 4): a tome that moved to another slot is clicked only at the slot a fresh read confirms (never the old empty one): two right-clicks, at two different slots, and it is learned
+PASS   D18 [REQ, NEW] D-030 F'' (Revision 4): learning that shows up late, during the bounded observation (the count drops 1.5 s after the click), is recognized as Learned with no further click and no abort: the second vendor is visited
+PASS   D19 [REQ, NEW] D-030 D' (Revision 3): a known-scan whose reads raise at some slots is logged with the read errors counted apart from empty slots and warned as possibly incomplete, and the by-name lookup still recognizes the discipline the scan missed
+PASS   D20 [REQ, NEW] D-030 D' (Revision 3): nonpositive or raising by-name results never make a tome known: the tome the list cannot see is bought and, being known, answered "already known" and put away
+PASS   D21 [REQ, NEW] D-030 D' (Revision 3): an ambiguous normalized match (two known names that normalize alike) is never "known" from the list: the tome is bought and the ambiguity is logged
+PASS   D22 [REQ, NEW] D-030 F'' (Revision 3 section 3.2): the abort flag is cleared for every run: a first run aborted by an unreadable count visits one vendor, the second run (the count readable) visits both
+PASS   D23 [REQ, NEW] D-030 A / observed live: Shadowknight's tome vendor, Zhao V`karin (a backtick in the name), is found and visited and his tomes are bought
+PASS   D24 [REQ, NEW] D-030 G / D-017: out of money partway through a tome visit: every tome on the list ends with one outcome and the ledger adds up (2 learned, 2 attempted not bought, 1 not attempted), the labels are the tome labels
+PASS   D25 [REQ, NEW] D-030 A: a class with ranges and tomes (Paladin) ticking 1-25 and Discipline Tomes visits the spell vendor first and then the tome vendor; the spells are bought within the range and the tomes are learned; the scroll ledger keeps its labels and the tome ledger uses the tome labels
+PASS   D26 [REQ, NEW] D-030 Revision 2 answer 1: the parent class box of a class with ranges ticks the four ranges only (no tome vendor is visited), and the Discipline Tomes box alone visits only the tome vendor
+PASS   D27 [REQ, NEW] D-030 A (Revision 2 answer 1): the four tome-only classes appear (Warrior, Monk, Rogue, Berserker): ticked together they visit Heldin Swordbreaker, Beorobin Amondson, Blane Darkblade, Kurlond Axebringer and Gaddi Buruca in class order, and the button counts five visits
+PASS   D28 [REQ, NEW] D-030 H: a tome visit logs the vendor name read from Merchant.Name and a tome list line with its counts
+PASS   D29 [REQ, NEW] D-030 F'' (Revision 2 answer 5): a different item landing where the tome should be is never right-clicked: no learning click, "bought, learn not completed: purchased tome not located", and the whole spree stops
+PASS   D30 [REQ, NEW] D-030 F'' (Revision 2 answer 7): recovery that does not clear the cursor stops the whole spree and leaves the tome on the cursor; no room to put the tome away stops the spree without sending /autoinventory
+PASS   D31 [REQ, NEW] D-030 F'' (Revision 3 section 3.2, failure 6): an item on the cursor when a tome visit starts stops the whole spree before anything is bought
+PASS   D32 [REQ, NEW] D-030 F'' (Revision 2 answer 7): Stop pressed while /autoinventory is working: the recovery completes first (the tome is back in the bags, the cursor empty), then the run ends "Stopped by user" with the rest not attempted
+PASS   D33 [REQ, NEW] D-030 Revision 4 (the abort reasons): every tome safety stop says "Tome safety stop:" and ends the spree with the existing message
+PASS   D34 [REQ, NEW] D-030 B (Revision 2): runSpellSpree called without the item kind is refused before anything is read: ERROR "No item kind", nothing selected or bought (fail closed)
+PASS   D35 [REQ, REGRESSION] D-030 C / I: a scroll visit at a vendor that also lists tomes buys the spells in range and never selects or clicks the tomes
+OK   D1 expected pass, got pass
+OK   D2 expected pass, got pass
+OK   D3 expected pass, got pass
+OK   D4 expected pass, got pass
+OK   D5 expected pass, got pass
+OK   D6 expected pass, got pass
+OK   D7 expected pass, got pass
+OK   D8 expected pass, got pass
+OK   D9 expected pass, got pass
+OK   D10 expected pass, got pass
+OK   D11 expected pass, got pass
+OK   D12 expected pass, got pass
+OK   D13 expected pass, got pass
+OK   D14 expected pass, got pass
+OK   D15 expected pass, got pass
+OK   D16 expected pass, got pass
+OK   D17 expected pass, got pass
+OK   D18 expected pass, got pass
+OK   D19 expected pass, got pass
+OK   D20 expected pass, got pass
+OK   D21 expected pass, got pass
+OK   D22 expected pass, got pass
+OK   D23 expected pass, got pass
+OK   D24 expected pass, got pass
+OK   D25 expected pass, got pass
+OK   D26 expected pass, got pass
+OK   D27 expected pass, got pass
+OK   D28 expected pass, got pass
+OK   D29 expected pass, got pass
+OK   D30 expected pass, got pass
+OK   D31 expected pass, got pass
+OK   D32 expected pass, got pass
+OK   D33 expected pass, got pass
+OK   D34 expected pass, got pass
+OK   D35 expected pass, got pass
+
+stage 3: 0 mismatch(es) against the expected table

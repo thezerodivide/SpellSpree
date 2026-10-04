@@ -48,6 +48,8 @@ local function pok(extra)
         local o = { logsRaw = dir, rootRaw = dir, zone = 'poknowledge', clickPrefix = 'Run Shopping Spree', classes = { 'MNK' },
             openTrees = { Monk = true, Berserker = true, Paladin = true, Shadowknight = true, Warrior = true, Rogue = true }, ticks = {}, vendors = {} }
         for k, v in pairs(deepcopy(extra)) do o[k] = v end
+        -- _fresh builds options holding state (a counter) anew for every run of the scenario, so repeated evaluations (the mutation runs) start alike
+        if extra._fresh then for k, v in pairs(extra._fresh()) do o[k] = v end end
         return o
     end
 end
@@ -91,7 +93,7 @@ local SCENARIOS = {
         { tm('Diversive Strike', 24, { teaches = 'Divertive Strike' }) }, { tm('Head Strike', 12) }) }),
     -- the same, corroborated only by a by-name lookup that turns positive after the classification (no message)
     cursor_byname = pok({ classes = { 'BER' }, ticks = { '##class_Berserker' }, knownDisciplines = { 'Divertive Strike' }, knownMessageNever = true,
-        byNameResult = (function() local n = 0; return function() n = n + 1; if n == 1 then return nil end return 7 end end)(),
+        _fresh = function() local n = 0; return { byNameResult = function() n = n + 1; if n == 1 then return nil end return 7 end } end,
         vendors = { [K] = vendor({ tm('Diversive Strike', 24, { teaches = 'Divertive Strike' }) }), [G] = vendor({ tm('Head Strike', 12) }) } }),
     -- learning completes between two attempts (after the first window, before the second reclassification)
     between = pok({ classes = { 'BER' }, ticks = { '##class_Berserker' }, tomeLearnDelayMs = 1100, vendors = berserkers({ tm('Battle Cry', 30) }, { tm('Leg Strike', 18) }) }),
@@ -112,10 +114,10 @@ local SCENARIOS = {
     ambig = pok({ ticks = { '##class_Monk' }, knownDisciplines = { 'Foo Bar', 'FooBar' }, vendors = { [MONK] = vendor({ tm('Foo-Bar', 10, { teaches = 'Foo-Bar' }) }) } }),
     -- two runs: the first aborts (the count cannot be read), the second is not affected by the abort
     abort_twice = pok({ classes = { 'BER' }, ticks = { '##class_Berserker' }, presses = 2, runs = 2, pressNotBeforeMs = { [2] = 90000 },
-        countOverride = (function() local n = 0; return function(_, real) n = n + 1; if n <= 2 then return nil end return real end end)(),
+        _fresh = function() local n = 0; return { countOverride = function(_, real) n = n + 1; if n <= 1 then return nil end return real end } end,
         vendors = berserkers({ tm('Battle Cry', 30) }, { tm('Leg Strike', 18) }) }),
     -- Shadowknight: the vendor's name has a backtick
-    zhao = pok({ classes = { 'SHD' }, ticks = { '##class_Shadowknight' }, vendors = { ['Zhao V`karin'] = vendor({ tm('Unholy Aura Discipline', 55), tm('Leechcurse Discipline', 50) }) } }),
+    zhao = pok({ classes = { 'SHD' }, ticks = { 'Discipline Tomes##Shadowknight' }, vendors = { ['Zhao V`karin'] = vendor({ tm('Unholy Aura Discipline', 55), tm('Leechcurse Discipline', 50) }) } }),
     -- money for two of five tomes
     money = pok({ ticks = { '##class_Monk' }, money = 250, vendors = { [MONK] = vendor({ tm('Tome A', 1), tm('Tome B', 2), tm('Tome C', 3), tm('Tome D', 4), tm('Tome E', 5) }) } }),
     -- Paladin: the four ranges and the tomes in one run; the class box ticks the ranges only; the tomes box alone
@@ -140,7 +142,7 @@ local SCENARIOS = {
     -- something else is on the cursor when a tome visit starts
     startcursor = pok({ classes = { 'BER' }, ticks = { '##class_Berserker' }, startCursor = 'Mystery Bone', vendors = berserkers({ tm('Battle Cry', 30) }, { tm('Leg Strike', 18) }) }),
     -- Stop pressed while /autoinventory is working (the cursor empties 1.5 s after the command)
-    stoprecov = pok({ classes = { 'BER' }, ticks = { '##class_Berserker' }, knownDisciplines = { 'Divertive Strike' }, autoinvDelayMs = 1500, stopAtMs = 9000, vendors = berserkers(
+    stoprecov = pok({ classes = { 'BER' }, ticks = { '##class_Berserker' }, knownDisciplines = { 'Divertive Strike' }, autoinvDelayMs = 1500, stopAtMs = 7500, vendors = berserkers(
         { tm('Diversive Strike', 24, { teaches = 'Divertive Strike' }), tm('Head Strike', 12) }, { tm('Head Strike', 12) }) }),
     -- all four tome-only classes and the Berserker pair, ticked at once
     allclasses = pok({ classes = { 'WAR', 'MNK', 'ROG', 'BER' }, ticks = { '##class_Warrior', '##class_Monk', '##class_Rogue', '##class_Berserker' }, vendors = {
@@ -171,6 +173,12 @@ local function grep(lines, plain)
     local hits = {}
     for _, l in ipairs(lines or {}) do if l:find(plain, 1, true) then hits[#hits + 1] = l end end
     return hits
+end
+-- every right-click command sent landed on a tome that was in its slot: none was sent at an empty slot or while the tome was on the cursor
+local function noStrayClicks(sim)
+    local n = 0
+    for _, cmd in ipairs(sim.cmds) do if cmd:find('rightmouseup', 1, true) then n = n + 1 end end
+    return n == sim.tomeClicks, string.format('%d right-click command(s) sent, but only %d reached a tome in its slot', n, sim.tomeClicks)
 end
 local function count(list, pred) local n = 0; for _, v in ipairs(list) do if pred(v) then n = n + 1 end end; return n end
 local function cmdCount(sim, prefix) return count(sim.cmds, function(c) return c:sub(1, #prefix) == prefix end) end
@@ -315,6 +323,7 @@ local TESTS = {
           local line = ledgerNames(r.lines, NOT_LEARNED, 1)
           return firstFail({ r.sim.autoinvCount == 1, '/autoinventory was sent ' .. r.sim.autoinvCount .. ' time(s), expected 1' },
               { r.sim.cursor == nil, 'the cursor is not empty at the end' },
+              { noStrayClicks(r.sim) },
               { line and line:find('discipline already known', 1, true), 'the outcome reason should say the discipline was already known: ' .. tostring(line) },
               { r.sim.buyClicks['Tome of Head Strike'] == 1 and r.sim.knownDiscSet['Head Strike'] ~= nil, 'the run should have gone on and learned Head Strike' })
       end),
@@ -348,6 +357,7 @@ local TESTS = {
           local line = ledgerNames(r.lines, NOT_LEARNED, 1)
           return firstFail({ r.sim.autoinvCount == 0, '/autoinventory was sent without corroboration' },
               { r.sim.cursor ~= nil, 'the tome should have been left on the cursor' },
+              { noStrayClicks(r.sim) },
               { line and line:find('no sign it was already known', 1, true), 'the reason should say the game gave no sign: ' .. tostring(line) },
               { sameList(visited(r.sim), { K }), 'the second vendor must not be visited' })
       end),
@@ -357,6 +367,7 @@ local TESTS = {
           local r = c.cursor_byname
           return firstFail({ r.sim.autoinvCount == 1, '/autoinventory was sent ' .. r.sim.autoinvCount .. ' time(s), expected 1' },
               { r.sim.cursor == nil, 'the cursor is not empty at the end' },
+              { noStrayClicks(r.sim) },
               { sameList(visited(r.sim), { K, G }), 'the run should have gone on to the second vendor' })
       end),
 
@@ -418,6 +429,8 @@ local TESTS = {
               local r = c[k]
               if (r.sim.buyClicks['Tome of Fearless Discipline'] or 0) ~= 1 then return false, k .. ': the tome should have been bought (it is not known by either test)' end
               if r.sim.autoinvCount ~= 1 then return false, k .. ': the already-known path should have run once' end
+              local okc, whyc = noStrayClicks(r.sim)
+              if not okc then return false, k .. ': ' .. whyc end
           end
           return true
       end),
@@ -571,7 +584,55 @@ local function evaluate(script)
 end
 
 -- filled in after the build; the expected sets are written before the first run
-local MUTATIONS = {}
+-- Mutation checks (D-030). The predictions in `fails` were written BEFORE the first mutation run; see docs/evidence/2026-10-03_step6_mutations.txt
+-- for the first-run result and any prediction that was wrong. An empty `fails` is a prediction that nothing in THIS suite catches the mutant
+-- (the unit suite or a structural reason covers it, said in the name).
+local MUTATIONS = {
+    { name = 'the "Tome of " rule ignores case', fails = { 'D3' },
+      from = "if name:sub(1, #TOME_PREFIX) ~= TOME_PREFIX then return false end", to = "if name:sub(1, #TOME_PREFIX):lower() ~= TOME_PREFIX:lower() then return false end" },
+    { name = 'normalization keeps spaces', fails = { 'D4', 'D21', 'D28' },
+      from = ":lower():gsub('[^a-z0-9]', ''))", to = ":lower():gsub('[^a-z0-9 ]', ''))" },
+    { name = 'the Buy click does not record the tome as attempted', fails = { 'D7' },
+      from = "if kind == 'tome' then S.tomesDone[name] = { state = 'attempted', vendor = S.visitVendor } end", to = "" },
+    { name = 'the run-wide tome record is carried across runs', fails = { 'D22' },
+      from = "S.tomesDone, S.abortSpree = {}, false", to = "S.abortSpree = false" },
+    { name = 'the known check is removed', fails = { 'D4', 'D19', 'D28' },
+      from = "            if verdict == 'known' then\n                knownCount", to = "            if false then\n                knownCount" },
+    { name = 'the already-known recovery sends nothing (the tome stays on the cursor)', fails = { 'D10', 'D14', 'D20', 'D30', 'D32' },
+      from = "(it was not consumed)', name), '/autoinventory')", to = "(it was not consumed)', name), '/nop')" },
+    { name = "Berserker's second vendor is missing", fails = { 'D6', 'D7', 'D8', 'D14', 'D15', 'D18', 'D22', 'D27' },
+      from = "{ 'Kurlond Axebringer', 'Gaddi Buruca' }", to = "{ 'Kurlond Axebringer' }" },
+    { name = 'a tome visit applies a level bound', fails = { 'D2' },
+      from = "elseif isTomeName(name) then\n            if byName[name] then", to = "elseif isTomeName(name) and (tonumber(listCell(r, LIST_COL.LVL)) or 0) >= 1 and (tonumber(listCell(r, LIST_COL.LVL)) or 0) <= 70 then\n            if byName[name] then" },
+    { name = 'a scroll visit also buys tomes', fails = { 'D35' },
+      from = "elseif isScrollName(name) then\n            if byName[name] then", to = "elseif isScrollName(name) or isTomeName(name) then\n            if byName[name] then" },
+    { name = 'a tome on the cursor is treated as known without corroboration', fails = { 'D13', 'D33' },
+      from = "return (message or knownBefore) and 'known' or 'unresolved', nil", to = "return 'known', nil" },
+    { name = 'a count of zero does not block the first click', fails = { 'D12' },
+      from = "if not n0 or n0 < 1 then", to = "if not n0 then" },
+    { name = 'the baseline count is read again before each attempt', fails = { 'D15' },
+      from = "        local o = observe(); local st = learnState(o, n0, name)\n        describe(o, st, string.format('attempt %d/%d'", to = "        n0 = readItemCount(name) or n0\n        local o = observe(); local st = learnState(o, n0, name)\n        describe(o, st, string.format('attempt %d/%d'" },
+    { name = 'the click is sent without the fresh slot read (the mock cannot change state between two instant reads: not caught here by design)', fails = {},
+      from = "if item and itemDisplayName(item) == name and not cursorItemName() then", to = "if true then" },
+    { name = 'the observation window is 100 times longer', fails = { 'D16' },
+      from = "local TOME_OBSERVE_PASSES, TOME_OBSERVE_MS = 15, 200", to = "local TOME_OBSERVE_PASSES, TOME_OBSERVE_MS = 1500, 200" },
+    { name = 'a "learned" reading between attempts is handed to the click path instead of finishing', fails = { 'D15' },
+      from = "local final, fo = resolve(o, st)", to = "local final, fo = resolve(o, st == 'learned' and 'clickable' or st)" },
+    { name = 'the pending observation right-clicks the tome', fails = { 'D10', 'D13', 'D14', 'D20' },
+      from = "            mq.delay(TOME_OBSERVE_MS); mq.doevents()\n            local o = observe(); local st = learnState(o, n0, name)\n            describe(o, st, string.format('cursor wait", to = "            mq.delay(TOME_OBSERVE_MS); mq.doevents()\n            sendCmd('x', targetSlotNotifyCmd(targetBag, targetSlot))\n            local o = observe(); local st = learnState(o, n0, name)\n            describe(o, st, string.format('cursor wait" },
+    { name = 'recovery does not look at the cursor first (covered by the unit suite U44, not here)', fails = {},
+      from = "    if before ~= name then return 'changed', before end\n", to = "" },
+    { name = 'a tome safety stop does not set the abort flag', fails = { 'D12', 'D13', 'D16', 'D22', 'D29', 'D30', 'D33' },
+      from = "    S.abortSpree = true\n    setOutcome(entry, outcome, detail)", to = "    setOutcome(entry, outcome, detail)" },
+    { name = 'the abort flag is not checked after a visit', fails = { 'D12', 'D13', 'D16', 'D22', 'D29', 'D30', 'D33' },
+      from = "if S.abortSpree or isSpreeAbortingReason(S.lastStopReason) then", to = "if isSpreeAbortingReason(S.lastStopReason) then" },
+    { name = 'an ambiguous list match is treated as known', fails = { 'D21' },
+      from = "if listState == 'ambiguous' then return 'ambiguous', nil end", to = "if listState == 'ambiguous' then return 'known', 'list' end" },
+    { name = 'a by-name result of zero is accepted as a slot', fails = { 'D20' },
+      from = "or n ~= math.floor(n) or n < 1 then return nil end", to = "or n ~= math.floor(n) or n < 0 then return nil end" },
+    { name = 'a read that raises is counted as an empty slot', fails = { 'D19' },
+      from = "            readErrors = readErrors + 1\n            emptyRun = emptyRun + 1", to = "            emptySlots = emptySlots + 1\n            emptyRun = emptyRun + 1" },
+}
 
 local failures = 0
 local function report(label, ok, detail)
@@ -582,6 +643,12 @@ end
 print('=== baseline: spellspree.lua against the simulated MQ ===')
 local base = evaluate(SCRIPT)
 for _, t in ipairs(TESTS) do report(string.format('%s [%s, %s] %s', t.id, t.kind, t.label, t.src), base[t.id].pass, base[t.id].msg) end
+
+if arg[1] == 'dump' then -- P-1: print the log of one scenario (luajit test/test_tomes.lua dump <scenario>)
+    local c = runAll(SCRIPT)
+    for _, l in ipairs(c[arg[2]].lines) do print(l) end
+    os.exit(0)
+end
 
 if arg[1] == 'stage' then
     local stage = tonumber(arg[2])

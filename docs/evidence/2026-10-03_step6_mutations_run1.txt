@@ -1,0 +1,25 @@
+=== mutation checks: each broken build must fail exactly its named test(s) ===
+PASS   mutation 1 the "Tome of " rule ignores case -- caught by D3
+FAIL   mutation 2 normalization keeps spaces -- D21 failed unexpectedly (the ambiguity was not logged); D28 failed unexpectedly (no tome check line)
+PASS   mutation 3 the Buy click does not record the tome as attempted -- caught by D7
+PASS   mutation 4 the run-wide tome record is carried across runs -- caught by D22
+FAIL   mutation 5 the known check is removed -- D28 failed unexpectedly (no tome check line)
+FAIL   mutation 6 the already-known recovery sends nothing (the tome stays on the cursor) -- D30 failed unexpectedly (recfail: one command and the tome still on the cursor expected)
+FAIL   mutation 7 Berserker's second vendor is missing -- D7 failed unexpectedly (both vendors should have been visited); D14 failed unexpectedly (the run should have gone on to the second vendor); D15 failed unexpectedly (two tomes, so two right-clicks in all (one each), saw 1)
+PASS   mutation 8 a tome visit applies a level bound -- caught by D2
+PASS   mutation 9 a scroll visit also buys tomes -- caught by D35
+FAIL   mutation 10 a tome on the cursor is treated as known without corroboration -- D33 failed unexpectedly (cursor_unresolved: the spree was not ended with the "ending the shopping spree early" message)
+PASS   mutation 11 a count of zero does not block the first click -- caught by D12
+PASS   mutation 12 the baseline count is read again before each attempt -- caught by D15
+PASS   mutation 13 the click is sent without the fresh slot read (the mock cannot change state between two instant reads: not caught here by design) -- caught by 
+PASS   mutation 14 the observation window is 100 times longer -- caught by D16
+PASS   mutation 15 a "learned" reading between attempts is handed to the click path instead of finishing -- caught by D15
+FAIL   mutation 16 the pending observation right-clicks the tome -- D10 should have failed but passed; D13 should have failed but passed; D14 should have failed but passed; D20 should have failed but passed
+PASS   mutation 17 recovery does not look at the cursor first (covered by the unit suite U44, not here) -- caught by 
+PASS   mutation 18 a tome safety stop does not set the abort flag -- caught by D12,D13,D16,D22,D29,D30,D33
+PASS   mutation 19 the abort flag is not checked after a visit -- caught by D12,D13,D16,D22,D29,D30,D33
+PASS   mutation 20 an ambiguous list match is treated as known -- caught by D21
+PASS   mutation 21 a by-name result of zero is accepted as a slot -- caught by D20
+PASS   mutation 22 a read that raises is counted as an empty slot -- caught by D19
+
+NOT OK: 6 failure(s)
