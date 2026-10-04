@@ -3192,3 +3192,28 @@ exact tome in the slot and an empty cursor; an empty or replaced slot is never c
 disappeared without enough evidence, with no click during it, ending unresolved (`Tome safety stop: learning unresolved`, `S.abortSpree`). **K''** adds seven scenario groups and six mutations.
 
 **Status:** awaiting ChatGPT's confirmation of F'' and K''. Nothing is built.
+
+### D-030 addendum 13 (2026-10-03): consensus reached; Step 6 (discipline tomes) APPROVED to build (D-027)
+
+Archived: `docs/handoffs/2026-10-03_step6_decision30_rev4_review_from-chatgpt.md`. ChatGPT **approved F'' and K''** and stated consensus on every item A-K. Under D-027 that is the developer's approval: the build starts (TDD, D-024 / P-9),
+delivered as `1.7.0-test.1`. Release `1.7.0` is not authorized.
+
+**Consensus design (A-K with the NEW DETAIL of Revisions 2-4):**
+- **A** `TOME_VENDORS` (Bard Larquin Julinok; Beastlord Tana Clawguard; Berserker Kurlond Axebringer then Gaddi Buruca; Monk Beorobin Amondson; Paladin Ulin Velnik; Ranger Keshyk Wardorn; Rogue Blane Darkblade;
+  Shadowknight Zhao V`karin with the backtick; Warrior Heldin Swordbreaker); Warrior, Monk, Rogue, Berserker added (`ABBR_TO_FULLNAME`, `CLASS_ORDER`, `freshSelection` gets `tomes`); a **Discipline Tomes** box per class; the
+  parent class box excludes tomes (tome-only classes use the tome box as the parent); the button counts visits; tome visits follow the class's spell visits.
+- **B** `runSpellSpree(range, kind)` with kind `scroll` or `tome` (missing or unknown refused); tome visits pass the no-range value; Lvl logged, never used.
+- **C** a tome is a row whose name begins exactly `Tome of `; everything else ignored in a tome visit.
+- **D'** known check: TAC-style scan (count or 400 slots, 60-empty stop) with `readErrors` and `emptySlots` counted separately; normalized (lower case, non-alphanumerics removed) comparison; a second test by exact name
+  (a positive whole slot number); known if either says known; an ambiguous normalized match is never known from the list; empty scan = check off, logged.
+- **E** run-wide `S.tomesDone`, keyed on the exact item name, recorded at the known skip, at the Buy click and at the outcome; at most one Buy click per tome item per run; entries that never reached Buy may be retried at another vendor.
+- **F''** the learn operation: exact-name landing gate; one baseline `n0` (whole number >= 1) before the first click, never replaced, no click if unreadable; before every retry process events and reclassify slot, cursor and count against `n0`; a
+  click only after a fresh read confirms the exact tome in the slot and an empty cursor; finite observation (15 passes at 200 ms) with no click; a tome on the cursor is pending and "already known" only with corroboration (the message in
+  this attempt's window or `knownBefore`), else unresolved with no `/autoinventory`; verified, bounded `/autoinventory` recovery; every tome safety stop sets `S.abortSpree` (checked after each visit; reasons begin `Tome safety stop:`).
+- **G** the six outcomes reused, with tome labels substituted ("bought and learned", "bought, learn not completed"). **H** logging per tome visit (vendor name from `Merchant.Name`, counts, scan status, each verdict, each learn
+  result, a final scan count). **I** nothing else changes. **J** `1.7.0-test.N`, `1.7.0` only on the developer's instruction. **K'' ** the test plan, staged red runs and mutations of Revisions 1-4.
+- Diversive Strike: bought once per run with its unresolved identity logged; an alias only if the server data supports it.
+
+**Not verified live (stated):** a learn of a new tome (chat text, the count dropping, the known list refreshing), `/autoinventory` with a tome on the cursor, `Merchant.Name`.
+
+**Status:** approved; building.
