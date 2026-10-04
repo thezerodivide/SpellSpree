@@ -30,6 +30,16 @@ end
 --       Step 3 (level bounding, D-025): spells[i].levelText = the raw text returned for column 8 (overrides level; false = the cell is
 --         missing, so the TLO returns nil for it). sim.selectClicks[name] counts the select clicks that landed on each row (a record
 --         for tests, no behavior).
+--       Step 6 (discipline tomes, D-030): a vendor's spec may carry tomes = { { name=, price=, level=, teaches= }, ... } (rows named "Tome of <name>", the
+--         discipline taught defaults to <name>); knownDisciplines = { 'Bellow', ... } (what the character already knows, readable through Me.CombatAbility(i) by
+--         index and by exact name, no Me.CombatAbilityCount); knownScanErrors = { [slot] = true } (that slot's read raises); byNameResult = function(name) (what the
+--         by-name lookup returns instead of the slot number); countOverride = function(name, real) (what FindItemCount returns; may return nil, a non-number or raise);
+--         Right-clicking a tome for an UNKNOWN discipline consumes it and teaches it, for a KNOWN one the chat line "You already know this discipline." is queued and
+--         the tome goes to the cursor, not consumed. Options: tomeTransientCursorMs (the tome sits on the cursor that long, then is consumed), tomeLearnDelayMs (consumed
+--         only that long after the click), tomeRejectFirst (the first n right-clicks do nothing), knownMessageNever (no chat line), landAs = function(row) (the name that
+--         lands in the bag), tomeVanishAfterClick (the tome leaves its slot without being consumed or on the cursor), tomeRelocateAfterClick (it moves to another slot),
+--         tomeReplaceAfterClick = 'Tome of X' (a different item takes its slot), autoinventoryFails. sim.tomeClicks / sim.tomeClickSlots / sim.autoinvCount record
+--         what the script did; sim.cursor is the cursor item. mq.event handlers are kept and run by mq.doevents on the chat lines queued in sim.chat.
 --       Step 5 (log follows the character, D-028): identities = { {atMs=, server=, character=}, ... } (the server and character name the TLOs
 --         return from each simulated time on; a nil or non-string value models an unreadable read); logsUnreadableAfterMs (Path('logs') reads
 --         nil from then on); presses = n and pressNotBeforeMs = { [k] = ms } (the Run button is pressed again for the k-th time once the
@@ -50,7 +60,7 @@ function M.new(opts)
     local sim = {
         opts = opts, clockMs = 0, cmds = {}, prints = {}, merchantOpen = not opts.startClosed,
         usableChecked = true, known = {}, targetId = 4242, finished = false,
-        scribeRejects = opts.scribeRejectFirst or 0, delays = 0, purchases = {}, buyClicks = {}, pending = {}, ticks = {}, selectClicks = {},
+        scribeRejects = opts.scribeRejectFirst or 0, delays = 0, purchases = {}, buyClicks = {}, pending = {}, ticks = {}, selectClicks = {}, chat = {}, events = {}, tomeClicks = 0, tomeClickSlots = {}, autoinvCount = 0, tomeRejects = 0, later = {},
     }
     sim.money = opts.money or 10000000
 
@@ -62,6 +72,9 @@ function M.new(opts)
         end
         for _, sp in ipairs(spec.spells or {}) do
             id = id + 1; rows[#rows + 1] = { name = 'Spell: ' .. sp.name, id = id, price = sp.price or 100, level = sp.level, levelText = sp.levelText }
+        end
+        for _, tm in ipairs(spec.tomes or {}) do
+            id = id + 1; rows[#rows + 1] = { name = 'Tome of ' .. tm.name, id = id, price = tm.price or 100, level = tm.level, levelText = tm.levelText, isTome = true, teaches = tm.teaches or tm.name }
         end
         return rows
     end
@@ -151,14 +164,15 @@ function M.new(opts)
                     sim.purchasesByVendor[sim.vendorName] = list
                 end
                 local existing
+                local landName = (opts.landAs and r.isTome) and opts.landAs(r) or r.name
                 if opts.stackOnExisting then
-                    for s = 1, 10 do if sim.bag[s] and sim.bag[s].name == r.name then existing = sim.bag[s] end end
+                    for s = 1, 10 do if sim.bag[s] and sim.bag[s].name == landName then existing = sim.bag[s] end end
                 end
                 if existing then
                     existing.stack = existing.stack + 1
                 else
                     local s = firstFreeBagSlot()
-                    if s then sim.bag[s] = { name = r.name, stack = 1 } end
+                    if s then sim.bag[s] = { name = landName, stack = 1, teaches = r.teaches } end
                 end
                 if opts.reorderAfterBuy then
                     table.insert(sim.visible, table.remove(sim.visible, 1))
@@ -166,9 +180,53 @@ function M.new(opts)
             end
             return
         end
+        if cmd == '/autoinventory' then
+            sim.autoinvCount = sim.autoinvCount + 1
+            if sim.cursor and not opts.autoinventoryFails then
+                local s = firstFreeBagSlot()
+                if s then sim.bag[s] = { name = sim.cursor.name, stack = 1, teaches = sim.cursor.teaches }; sim.cursor = nil end
+            end
+            return
+        end
         local slot = cmd:match('^/itemnotify in pack1 (%d+) rightmouseup$')
         if slot then
             local it = sim.bag[tonumber(slot)]
+            if it and it.name:match('^Tome of ') then
+                local n = tonumber(slot)
+                sim.tomeClicks = sim.tomeClicks + 1
+                sim.tomeClickSlots[#sim.tomeClickSlots + 1] = n
+                if opts.tomeRejectFirst and sim.tomeRejects < opts.tomeRejectFirst then sim.tomeRejects = sim.tomeRejects + 1; return end
+                local function takeFromSlot()
+                    if it.stack > 1 then it.stack = it.stack - 1 else sim.bag[n] = nil end
+                end
+                local function learn() sim.knownDisc[#sim.knownDisc + 1] = it.teaches; sim.knownDiscSet[it.teaches] = #sim.knownDisc end
+                if opts.tomeVanishAfterClick then takeFromSlot(); return end
+                if opts.tomeRelocateAfterClick then
+                    local s2 = firstFreeBagSlot()
+                    sim.bag[n] = nil
+                    if s2 then sim.bag[s2] = it end
+                    return
+                end
+                if opts.tomeReplaceAfterClick then sim.bag[n] = { name = opts.tomeReplaceAfterClick, stack = 1 }; return end
+                if sim.knownDiscSet[it.teaches] then
+                    if not opts.knownMessageNever then sim.chat[#sim.chat + 1] = 'You already know this discipline.' end
+                    takeFromSlot()
+                    sim.cursor = { name = it.name, teaches = it.teaches }
+                elseif opts.tomeTransientCursorMs then
+                    takeFromSlot()
+                    sim.cursor = { name = it.name, teaches = it.teaches }
+                    sim.later[#sim.later + 1] = { atMs = sim.clockMs + opts.tomeTransientCursorMs, fn = function() sim.cursor = nil; learn() end }
+                elseif opts.tomeLearnDelayMs then
+                    sim.later[#sim.later + 1] = { atMs = sim.clockMs + opts.tomeLearnDelayMs, fn = function()
+                        for s3 = 1, 10 do if sim.bag[s3] == it then if it.stack > 1 then it.stack = it.stack - 1 else sim.bag[s3] = nil end; break end end
+                        learn()
+                    end }
+                else
+                    takeFromSlot()
+                    learn()
+                end
+                return
+            end
             if it and it.name:match('^Spell:') then
                 if sim.scribeRejects > 0 then sim.scribeRejects = sim.scribeRejects - 1; return end
                 sim.known[it.name] = true
@@ -218,6 +276,8 @@ function M.new(opts)
 
     -- a spell bought, scribed and removed from the list by hand (spike watch mode)
     sim.book = {}
+    sim.knownDisc, sim.knownDiscSet = {}, {}
+    for i, n in ipairs(opts.knownDisciplines or {}) do sim.knownDisc[i] = n; sim.knownDiscSet[n] = i end
     if opts.manualBuy then
         local mb, done = opts.manualBuy, {}
         local function find(list) for i, r in ipairs(list) do if r.name == mb.name then return i, r end end end
@@ -277,6 +337,11 @@ function M.new(opts)
             end
         end
     end
+    sim.ticks[#sim.ticks + 1] = function()
+        for _, l in ipairs(sim.later) do
+            if not l.done and sim.clockMs >= l.atMs then l.done = true; l.fn() end
+        end
+    end
     sim.tick = function() for _, f in ipairs(sim.ticks) do f() end end
 
     -- the row count the list reports (can be small right after open, or never stable)
@@ -293,8 +358,16 @@ function M.new(opts)
     function mq.cmd(c) handleCmd(c) end
     function mq.cmdf(f, ...) handleCmd(string.format(f, ...)) end
     function mq.gettime() return sim.clockMs end
-    function mq.doevents() end
-    function mq.event() end
+    function mq.doevents()
+        while #sim.chat > 0 do
+            local line = table.remove(sim.chat, 1)
+            for _, ev in ipairs(sim.events) do
+                local pat = ev.pattern:gsub('([%^%$%(%)%%%.%[%]%+%-%?])', '%%%1'):gsub('#%*#', '.*'):gsub('#%d+#', '(.-)')
+                if line:match(pat) then ev.fn(line) end
+            end
+        end
+    end
+    function mq.event(name, pattern, fn) sim.events[#sim.events + 1] = { name = name, pattern = pattern, fn = fn } end
     mq.imgui = { init = function(_, fn) sim.draw = fn end }
     function mq.delay(ms)
         sim.delays = sim.delays + 1
@@ -410,12 +483,28 @@ function M.new(opts)
             NumBagSlots = function() return 10 end,
             CleanName = function() return identity('character') end,
             Class = { ShortName = function() return 'CLR' end },
+            -- the character's known disciplines (D-030): by slot number a node whose Name() is the discipline; by exact name a node whose value is the slot number
+            CombatAbility = function(arg)
+                if type(arg) == 'number' then
+                    if opts.knownScanErrors and opts.knownScanErrors[arg] then error('simulated read error at slot ' .. arg) end
+                    local nm = sim.knownDisc[arg]
+                    if not nm then return node(nil) end
+                    return node(nm, { Name = function() return nm end })
+                end
+                if opts.byNameResult then
+                    local v = opts.byNameResult(tostring(arg))
+                    if v == 'RAISE' then error('simulated by-name read error') end
+                    return node(v)
+                end
+                return node(sim.knownDiscSet[tostring(arg)])
+            end,
             Inventory = function(name)
                 local n = tonumber(name:match('^pack(%d+)$'))
                 return itemNode(n and packItem(n))
             end,
         },
-        Cursor = node(nil, { Name = function() return nil end }),
+        Cursor = setmetatable({}, { __call = function() return sim.cursor and sim.cursor.name or nil end,
+            __index = function(_, k) if k == 'Name' then return function() return sim.cursor and sim.cursor.name or nil end end end }),
         Merchant = {},
         Target = {
             ID = function() return sim.targetId end,
@@ -438,6 +527,8 @@ function M.new(opts)
         local want = (exact and tostring(spec):sub(2) or tostring(spec)):lower()
         local n = 0
         for _, it in pairs(sim.bag) do if it.name:lower() == want then n = n + (it.stack or 1) end end
+        if sim.cursor and sim.cursor.name:lower() == want then n = n + 1 end   -- observed live: the cursor item is counted
+        if opts.countOverride then return node(opts.countOverride(tostring(spec), n)) end
         return node(n)
     end
     mq.TLO.Me.Book = function(name) return node(sim.book[name]) end
@@ -466,6 +557,7 @@ function M.new(opts)
         return node(true)
     end
     setmetatable(mq.TLO.Merchant, { __index = function(_, k)
+        if k == 'Name' then return function() return sim.vendorName end end
         if k == 'SelectedItem' then
             local r = sim.selected
             if not r then return node(nil) end
