@@ -90,6 +90,8 @@ local TIERS = { '1-25', '26-50', '51-60', '61-70' }
 local CLASS_ORDER = {
     'Cleric', 'Bard', 'Enchanter', 'Wizard', 'Shadowknight', 'Necromancer',
     'Shaman', 'Druid', 'Magician', 'Ranger', 'Paladin', 'Beastlord',
+    -- D-030: classes whose only shopping here is discipline tomes (no spell vendors)
+    'Warrior', 'Monk', 'Rogue', 'Berserker',
 }
 
 -- The 61-70 vendor names below are COMMENTED OUT, not deleted (decision log D-021 B', D-020 addendum 2): no spells
@@ -126,6 +128,20 @@ local TIER_VENDOR = {
     --[[ OLD, kept for restoring: ['61-70'] = '61-70', ]]
 }
 
+-- D-030 A. The discipline-tome vendors of the Plane of Knowledge, in visit order (Berserker's larger vendor first, so the second finds its stock already
+-- handled). All ten were observed live; Zhao's name has a backtick (byte 0x60), not an apostrophe.
+local TOME_VENDORS = {
+    Bard         = { 'Larquin Julinok' },
+    Beastlord    = { 'Tana Clawguard' },
+    Berserker    = { 'Kurlond Axebringer', 'Gaddi Buruca' },
+    Monk         = { 'Beorobin Amondson' },
+    Paladin      = { 'Ulin Velnik' },
+    Ranger       = { 'Keshyk Wardorn' },
+    Rogue        = { 'Blane Darkblade' },
+    Shadowknight = { 'Zhao V`karin' },
+    Warrior      = { 'Heldin Swordbreaker' },
+}
+
 -- ============================================================================
 -- Class detection -- ported from triune.lua's own detectClasses(), since
 -- that's proven working code for this "trio" multi-class character setup,
@@ -159,6 +175,7 @@ local ABBR_TO_FULLNAME = {
     Clr = 'Cleric', Brd = 'Bard', Enc = 'Enchanter', Wiz = 'Wizard',
     SK = 'Shadowknight', Nec = 'Necromancer', Shm = 'Shaman', Dru = 'Druid',
     Mag = 'Magician', Rng = 'Ranger', Pal = 'Paladin', Bst = 'Beastlord',
+    War = 'Warrior', Mnk = 'Monk', Rog = 'Rogue', Ber = 'Berserker', -- D-030: tome-only classes
 }
 
 local function parseClassLine(text)
@@ -323,6 +340,7 @@ local function freshSelection()
         for _, tier in ipairs(TIERS) do
             sel[className][tier] = false
         end
+        sel[className].tomes = false -- D-030: the Discipline Tomes box, independent of the ranges
     end
     return sel
 end
@@ -348,6 +366,10 @@ local S = {
     openedBags        = {}, -- [bagIdx] = true once we've clicked it open this run
     consecutiveNoMoneyMovement = 0, -- see the "not paid" branch in runSpellSpree
     stopOnOutOfMoney = true, -- false = skip unaffordable spells and keep going
+    tomesDone = {},          -- D-030 E: exact tome item name -> { state, vendor }, cleared at the start of every shopping run
+    abortSpree = false,      -- D-030 F'': set by every tome safety stop, checked after each visit, cleared at the start of every shopping run
+    knownSeq = 0,            -- D-030 F'': counts the "You already know this discipline." chat lines
+    visitVendor = nil,       -- the vendor the current visit is for (logs and the tome record)
 }
 
 local MAX_LOG_LINES = 400
@@ -1381,6 +1403,138 @@ local function classifyLevel(levelText, low, high)
     return 'unreadable', string.format('level unreadable ("%s")', trimmed)
 end
 
+-- ============================================================================
+-- Discipline tomes (decision log D-030)
+-- ----------------------------------------------------------------------------
+-- A tome is bought from a tome vendor and learned by right-clicking it; learning consumes it. A tome for a discipline the character already
+-- knows can still be bought, and right-clicking it does NOT consume it: the game answers "You already know this discipline." and puts it
+-- on the cursor (observed live). The functions below are the pure rules; the visit logic that uses them is in runSpellSpree / processEntry.
+-- ============================================================================
+local TOME_PREFIX = 'Tome of '
+-- tome discipline name -> the discipline's real name. Only entries the server data supports belong here (D-030: none yet).
+local TOME_ALIASES = {}
+-- tome discipline names for which no client spell of that name exists (the tome's identity is unresolved): bought once per run and
+-- protected by the learn check; the log says so.
+local TOME_UNRESOLVED = { ['Diversive Strike'] = true }
+
+-- C. A tome is a row whose name begins exactly "Tome of " (case-sensitive, from the start) with something after it.
+local function isTomeName(name)
+    if type(name) ~= 'string' then return false end
+    if name:sub(1, #TOME_PREFIX) ~= TOME_PREFIX then return false end
+    return name:sub(#TOME_PREFIX + 1):match('%S') ~= nil
+end
+
+-- The discipline a tome names: its name without "Tome of ", trimmed; nil if the name is not a tome's.
+local function tomeDiscipline(name)
+    if not isTomeName(name) then return nil end
+    return (name:sub(#TOME_PREFIX + 1):gsub('^%s+', ''):gsub('%s+$', ''))
+end
+
+-- D. Known-discipline matching ignores case and every character outside a-z and 0-9 (Inner Flame and Innerflame agree).
+local function normalizeDiscipline(s)
+    return (tostring(s or ''):lower():gsub('[^a-z0-9]', ''))
+end
+
+-- D'. A by-name result counts only as a positive whole slot number (a number, or a string of digits); anything else is nil.
+local function validSlotNumber(v)
+    local n
+    if type(v) == 'number' then n = v
+    elseif type(v) == 'string' and v:match('^%s*%d+%s*$') then n = tonumber(v) end
+    if n == nil or n ~= n or n == math.huge or n ~= math.floor(n) or n < 1 then return nil end
+    return n
+end
+
+-- D'. The known list indexed by normalized name: key -> the distinct raw names that share it (two or more = ambiguous).
+local function buildKnownIndex(names)
+    local index = {}
+    for _, raw in ipairs(names or {}) do
+        local key = normalizeDiscipline(raw)
+        if key ~= '' then
+            local list = index[key]
+            if not list then list = {}; index[key] = list end
+            local dup = false
+            for _, r in ipairs(list) do if r == raw then dup = true end end
+            if not dup then list[#list + 1] = raw end
+        end
+    end
+    return index
+end
+
+-- D'. 'known' (with how: 'list' or 'by-name'), 'ambiguous' or 'unknown'. Known if the list matches unambiguously, or the exact by-name
+-- lookup gave a positive slot number; an ambiguous list match alone is never known.
+local function tomeKnownVerdict(derived, index, byNameSlot, aliases)
+    local name = (aliases or TOME_ALIASES)[derived] or derived
+    local raws = index and index[normalizeDiscipline(name)]
+    local listState = raws and ((#raws == 1) and 'match' or 'ambiguous') or nil
+    if listState == 'match' then return 'known', 'list' end
+    if validSlotNumber(byNameSlot) then return 'known', 'by-name' end
+    if listState == 'ambiguous' then return 'ambiguous', nil end
+    return 'unknown', nil
+end
+
+-- F''. The state of a tome's learning from one observation: obs = { slotName, cursorName, count } (nil when empty or unreadable),
+-- n0 = the baseline count taken once before the first click, name = the tome's exact name. Cursor first, then the slot, then the count.
+local function learnState(obs, n0, name)
+    if obs.cursorName ~= nil then return (obs.cursorName == name) and 'pending' or 'cursor-other' end
+    if obs.slotName == name then return 'clickable' end
+    local c = obs.count
+    if type(c) == 'number' and c == math.floor(c) and c >= 0 and c == n0 - 1 then return 'learned' end
+    return 'insufficient'
+end
+
+-- D. The disciplines the character knows, read as TAC reads them: Me.CombatAbilityCount when the client has it, otherwise slot by slot up
+-- to 400, stopping after 60 empty slots in a row. A read that raises is counted apart from a slot that is simply empty.
+local KNOWN_MAX_SLOTS, KNOWN_EMPTY_LIMIT = 400, 60
+local function scanKnownDisciplines()
+    local names, readErrors, emptySlots, lastSlot, emptyRun = {}, 0, 0, 0, 0
+    local okc, count = pcall(function() return mq.TLO.Me.CombatAbilityCount() end)
+    count = okc and tonumber(count) or 0
+    local haveCount = count and count > 0
+    local limit = haveCount and count or KNOWN_MAX_SLOTS
+    local ended = haveCount and 'count' or 'limit'
+    for i = 1, limit do
+        local ok, name = pcall(function()
+            local ca = mq.TLO.Me.CombatAbility(i)
+            if not ca then return nil end
+            local n = ca.Name and ca.Name()
+            if n == nil or n == '' or tostring(n):upper() == 'NULL' then
+                local ok2, v = pcall(function() return ca() end)
+                if ok2 then n = v end
+            end
+            return n
+        end)
+        if not ok then
+            readErrors = readErrors + 1
+            emptyRun = emptyRun + 1
+        elseif name ~= nil and tostring(name) ~= '' and tostring(name):upper() ~= 'NULL' then
+            names[#names + 1] = tostring(name)
+            lastSlot, emptyRun = i, 0
+        else
+            emptySlots = emptySlots + 1
+            emptyRun = emptyRun + 1
+        end
+        if not haveCount and emptyRun >= KNOWN_EMPTY_LIMIT then ended = 'empty-run'; break end
+    end
+    return { names = names, readErrors = readErrors, emptySlots = emptySlots, lastSlot = lastSlot, ended = ended, count = haveCount and count or nil }
+end
+
+-- F'. Puts a tome that is on the cursor back in the bags. The cursor must still hold the exact tome (read again just now), a free slot must
+-- exist, /autoinventory is sent once, and the cursor is polled up to 10 times at 200 ms. Returns 'recovered', 'changed', 'no-room' or
+-- 'failed' (plus what was on the cursor).
+local function recoverKnownTome(name, freeSlotFn)
+    local before = cursorItemName()
+    if before ~= name then return 'changed', before end
+    local bag = (freeSlotFn or firstFreeInventorySlot)()
+    if not bag then return 'no-room' end
+    sendCmd(string.format('put the tome "%s" back in the bags (it was not consumed)', name), '/autoinventory')
+    for _ = 1, 10 do
+        mq.delay(200)
+        mq.doevents()
+        if not cursorItemName() then return 'recovered' end
+    end
+    return 'failed', cursorItemName()
+end
+
 local function buildSpellList(rows)
     local entries, byName = {}, {}
     local unreadable, duplicates, nonScroll = 0, {}, 0
@@ -1420,13 +1574,15 @@ local OUTCOME = {
 }
 local OUTCOME_ORDER = { OUTCOME.SCRIBED, OUTCOME.BOUGHT_NO_SCRIBE, OUTCOME.NOT_BOUGHT, OUTCOME.SKIPPED, OUTCOME.NOT_ATTEMPTED, OUTCOME.NONE }
 
+-- Tome visits print the first two outcomes with tome wording (ledger and per-entry log line); the outcome identities and the counts line format are unchanged (D-030 G).
+local TOME_OUTCOME_LABEL = { [OUTCOME.SCRIBED] = 'bought and learned', [OUTCOME.BOUGHT_NO_SCRIBE] = 'bought, learn not completed' }
 local function setOutcome(entry, outcome, detail)
     if entry.outcome then
         logLine(string.format('LEDGER DEFECT: an outcome was recorded twice for "%s" (kept "%s", ignored "%s").', entry.name, entry.outcome, outcome), COLOR_ERR)
         return
     end
     entry.outcome, entry.detail = outcome, detail
-    logObs(string.format('outcome for "%s": %s%s', entry.name, outcome, detail and (' -- ' .. detail) or ''))
+    logObs(string.format('outcome for "%s": %s%s', entry.name, (entry.isTome and TOME_OUTCOME_LABEL[outcome]) or outcome, detail and (' -- ' .. detail) or ''))
 end
 
 -- Entries from `fromIndex` on that have no outcome yet were never reached because the run stopped.
@@ -1437,7 +1593,8 @@ local function markRemainingNotAttempted(entries, fromIndex, reason)
 end
 
 -- Logs the ledger: counts for every outcome, names for all but the first. An entry with no outcome is a defect.
-local function logLedger(entries)
+local function logLedger(entries, kind)
+    local function label(o) return (kind == 'tome' and TOME_OUTCOME_LABEL[o]) or o end
     local groups = {}
     for _, o in ipairs(OUTCOME_ORDER) do groups[o] = {} end
     for _, e in ipairs(entries) do
@@ -1448,19 +1605,20 @@ local function logLedger(entries)
         table.insert(groups[e.outcome], e)
     end
     local parts = {}
-    for _, o in ipairs(OUTCOME_ORDER) do parts[#parts + 1] = string.format('%s=%d', o, #groups[o]) end
+    for _, o in ipairs(OUTCOME_ORDER) do parts[#parts + 1] = string.format('%s=%d', label(o), #groups[o]) end
     logLine(string.format('Outcome ledger (%d built-list entries): %s.', #entries, table.concat(parts, '; ')), COLOR_GOLD)
     for idx, o in ipairs(OUTCOME_ORDER) do
         if idx > 1 and #groups[o] > 0 then
             local names = {}
             for _, e in ipairs(groups[o]) do names[#names + 1] = e.detail and string.format('%s (%s)', e.name, e.detail) or e.name end
-            logLine(string.format('  %s (%d): %s', o, #groups[o], table.concat(names, '; ')), o == OUTCOME.NONE and COLOR_ERR or COLOR_WARN)
+            logLine(string.format('  %s (%d): %s', label(o), #groups[o], table.concat(names, '; ')), o == OUTCOME.NONE and COLOR_ERR or COLOR_WARN)
         end
     end
 end
 
 -- F''(b). Log-only. Never buys. Needs the window open.
-local function finalScan(entries, byName)
+local function finalScan(entries, byName, kind)
+    local isItemName = (kind == 'tome') and isTomeName or isScrollName
     if not merchantOpen() then
         logObs('final scan skipped: the merchant window is not open.')
         return
@@ -1473,7 +1631,7 @@ local function finalScan(entries, byName)
     local newScrolls, lingering, other, outOfRange = {}, {}, {}, 0
     for r = 1, n do
         local name = listCell(r, LIST_COL.NAME)
-        if name and isScrollName(name) then
+        if name and isItemName(name) then
             local e = byName[name]
             if not e then
                 newScrolls[#newScrolls + 1] = name
@@ -1517,9 +1675,257 @@ local function selectEntry(entry)
     return 'unverified'
 end
 
+-- ============================================================================
+-- Discipline tomes: the visit logic (decision log D-030, design items D-F'')
+-- ============================================================================
+local TOME_LEARN_ATTEMPTS = 20
+local TOME_OBSERVE_PASSES, TOME_OBSERVE_MS = 15, 200
+
+-- A tome safety stop: records the outcome, stops the visit AND the whole shopping spree (S.abortSpree is checked after each visit).
+local function tomeSafetyStop(entry, outcome, detail, reason)
+    S.state = STATE.STOPPED
+    S.lastStopReason = 'Tome safety stop: ' .. reason
+    S.abortSpree = true
+    setOutcome(entry, outcome, detail)
+    logLine(string.format('%s -- %s. Stopping the whole shopping spree so you can check.', S.lastStopReason, detail), COLOR_ERR)
+    return 'stop'
+end
+
+-- The copies of an item on hand (the cursor counts: observed live), or nil plus why it could not be read.
+local function readItemCount(name)
+    local ok, v = pcall(function() return mq.TLO.FindItemCount('=' .. name)() end)
+    if not ok then return nil, 'the read raised an error' end
+    local n
+    if type(v) == 'number' then n = v
+    elseif type(v) == 'string' and v:match('^%s*%d+%s*$') then n = tonumber(v) end
+    if n == nil or n ~= math.floor(n) or n < 0 then return nil, string.format('got %s', tostring(v)) end
+    return n
+end
+
+-- The exact by-name lookup: the slot number of a known discipline (validated by the caller), the value as read, and whether the read raised.
+local function knownByName(derived)
+    local name = TOME_ALIASES[derived] or derived
+    local ok, v = pcall(function() return mq.TLO.Me.CombatAbility(name)() end)
+    if not ok then return nil, true end
+    return v, false
+end
+
+-- The learn operation of one purchased tome (F''): one baseline count for the whole operation, reclassification before every retry, a click only
+-- after a fresh read confirms the exact tome in the slot, finite observation, corroboration before "already known". Returns 'continue' or 'stop'.
+local function learnTome(entry, name, targetBag, targetSlot)
+    local derived = tomeDiscipline(name)
+    local n0, why = readItemCount(name)
+    if not n0 or n0 < 1 then
+        return tomeSafetyStop(entry, OUTCOME.BOUGHT_NO_SCRIBE, string.format('the item count could not be read (%s)', why or ('read ' .. tostring(n0))),
+            string.format('item count unreadable for "%s"', name))
+    end
+    local knownBefore = validSlotNumber((knownByName(derived))) ~= nil
+    logObs(string.format('learn baseline for "%s": n0=%d knownBefore=%s', name, n0, tostring(knownBefore)))
+
+    local clicked, seqAtClick = false, S.knownSeq
+    local function slotText() return slotLabel(targetBag, targetSlot) end
+    local function observe()
+        local item = readTargetSlot(targetBag, targetSlot)
+        local o = { slotName = item and itemDisplayName(item) or nil, cursorName = cursorItemName() }
+        o.count = readItemCount(name)
+        return o
+    end
+    local function describe(o, st, tag)
+        logObs(string.format('learn check for "%s" (%s): slot=%s cursor=%s count=%s n0=%d -> %s', name, tag, tostring(o.slotName), tostring(o.cursorName), tostring(o.count), n0, st))
+    end
+    local function finishLearned(note)
+        S.tomesDone[name] = { state = 'learned', vendor = S.visitVendor }
+        setOutcome(entry, OUTCOME.SCRIBED, note)
+        logLine(string.format('Confirmed learned: "%s"%s.', name, note and (' (' .. note .. ')') or ''), COLOR_GOOD)
+        return 'continue'
+    end
+
+    -- the tome is on the cursor: observe the bounded window (a scroll is seen to pass through the cursor briefly while it is used)
+    local function observePending()
+        for pass = 1, TOME_OBSERVE_PASSES do
+            mq.delay(TOME_OBSERVE_MS); mq.doevents()
+            local o = observe(); local st = learnState(o, n0, name)
+            describe(o, st, string.format('cursor wait %d/%d', pass, TOME_OBSERVE_PASSES))
+            if st ~= 'pending' then return st, o end
+        end
+        local message = S.knownSeq ~= seqAtClick
+        logObs(string.format('"%s" is still on the cursor after %d passes: message seen in this attempt=%s, knownBefore=%s', name, TOME_OBSERVE_PASSES, tostring(message), tostring(knownBefore)))
+        return (message or knownBefore) and 'known' or 'unresolved', nil
+    end
+    -- the slot does not hold the tome, the cursor is empty and the count did not drop: observe, never click
+    local function observeGone()
+        local swept = false
+        for pass = 1, TOME_OBSERVE_PASSES do
+            mq.delay(TOME_OBSERVE_MS); mq.doevents()
+            if not swept then
+                swept = true
+                local fb, fs = findCopyAnywhere(name, nil, nil)
+                if fb then
+                    logLine(string.format('"%s" is now in %s -- it will be clicked there only after a fresh read.', name, slotLabel(fb, fs)), COLOR_WARN)
+                    targetBag, targetSlot = fb, fs
+                    return 'relocated', nil
+                end
+            end
+            local o = observe(); local st = learnState(o, n0, name)
+            describe(o, st, string.format('observing %d/%d', pass, TOME_OBSERVE_PASSES))
+            if st ~= 'insufficient' then return st, o end
+        end
+        return 'unresolved-gone', nil
+    end
+    local function resolve(o, st)
+        for _ = 1, 4 do
+            if st == 'learned' or st == 'clickable' or st == 'cursor-other' then return st, o end
+            if st == 'pending' then
+                local r, o2 = observePending()
+                if r == 'known' or r == 'unresolved' then return r, o end
+                st, o = r, o2 or o
+            else
+                local r, o2 = observeGone()
+                if r == 'unresolved-gone' then return r, o end
+                if r == 'relocated' then return 'clickable', o end
+                st, o = r, o2 or o
+            end
+        end
+        return 'unresolved-gone', o
+    end
+    local function knownRecovery()
+        local r = recoverKnownTome(name)
+        if r == 'recovered' then
+            S.tomesDone[name] = { state = 'known-after-purchase', vendor = S.visitVendor }
+            setOutcome(entry, OUTCOME.BOUGHT_NO_SCRIBE, 'discipline already known (the check missed it; the tome is back in your bags)')
+            logLine(string.format('"%s": you already know that discipline -- the tome was put back in your bags (it cost you the purchase price).', name), COLOR_WARN)
+            return 'continue'
+        elseif r == 'changed' then
+            return 'redo'
+        elseif r == 'no-room' then
+            return tomeSafetyStop(entry, OUTCOME.BOUGHT_NO_SCRIBE, 'no room to put the tome away (the cursor holds the tome)', 'no room to put the tome away')
+        end
+        return tomeSafetyStop(entry, OUTCOME.BOUGHT_NO_SCRIBE, 'the tome was left on the cursor (/autoinventory did not clear it)', 'tome left on the cursor')
+    end
+
+    local skipDelay = false
+    for attempt = 1, TOME_LEARN_ATTEMPTS do
+        mq.delay(attempt == 1 and 150 or (skipDelay and 0 or 1000))
+        skipDelay = false
+        if S.stopRequested then break end
+        waitForMouseOffOverlay()
+        if S.stopRequested then break end
+        mq.doevents()
+        local o = observe(); local st = learnState(o, n0, name)
+        describe(o, st, string.format('attempt %d/%d', attempt, TOME_LEARN_ATTEMPTS))
+        local final, fo = resolve(o, st)
+        if final == 'learned' then
+            return finishLearned(clicked and 'recognized between attempts' or nil)
+        elseif final == 'known' then
+            local r = knownRecovery()
+            if r ~= 'redo' then return r end
+        elseif final == 'unresolved' then
+            return tomeSafetyStop(entry, OUTCOME.BOUGHT_NO_SCRIBE, 'the tome is on the cursor and the game gave no sign it was already known', string.format('learning unresolved for "%s"', name))
+        elseif final == 'unresolved-gone' then
+            return tomeSafetyStop(entry, OUTCOME.BOUGHT_NO_SCRIBE, string.format('the tome left %s and the game gave insufficient evidence it was learned', slotText()),
+                string.format('learning unresolved for "%s"', name))
+        elseif final == 'cursor-other' then
+            return tomeSafetyStop(entry, OUTCOME.BOUGHT_NO_SCRIBE, string.format('something else is on the cursor ("%s")', tostring((fo or o).cursorName)),
+                'unexpected item on the cursor during a tome visit')
+        elseif final == 'clickable' then
+            local item = readTargetSlot(targetBag, targetSlot)        -- a fresh read immediately before the click
+            if item and itemDisplayName(item) == name and not cursorItemName() then
+                seqAtClick, clicked = S.knownSeq, true
+                sendCmd(string.format('learn "%s": right-click the tome at %s (attempt %d/%d)', name, slotText(), attempt, TOME_LEARN_ATTEMPTS), targetSlotNotifyCmd(targetBag, targetSlot))
+                for _ = 1, 5 do
+                    mq.delay(200); mq.doevents()
+                    local o2 = observe(); local st2 = learnState(o2, n0, name)
+                    if st2 == 'learned' then describe(o2, st2, 'after the click'); return finishLearned(nil) end
+                    if st2 ~= 'clickable' then describe(o2, st2, 'after the click'); skipDelay = true; break end
+                end
+            else
+                logObs(string.format('"%s" is not confirmed in %s on a fresh read -- no click on this pass.', name, slotText()))
+            end
+        end
+    end
+    if S.stopRequested then
+        logLine('Stopped by user.', COLOR_WARN)
+        S.state = STATE.STOPPED
+        S.lastStopReason = 'Stopped by user'
+        setOutcome(entry, OUTCOME.BOUGHT_NO_SCRIBE, 'the user pressed Stop during the learn')
+        return 'stop'
+    end
+    return tomeSafetyStop(entry, OUTCOME.BOUGHT_NO_SCRIBE, string.format('the tome never left %s after %d tries', slotText(), TOME_LEARN_ATTEMPTS), string.format('learn failed on "%s"', name))
+end
+
+-- The tome list of a vendor: the rows named "Tome of ...", read once; every other row is counted and ignored.
+local function buildTomeList(rows)
+    local entries, byName = {}, {}
+    local unreadable, duplicates, nonTome = 0, {}, 0
+    for r = 1, rows do
+        local name = listCell(r, LIST_COL.NAME)
+        if name == nil then
+            unreadable = unreadable + 1
+        elseif isTomeName(name) then
+            if byName[name] then
+                duplicates[#duplicates + 1] = name
+                logLine(string.format('[list] "%s" appears more than once (row %d); keeping the first, buying it once.', name, r), COLOR_WARN)
+            else
+                local function clean(c) return (tostring(listCell(r, c) or '?'):gsub('%s+', '')) end
+                local price = string.format('%spp %sgp %ssp %scp', clean(LIST_COL.PP), clean(LIST_COL.GP), clean(LIST_COL.SP), clean(LIST_COL.CP))
+                local e = {
+                    name = name, index = #entries + 1, row = r, outcome = nil, detail = nil, selectAttempts = 0, isTome = true,
+                    levelText = listCell(r, LIST_COL.LVL), qtyText = listCell(r, LIST_COL.QTY), priceText = price,
+                }
+                entries[#entries + 1] = e
+                byName[name] = e
+            end
+        else
+            nonTome = nonTome + 1
+        end
+    end
+    return entries, byName, { unreadable = unreadable, duplicates = duplicates, nonTome = nonTome }
+end
+
+-- Before any purchase of a tome visit: skip what was handled earlier in this run (E) and what the character already knows (D). Both are
+-- ledger-only outcomes (S.skipped is not touched), and nothing skipped is ever selected or clicked.
+local function classifyTomeEntries(entries)
+    local scan = scanKnownDisciplines()
+    logObs(string.format('known-discipline scan: %d name(s); readErrors=%d; emptySlots=%d; last filled slot %d; ended by %s.',
+        #scan.names, scan.readErrors, scan.emptySlots, scan.lastSlot, scan.ended))
+    if scan.readErrors > 0 then
+        logLine(string.format('Known list possibly incomplete: %d read(s) of the disciplines raised an error.', scan.readErrors), COLOR_WARN)
+    end
+    if #scan.names == 0 then
+        logLine('The list of known disciplines is empty or unreadable -- the list check is off for this visit (the by-name check still runs).', COLOR_WARN)
+    end
+    local index = buildKnownIndex(scan.names)
+    local knownCount, handledCount = 0, 0
+    for _, e in ipairs(entries) do
+        local derived = tomeDiscipline(e.name)
+        local done = S.tomesDone[e.name]
+        if done then
+            handledCount = handledCount + 1
+            setOutcome(e, OUTCOME.SKIPPED, string.format('already handled earlier in this run (%s)', tostring(done.vendor)))
+        else
+            if TOME_UNRESOLVED[derived] then
+                logObs(string.format('"%s": no client spell has this discipline name (its identity is unresolved); it is bought once and protected by the learn check.', e.name))
+            end
+            local slot = knownByName(derived)
+            local verdict, via = tomeKnownVerdict(derived, index, slot)
+            if verdict == 'ambiguous' then
+                local key = normalizeDiscipline(TOME_ALIASES[derived] or derived)
+                logObs(string.format('ambiguous known match: "%s" -> %s', e.name, table.concat(index[key] or {}, '; ')))
+            end
+            logObs(string.format('known check for "%s": %s%s', e.name, verdict, via and (' (' .. via .. ')') or ''))
+            if verdict == 'known' then
+                knownCount = knownCount + 1
+                S.tomesDone[e.name] = { state = 'known', vendor = S.visitVendor }
+                setOutcome(e, OUTCOME.SKIPPED, string.format('discipline already known (%s)', via))
+            end
+        end
+    end
+    return knownCount, handledCount
+end
+
 -- Buys and scribes ONE built-list entry with the existing logic. Records its outcome. Returns 'continue', or
 -- 'stop' after setting S.state / S.lastStopReason (the caller marks the rest as not attempted).
-local function processEntry(entry)
+local function processEntry(entry, kind)
     local name = entry.name
     S.currentName, S.currentIndex = name, entry.index
     logObs(string.format('entry %d "%s": list row at build time %d, Lvl=%s, Qty=%s, price in list=%s (read from the list; gates nothing)',
@@ -1613,6 +2019,8 @@ local function processEntry(entry)
 
     logLine(string.format('Buying "%s"...', name), COLOR_INFO)
     local copperBeforeBuy = myTotalCopper()
+    -- D-030 E: the Buy click is the moment a tome counts as attempted for the rest of the run
+    if kind == 'tome' then S.tomesDone[name] = { state = 'attempted', vendor = S.visitVendor } end
     sendCmd(string.format('buy the selected item "%s" (selection verified as this item just before; money before %s)', name, formatCoin(copperBeforeBuy)),
         '/notify MerchantWnd MW_Buy_Button leftmouseup')
     handleQuantityWindowIfOpen()
@@ -1682,7 +2090,7 @@ local function processEntry(entry)
         landed and ('found "' .. itemDisplayName(landed) .. '"') or 'nothing readable there', landPolls))
     if landed then
         local landedName = itemDisplayName(landed)
-        if landedName ~= name then
+        if landedName ~= name and kind ~= 'tome' then
             logLine(string.format('Something landed in %s ("%s") but the name doesn\'t match "%s" -- proceeding anyway.', slotLabel(targetBag, targetSlot), landedName, name), COLOR_WARN)
         end
     end
@@ -1741,9 +2149,22 @@ local function processEntry(entry)
         return 'continue'
     end
 
-    -- Hard safety gate: never right-click anything that isn't name-confirmed as a scroll.
+    -- Hard safety gate: never right-click anything that isn't name-confirmed as a scroll (a tome: as the exact tome that was bought, D-030).
     local landedName = itemDisplayName(landed)
-    if not isScrollName(landedName) then
+    if kind == 'tome' then
+        if landedName ~= name then
+            local fb, fs = findCopyAnywhere(name, nil, nil)
+            if fb then
+                targetBag, targetSlot = fb, fs
+                landed = readTargetSlot(fb, fs)
+                landedName = landed and itemDisplayName(landed) or nil
+            end
+        end
+        if landedName ~= name then
+            return tomeSafetyStop(entry, OUTCOME.BOUGHT_NO_SCRIBE, string.format('purchased tome not located (found "%s" in the expected slot)', tostring(landedName)),
+                'unexpected item where a tome should be')
+        end
+    elseif not isScrollName(landedName) then
         logLine(string.format('"%s" landed in %s but isn\'t named like a spell or song scroll -- NOT right-clicking it. Stopping so you can check what happened.', landedName, slotLabel(targetBag, targetSlot)), COLOR_ERR)
         S.state = STATE.STOPPED
         S.lastStopReason = string.format('Refused to scribe non-spell item: "%s"', landedName)
@@ -1756,6 +2177,7 @@ local function processEntry(entry)
     -- The ACTUAL measured drop in money on hand is the only trustworthy cost figure.
     local actualSpent = math.max(0, copperBeforeBuy - myTotalCopper())
     S.spentCopper = S.spentCopper + actualSpent
+    if kind == 'tome' then return learnTome(entry, name, targetBag, targetSlot) end
     logLine(string.format('Scribing "%s"...', name), COLOR_INFO)
 
     -- The client can reject the right-click for a while after a purchase, so click, watch for the scroll to
@@ -1834,7 +2256,7 @@ local function processEntry(entry)
     return 'stop'
 end
 
-local function runSpellSpree(range)
+local function runSpellSpree(range, kind)
     S.state = STATE.RUNNING
     -- NOT resetting bought/skipped/spentCopper here -- they accumulate across the whole shopping spree (all
     -- vendors); they are reset once at the start of runShoppingSpree.
@@ -1865,6 +2287,14 @@ local function runSpellSpree(range)
             return
         end
     end
+    -- D-030 B: the item kind is a required argument too: 'scroll' (spells and songs) or 'tome'. Anything else is refused, fail closed.
+    if kind ~= 'scroll' and kind ~= 'tome' then
+        local refusal = (kind == nil) and 'No item kind' or 'Invalid item kind'
+        logLine(string.format('%s was given for this visit (%s) -- buying nothing.', refusal, tostring(kind)), COLOR_ERR)
+        S.state = STATE.STOPPED
+        S.lastStopReason = refusal
+        return
+    end
     -- NOT resetting S.openedBags: a bag's open/closed state in the game does not reset between vendors, and
     -- the click that opens it TOGGLES it.
     logLine('Starting up...', COLOR_GOLD)
@@ -1887,6 +2317,7 @@ local function runSpellSpree(range)
             logLine(string.format('There\'s already something on your cursor ("%s") -- clear that before starting.', stray), COLOR_ERR)
             S.state = STATE.STOPPED
             S.lastStopReason = 'Item already on cursor'
+            if kind == 'tome' then S.lastStopReason = 'Tome safety stop: unexpected item on the cursor ("' .. tostring(stray) .. '") at the start of a tome visit'; S.abortSpree = true end
             return
         end
     end
@@ -1924,9 +2355,17 @@ local function runSpellSpree(range)
     end
     logLine(string.format('[list] The visible list settled at %d row(s).', rows), COLOR_GOLD)
 
-    local entries, byName, stats = buildSpellList(rows)
-    logLine(string.format('[list] Built the spell list: %d scroll(s) to buy from %d row(s); %d non-scroll row(s) ignored; %d unreadable row(s); %d duplicate name(s).',
-        #entries, rows, stats.nonScroll, stats.unreadable, #stats.duplicates), COLOR_GOLD)
+    local entries, byName, stats
+    if kind == 'tome' then
+        entries, byName, stats = buildTomeList(rows)
+        logObs(string.format('merchant window name: %s (this visit is for "%s")', tloText(function() return mq.TLO.Merchant.Name() end), tostring(S.visitVendor)))
+        logLine(string.format('[list] Built the tome list: %d tome(s) from %d row(s); %d non-tome row(s) ignored; %d unreadable row(s); %d duplicate name(s).',
+            #entries, rows, stats.nonTome, stats.unreadable, #stats.duplicates), COLOR_GOLD)
+    else
+        entries, byName, stats = buildSpellList(rows)
+        logLine(string.format('[list] Built the spell list: %d scroll(s) to buy from %d row(s); %d non-scroll row(s) ignored; %d unreadable row(s); %d duplicate name(s).',
+            #entries, rows, stats.nonScroll, stats.unreadable, #stats.duplicates), COLOR_GOLD)
+    end
     do
         local chunk = {}
         for _, e in ipairs(entries) do
@@ -1939,7 +2378,10 @@ local function runSpellSpree(range)
     -- D-025 C, E: one pass before any purchase. An entry whose level is outside the visit's range, or unreadable, is recorded as
     -- deliberately skipped now, so it is never selected or clicked and an early stop cannot relabel it. Range skips are ledger
     -- outcomes only (S.skipped and S.skippedNames are not touched).
-    if unrestricted then
+    if kind == 'tome' then
+        local knownCount, handledCount = classifyTomeEntries(entries)
+        logLine(string.format('[list] Tome check: %d known, %d handled earlier in this run, %d to buy.', knownCount, handledCount, #entries - knownCount - handledCount), COLOR_GOLD)
+    elseif unrestricted then
         logLine('[list] No level range for this visit (Bazaar): every scroll the vendor sells is eligible.', COLOR_GOLD)
     else
         local inCount, outCount, unreadableCount = 0, 0, 0
@@ -1957,8 +2399,8 @@ local function runSpellSpree(range)
     end
 
     local function finish()
-        logLedger(entries)
-        finalScan(entries, byName)
+        logLedger(entries, kind)
+        finalScan(entries, byName, kind)
     end
 
     for i, entry in ipairs(entries) do
@@ -1990,13 +2432,14 @@ local function runSpellSpree(range)
                     logLine(string.format('Something ended up on your cursor ("%s") -- that means an action didn\'t complete cleanly. Stopping before anything gets lost or misplaced.', stray), COLOR_ERR)
                     S.state = STATE.STOPPED
                     S.lastStopReason = string.format('Unexpected item on cursor: "%s"', stray)
+                    if kind == 'tome' then S.lastStopReason = 'Tome safety stop: ' .. S.lastStopReason; S.abortSpree = true end
                     markRemainingNotAttempted(entries, i, S.lastStopReason)
                     finish()
                     return
                 end
             end
 
-            local result = processEntry(entry)
+            local result = processEntry(entry, kind)
             if result == 'stop' then
                 markRemainingNotAttempted(entries, i + 1, S.lastStopReason)
                 finish()
@@ -2007,7 +2450,7 @@ local function runSpellSpree(range)
     end
 
     if #entries == 0 then
-        logLine('No spell or song scrolls are listed on this vendor.', COLOR_GOLD)
+        logLine(kind == 'tome' and 'No discipline tomes are listed on this vendor.' or 'No spell or song scrolls are listed on this vendor.', COLOR_GOLD)
     else
         logLine(string.format('Reached the end of the built list (%d entr%s).', #entries, #entries == 1 and 'y' or 'ies'), COLOR_GOLD)
     end
@@ -2038,9 +2481,10 @@ local function findNpcSpawn(npcName)
     return spawn
 end
 
-local function runNavAndShop(npcName, range)
+local function runNavAndShop(npcName, range, kind)
     S.state = STATE.RUNNING
     S.lastStopReason = nil
+    S.visitVendor = npcName
     logLine(string.format('Nav & Shop: looking for "%s"...', npcName), COLOR_GOLD)
 
     -- Don't kick off anything -- not even the nav -- until the mouse is
@@ -2144,7 +2588,7 @@ local function runNavAndShop(npcName, range)
 
     logLine('Merchant window open -- starting the buy run.', COLOR_GOOD)
     local countersBefore = runCounters()
-    runSpellSpree(range)
+    runSpellSpree(range, kind)
     logRunOutcome('Nav & Shop "' .. npcName .. '"', countersBefore)
 
     -- Always close, no matter how the buy run ended -- this is meant to be a
@@ -2174,12 +2618,19 @@ local function collectSelectedVendors()
                     logLine(string.format('Invalid level range for %s %s: %s -- skipping that visit (nothing will be bought).',
                         className, tier, tostring(high)), COLOR_ERR)
                 elseif npcName then
-                    table.insert(list, { class = className, tier = tier, vendorTier = vendorTier, name = npcName,
+                    table.insert(list, { class = className, tier = tier, vendorTier = vendorTier, name = npcName, kind = 'scroll',
                         range = { low = low, high = high, label = tier } })
                 else
                     logLine(string.format('No vendor is configured for %s %s (vendor tier %s) -- skipping that visit.',
                         className, tier, tostring(vendorTier)), COLOR_WARN)
                 end
+            end
+        end
+        -- D-030 A: the class's tome vendors, after its spell visits, in table order
+        if S.selected[className].tomes and TOME_VENDORS[className] then
+            for _, npcName in ipairs(TOME_VENDORS[className]) do
+                table.insert(list, { class = className, tier = 'Discipline Tomes', vendorTier = 'Discipline Tomes', name = npcName, kind = 'tome',
+                    range = { unrestricted = true } })
             end
         end
     end
@@ -2222,6 +2673,7 @@ local function runShoppingSpree()
 
     S.bought, S.skipped, S.spentCopper = 0, 0, 0
     S.purchasedNames, S.skippedNames = {}, {}
+    S.tomesDone, S.abortSpree = {}, false -- D-030: the run-wide tome record and the abort flag start fresh with every run
     logLine(string.format('Shopping spree: %d vendor(s) selected.', #list), COLOR_GOLD)
     for i, entry in ipairs(list) do
         if S.stopRequested then
@@ -2235,7 +2687,7 @@ local function runShoppingSpree()
         -- D': say where the visit goes when it differs from the ticked tier (logged before any purchase)
         local via = (entry.vendorTier ~= entry.tier) and string.format(', using the %s vendor', entry.vendorTier) or ''
         logLine(string.format('--- Vendor %d/%d: %s (%s %s%s) ---', i, #list, entry.name, entry.class, entry.tier, via), COLOR_GOLD)
-        runNavAndShop(entry.name, entry.range)
+        runNavAndShop(entry.name, entry.range, entry.kind)
 
         if S.stopRequested then
             logLine('Stopped by user.', COLOR_WARN)
@@ -2244,7 +2696,7 @@ local function runShoppingSpree()
             printSpreeSummary()
             return
         end
-        if isSpreeAbortingReason(S.lastStopReason) then
+        if S.abortSpree or isSpreeAbortingReason(S.lastStopReason) then
             logLine(string.format('"%s" -- ending the shopping spree early, no point visiting the rest.', S.lastStopReason), COLOR_ERR)
             S.state = STATE.STOPPED
             printSpreeSummary()
@@ -2287,7 +2739,8 @@ local function runBazaarShop()
     logLine('Bazaar: working the merchant window you have open.', COLOR_GOLD)
 
     local countersBefore = runCounters()
-    runSpellSpree({ unrestricted = true })
+    S.visitVendor = nil
+    runSpellSpree({ unrestricted = true }, 'scroll')
     logRunOutcome('Bazaar', countersBefore)
     printSpreeSummary()
 end
@@ -2423,26 +2876,47 @@ local function draw()
         ImGui.Dummy(0, 2)
         for _, className in ipairs(CLASS_ORDER) do
             if (not S.detectedClasses) or S.detectedClasses[className] then
-                local allChecked = true
-                for _, tier in ipairs(TIERS) do
-                    if not S.selected[className][tier] then
-                        allChecked = false
-                        break
-                    end
-                end
-                local newClassChecked, classChanged = ImGui.Checkbox('##class_' .. className, allChecked)
-                if classChanged then
+                -- D-030: a class with spell vendors has its four ranges (the class box ticks only those) and, if it has tome vendors, a separate
+                -- Discipline Tomes box; a tome-only class uses its tome box as the class box.
+                local hasTiers = VENDOR_DATA[className] ~= nil
+                local hasTomes = TOME_VENDORS[className] ~= nil
+                local parentChecked
+                if hasTiers then
+                    parentChecked = true
                     for _, tier in ipairs(TIERS) do
-                        S.selected[className][tier] = newClassChecked
+                        if not S.selected[className][tier] then
+                            parentChecked = false
+                            break
+                        end
+                    end
+                else
+                    parentChecked = S.selected[className].tomes == true
+                end
+                local newClassChecked, classChanged = ImGui.Checkbox('##class_' .. className, parentChecked)
+                if classChanged then
+                    if hasTiers then
+                        for _, tier in ipairs(TIERS) do
+                            S.selected[className][tier] = newClassChecked
+                        end
+                    else
+                        S.selected[className].tomes = newClassChecked
                     end
                 end
                 ImGui.SameLine()
                 if ImGui.TreeNode(className) then
                     ImGui.Indent()
-                    for _, tier in ipairs(TIERS) do
-                        local checked, changed = ImGui.Checkbox(tier .. '##' .. className, S.selected[className][tier])
-                        if changed then
-                            S.selected[className][tier] = checked
+                    if hasTiers then
+                        for _, tier in ipairs(TIERS) do
+                            local checked, changed = ImGui.Checkbox(tier .. '##' .. className, S.selected[className][tier])
+                            if changed then
+                                S.selected[className][tier] = checked
+                            end
+                        end
+                    end
+                    if hasTomes then
+                        local tomesChecked, tomesChanged = ImGui.Checkbox('Discipline Tomes##' .. className, S.selected[className].tomes == true)
+                        if tomesChanged then
+                            S.selected[className].tomes = tomesChecked
                         end
                     end
                     ImGui.Unindent()
@@ -2457,6 +2931,10 @@ local function draw()
                 if S.selected[className][tier] then
                     selectedCount = selectedCount + 1
                 end
+            end
+            -- D-030: the button counts visits; each tome vendor of a ticked class is one
+            if S.selected[className].tomes and TOME_VENDORS[className] then
+                selectedCount = selectedCount + #TOME_VENDORS[className]
             end
         end
 
@@ -2598,6 +3076,9 @@ if type(rawget(_G, 'SPELLSPREE_UNIT')) == 'table' then
     unit.parseTierRange, unit.validateRange, unit.classifyLevel = parseTierRange, validateRange, classifyLevel
     unit.logWriteFile, unit.logLine, unit.logObs, unit.logFail = logWriteFile, logLine, logObs, logFail
     unit.logSyncIdentity, unit.logUnavailable, unit.logIdentityKeyFor = logSyncIdentity, logUnavailable, logIdentityKeyFor
+    unit.isTomeName, unit.tomeDiscipline, unit.normalizeDiscipline, unit.validSlotNumber = isTomeName, tomeDiscipline, normalizeDiscipline, validSlotNumber
+    unit.buildKnownIndex, unit.tomeKnownVerdict, unit.learnState = buildKnownIndex, tomeKnownVerdict, learnState
+    unit.scanKnownDisciplines, unit.recoverKnownTome = scanKnownDisciplines, recoverKnownTome
     return
 end
 
@@ -2637,6 +3118,9 @@ end
 -- Both wordings, confirmed both actually occur on the same vendor for
 -- different items -- "for" was dropped in an earlier version on the
 -- (wrong) assumption only "per" was real.
+-- D-030 F'': the game's answer when a tome for an already-known discipline is right-clicked. Only counted here; the learn step decides from the slot,
+-- the cursor and the item count, and uses this as corroboration.
+mq.event('spellspree_known_discipline', "#*#You already know this discipline#*#", function() S.knownSeq = S.knownSeq + 1 end)
 mq.event('spellspree_price_per', "#*#tells you, 'That'll be #1# per #2#.'", onPriceQuote)
 mq.event('spellspree_price_for', "#*#tells you, 'That'll be #1# for #2#.'", onPriceQuote)
 
